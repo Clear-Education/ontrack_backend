@@ -8,4 +8,4 @@ services:
 before_script: pip install docker-compose
 
 script:
-  - docker-compose run web sh -c "python ./ontrack/manage.py test"
+  - docker-compose run web sh -c "python ./ontrack/manage.py test ./ontrack"
