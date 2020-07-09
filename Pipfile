@@ -1,0 +1,18 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+flake8 = "*"
+
+[packages]
+django = "3.0.8"
+djangorestframework = "3.11.0"
+pillow = "7.2.0"
+psycopg2 = "2.8.5"
+django-softdelete = "0.9.1"
+django-rest-passwordreset = "1.1.0"
+
+[requires]
+python_version = "3.7"
