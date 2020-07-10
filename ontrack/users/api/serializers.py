@@ -1,16 +1,16 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
 from users.models import User
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Group
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
-
     password2 = serializers.CharField(
         style={
             'input_type': 'password',
         },
-        write_only=True)
+        write_only=True, required=True)
+    groups = serializers.PrimaryKeyRelatedField(
+        many=False, required=True, queryset=Group.objects.all())
 
     class Meta:
         model = User
@@ -22,6 +22,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     def save(self):
         user = User(
             email=self.validated_data['email'],
+            groups=self.validated_data['groups'],
         )
         password = self.validated_data['password']
         password2 = self.validated_data['password2']
@@ -33,6 +34,12 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+
+
+class ListUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['email', 'groups']
 
 
 class GroupSerializer(serializers.ModelSerializer):
