@@ -5,6 +5,10 @@ python:
 services:
   - docker
 
+branches:
+  only:
+  - master
+
 before_script: pip install docker-compose
 
 script:
