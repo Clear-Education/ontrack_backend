@@ -146,6 +146,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATIC_ROOT = "/var/www/example.com/static/"
+
 AUTH_USER_MODEL = 'users.User'
 
 if os.getenv('DJANGO_DEVELOPMENT') is not None:
