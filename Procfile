@@ -1,1 +1,1 @@
-web: gunicorn ontrack.wsgi:application --log-file -
+web: gunicorn ontrack.ontrack.wsgi:application --log-file -
