@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'softdelete',
     'django_rest_passwordreset',
+    'drf_yasg',
     # Custom
     'users',
     'instituciones',
@@ -104,6 +105,16 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS':{
+        "Auth Token: Token YOUR_TOKEN":{
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
     }
 }
 
