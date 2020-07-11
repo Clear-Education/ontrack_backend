@@ -21,6 +21,8 @@ def permission_required(resource_name, raise_exception=False):
             return action
 
         def has_permission(self, request, view):
+            print(view.action)
+            print(resource_name)
             permissions = [
                 perm.codename for perm in request.user.groups.permissions.all()]
             view_codename = self.map_action(view.action) + '_' + resource_name

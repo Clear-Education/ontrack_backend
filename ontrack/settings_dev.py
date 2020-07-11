@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django_rest_passwordreset',
     # Custom
     'users',
+    'instituciones',
 
 ]
 
@@ -148,6 +149,8 @@ STATIC_URL = '/static/'
 AUTH_USER_MODEL = 'users.User'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+APPEND_SLASH = True
 
 # CACHES = {
 #     'default': {
