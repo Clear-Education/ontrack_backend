@@ -1,6 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
-from instituciones.api.serializers import InstitucionSerializer
+from instituciones.api import serializers
 from instituciones.models import Institucion
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
@@ -8,35 +8,59 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import LimitOffsetPagination
+from drf_yasg.utils import swagger_auto_schema
+
+
+CREATED_REPONSE = {201: ''}
+
+OK_RESPONSE = {200: serializers.InstitucionSerializer}
+
+OK_LIST = {200: serializers.InstitucionSerializer(many=True)}
+
+OK_EMPTY = {200: ''}
+
+ERROR_RESPONSES = {
+    400: serializers.BadRequestSerializer,
+    401: serializers.UnauthorizedSerializer,
+    403: serializers.ForbiddenSerializer,
+    404: serializers.NotFoundSerializer,
+    500: serializers.ServerErrorSerializer
+}
 
 
 class InstitucionViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, permission_required('institucion')]
     pagination_class = LimitOffsetPagination
     queryset = Institucion.objects.all()
-    serializer_class = InstitucionSerializer
+    serializer_class = serializers.InstitucionSerializer
 
+    @swagger_auto_schema(
+        request_body=serializers.CreateInstitucionSerializer,
+        responses={**CREATED_REPONSE, **ERROR_RESPONSES})
     def create(self, request):
         '''
         Crear nueva Institucion
         '''
-        serializer = InstitucionSerializer(data=request.data)
+        serializer = serializers.CreateInstitucionSerializer(data=request.data)
         data = {}
         if serializer.is_valid():
             serializer.save()
-            data = serializer.data
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-        return Response(data=data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_201_CREATED)
 
+    @swagger_auto_schema(
+        request_body=serializers.CreateInstitucionSerializer,
+        responses={**OK_RESPONSE, **ERROR_RESPONSES},
+        )
     def update(self, request, pk=None):
         '''
         Editar Institucion
         '''
         queryset = Institucion.objects.all()
         institucion = get_object_or_404(queryset, pk=pk)
-        serializer = InstitucionSerializer(
+        serializer = serializers.CreateInstitucionSerializer(
             institucion, data=request.data, partial=True)
         data = {}
         if serializer.is_valid():
@@ -45,32 +69,47 @@ class InstitucionViewSet(ModelViewSet):
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-        return Response(data=data, status=status.HTTP_201_CREATED)
+        return Response(data=data, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+        responses={**OK_EMPTY, **ERROR_RESPONSES},
+        )
     def destroy(self, request, pk=None):
         '''
-        Dar de baja una institucion
+        Elimina una institucion
         '''
         queryset = Institucion.objects.all()
         institucion = get_object_or_404(queryset, pk=pk)
-        if institucion.activa:
-            institucion.activa = False
-            institucion.save()
+        institucion.delete()
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['POST'], name='alta')
-    def alta(self, request, pk=None):
+    @swagger_auto_schema(
+        request_body=serializers.InstitucionStatusSerializer,
+        responses={**OK_EMPTY, **ERROR_RESPONSES},
+        )
+    @action(detail=False, methods=['PATCH'], name='status')
+    def status(self, request, pk=None):
         '''
-        Dar de Alta una institucion
+        Cambiar el estado de una institucion
         '''
         queryset = Institucion.objects.all()
         institucion = get_object_or_404(queryset, pk=pk)
-        if not institucion.activa:
-            institucion.activa = True
-            institucion.save()
+        serializer = serializers.InstitucionStatusSerializer(
+            instance=institucion, data=request.data)
+        if serializer.is_valid():
+            serializer.update(institucion, serializer.validated_data)
+        else:
+            data = serializer.errors
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+        responses={**OK_LIST, **ERROR_RESPONSES},
+        )
     def list(self, request):
+        '''
+        Listar Instituciones
+        '''
         queryset = Institucion.objects.all()
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -81,17 +120,20 @@ class InstitucionViewSet(ModelViewSet):
         return Response(serializer.data)
 
     def get(self, request, pk=None):
+        '''
+        Ver una institucion
+        '''
         queryset = Institucion.objects.all()
         institucion = get_object_or_404(queryset, pk=pk)
-        serializer = InstitucionSerializer(institucion)
+        serializer = serializers.InstitucionSerializer(institucion)
         return Response(serializer.data)
 
 
 create_institucion = InstitucionViewSet.as_view({'post': 'create'})
 update_institucion = InstitucionViewSet.as_view({
-    'patch': 'update',
+    'put': 'update',
     'delete': 'destroy',
     'get': 'get'
     })
-alta_institucion = InstitucionViewSet.as_view({'post': 'alta'})
+status_institucion = InstitucionViewSet.as_view({'patch': 'status'})
 list_institucion = InstitucionViewSet.as_view({'get': 'list'})
