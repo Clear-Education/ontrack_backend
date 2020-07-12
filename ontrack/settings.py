@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'softdelete',
     'django_rest_passwordreset',
-    'drf-yasg'
+    'drf-yasg',
     # Custom
     'users',
     'instituciones',
