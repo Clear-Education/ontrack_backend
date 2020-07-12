@@ -1,27 +1,28 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User
+from users.models import User
 
 
 class UserAdmin(BaseUserAdmin):
 
     list_display = (
-        'email', 'name', 'phone', 'date_of_birth', 'is_staff',  'is_superuser')
+        'email', 'name', 'phone', 'date_of_birth', 'is_staff',  'is_superuser', 'institucion')
     list_filter = ('is_superuser',)
 
     fieldsets = (
-        (None, {'fields': ('email', 'is_staff', 'is_superuser', 'password')}),
+        (None, {'fields': ('email', 'is_staff', 'is_superuser', 'is_active', 'password')}),
         ('Personal info', {'fields': (
             'name', 'phone', 'date_of_birth', 'picture')}),
-        ('Groups', {'fields': ('groups',)}),
+        ('Groups', {'fields': ('groups', 'institucion')}),
         ('Permissions', {'fields': ('user_permissions',)}),
     )
+    
     add_fieldsets = (
         (None, {'fields': (
             'email', 'is_staff', 'is_superuser', 'password1', 'password2')}),
         ('Personal info', {'fields': (
             'name', 'phone', 'date_of_birth', 'picture')}),
-        ('Groups', {'fields': ('groups',)}),
+        ('Groups', {'fields': ('groups', 'institucion')}),
         ('Permissions', {'fields': ('user_permissions',)}),
     )
 

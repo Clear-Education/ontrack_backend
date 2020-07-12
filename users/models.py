@@ -9,6 +9,7 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django_rest_passwordreset.signals import reset_password_token_created
+from instituciones.models import Institucion
 
 
 class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
@@ -20,6 +21,7 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
         on_delete=models.CASCADE,
         null=True
         )
+    institucion = models.ForeignKey(to=Institucion, on_delete=models.CASCADE, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
     picture = models.ImageField(blank=True, null=True)
     is_staff = models.BooleanField(default=False)
@@ -43,6 +45,8 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
         permissions = [
             ("createadmin_user", "Can create users with group Admin"),
             ("list_user", "Can list all users"),
+            ("alta_user", "Can re-activate a deleted User"),
+            ("change_other_user", "Can edit other users info"),
         ]
 
 
