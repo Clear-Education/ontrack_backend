@@ -71,7 +71,7 @@ ROOT_URLCONF = 'ontrack.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -109,8 +109,8 @@ DATABASES = {
 }
 
 SWAGGER_SETTINGS = {
-    'SECURITY_DEFINITIONS':{
-        "Auth Token: Token YOUR_TOKEN":{
+    'SECURITY_DEFINITIONS': {
+        "Auth Token: Token YOUR_TOKEN": {
             'type': 'apiKey',
             'name': 'Authorization',
             'in': 'header'
