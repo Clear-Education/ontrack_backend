@@ -15,6 +15,7 @@ django-rest-passwordreset = "1.1.0"
 gunicorn = "*"
 psycopg2 = "*"
 drf-yasg = "*"
+django-heroku = "*"
 
 [requires]
 python_version = "3.7"
