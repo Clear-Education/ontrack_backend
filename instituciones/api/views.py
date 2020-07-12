@@ -123,7 +123,7 @@ class InstitucionViewSet(ModelViewSet):
 
 create_institucion = InstitucionViewSet.as_view({"post": "create"})
 update_institucion = InstitucionViewSet.as_view(
-    {"put": "update", "delete": "destroy", "get": "get"}
+    {"patch": "update", "delete": "destroy", "get": "get"}
 )
 status_institucion = InstitucionViewSet.as_view({"patch": "status"})
 list_institucion = InstitucionViewSet.as_view({"get": "list"})

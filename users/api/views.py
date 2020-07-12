@@ -30,6 +30,9 @@ class CustomAuthToken(ObtainAuthToken):
         return Response({"token": token.key})
 
 
+@swagger_auto_schema(
+    method="get", responses={**responses.STANDARD_ERRORS},
+)
 @api_view(["GET"])
 def logout(request):
     request.user.auth_token.delete()
