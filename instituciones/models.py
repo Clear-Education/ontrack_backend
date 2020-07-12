@@ -14,6 +14,6 @@ class Institucion(models.Model):
     class Meta:
         ordering = ['fecha_creacion']
         permissions = [
-            ("alta_institucion", "Puede dar de alta Institucion"),
+            ("status_institucion", "Cambiar el estado Instituciones"),
             ("list_institucion", "Puede listar Instituciones"),
         ]
