@@ -2,17 +2,14 @@ from rest_framework import serializers
 from instituciones.models import Institucion
 
 
-class InstitucionSerializer(serializers.Serializer):
+class CreateInstitucionSerializer(serializers.Serializer):
 
-    id = serializers.IntegerField(read_only=True)
     nombre = serializers.CharField(max_length=200, required=True)
     direccion = serializers.CharField(max_length=250, required=False)
     pais = serializers.CharField(max_length=250, required=False)
     identificador = serializers.CharField(max_length=250, required=False)
     descripcion = serializers.CharField(required=False)
     logo = serializers.ImageField(required=False)
-    activa = serializers.BooleanField(default=True, read_only=True)
-    fecha_creacion = serializers.DateTimeField(read_only=True)
 
     def create(self, validated_data):
         """
@@ -37,12 +34,39 @@ class InstitucionSerializer(serializers.Serializer):
         return instance
 
 
-# class InstitucionEstadoSerializer(serializers.ModelSerializer):
-#     id = serializers.IntegerField(read_only=True)
-#     activa = serializers.BooleanField(required=True)
+class InstitucionSerializer(serializers.ModelSerializer):
 
-#     class Meta:
-#         model = Institucion
+    class Meta:
+        model = Institucion
+        fields = '__all__'
+        read_only_fields = ['activa', 'fecha_creacion', 'id']
 
-#     def update(self, instance, validated_data):
-#         if instance.activa != validated_data.get('activa')
+
+class InstitucionStatusSerializer(serializers.ModelSerializer):
+
+    activa = serializers.BooleanField(required=True)
+
+    class Meta:
+        model = Institucion
+        fields = ['activa']
+
+
+class BadRequestSerializer(serializers.Serializer):
+    nombre_campo = serializers.CharField()
+    detail = serializers.StringRelatedField(many=True)
+
+
+class UnauthorizedSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class ForbiddenSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class ServerErrorSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class NotFoundSerializer(serializers.Serializer):
+    detail = serializers.CharField()

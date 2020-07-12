@@ -4,8 +4,8 @@ from instituciones.api import views
 
 
 urlpatterns = [
-    path('', views.create_institucion, name='create'),
-    path('<int:pk>/', views.update_institucion, name='viwe_update'),
-    path('<int:pk>/alta/', views.alta_institucion, name='alta'),
-    path('list/', views.list_institucion, name='list'),
+    path('', views.create_institucion, name='institucion-create'),
+    path('<int:pk>/', views.update_institucion, name='institucion-view-update'),
+    path('<int:pk>/status/', views.status_institucion, name='institucion-status'),
+    path('list/', views.list_institucion, name='institucion-list'),
 ]
