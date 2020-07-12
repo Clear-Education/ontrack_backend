@@ -1,1 +1,1 @@
-web: gunicorn ontrack.ontrack.wsgi:application --preload --log-file - 
+web: gunicorn ontrack.wsgi:application --preload --log-file - 
