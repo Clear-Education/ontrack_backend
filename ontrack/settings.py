@@ -72,7 +72,7 @@ ROOT_URLCONF = 'ontrack.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'ontrack', 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
