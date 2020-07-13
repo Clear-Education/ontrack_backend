@@ -70,6 +70,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAuthenticated, permission_required("user")]
     serializer_class = serializers.ListUserSerializer
+    queryset = User.objects.all()
     OK_CREATE_USER = {201: ""}
     OK_LIST_USER = {200: serializers.ListUserSerializer(many=True)}
     OK_VIEW_USER = {200: serializers.ListUserSerializer()}

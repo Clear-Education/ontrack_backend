@@ -24,4 +24,5 @@ urlpatterns = [
     path('api/institucion/', include('instituciones.api.urls')),
     path('', schema_view.with_ui(
         'swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('api/', include('curricula.api.urls'))
 ]
