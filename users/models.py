@@ -1,5 +1,4 @@
-from django.contrib.auth.models import (
-    AbstractBaseUser, PermissionsMixin, Group)
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group
 from django.utils import timezone
 from django.db import models
 from .managers import UserManager
@@ -16,11 +15,7 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=150, null=True)
     phone = models.CharField(max_length=50, null=True)
-    groups = models.ForeignKey(
-        to=Group,
-        on_delete=models.CASCADE,
-        null=True
-        )
+    groups = models.ForeignKey(to=Group, on_delete=models.CASCADE, null=True)
     institucion = models.ForeignKey(to=Institucion, on_delete=models.CASCADE, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
     picture = models.ImageField(blank=True, null=True)
@@ -31,7 +26,7 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     def get_full_name(self):
@@ -44,8 +39,7 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
         # Example Permissions
         permissions = [
             ("createadmin_user", "Can create users with group Admin"),
-            ("list_user", "Can list all users"),
-            ("alta_user", "Can re-activate a deleted User"),
+            ("status_user", "Can change status of User"),
             ("change_other_user", "Can edit other users info"),
         ]
 
@@ -73,18 +67,16 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     """
     # send an e-mail to the user
     context = {
-        'current_user': reset_password_token.user,
-        'email': reset_password_token.user.email,
-        'reset_password_url': "{}?token={}".format(
-            reverse('password_reset:reset-password-request'),
-            reset_password_token.key)
+        "current_user": reset_password_token.user,
+        "email": reset_password_token.user.email,
+        "reset_password_url": "{}?token={}".format(
+            reverse("password_reset:reset-password-request"), reset_password_token.key
+        ),
     }
 
     # render email text
-    email_html_message = render_to_string(
-        'email/user_reset_password.html', context)
-    email_plaintext_message = render_to_string(
-        'email/user_reset_password.txt', context)
+    email_html_message = render_to_string("email/user_reset_password.html", context)
+    email_plaintext_message = render_to_string("email/user_reset_password.txt", context)
 
     msg = EmailMultiAlternatives(
         # title:
@@ -94,7 +86,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
         # from:
         "noreply@somehost.local",
         # to:
-        [reset_password_token.user.email]
+        [reset_password_token.user.email],
     )
     msg.attach_alternative(email_html_message, "text/html")
     msg.send()
