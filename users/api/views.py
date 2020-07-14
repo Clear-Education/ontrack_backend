@@ -31,6 +31,7 @@ class CustomAuthToken(ObtainAuthToken):
     method="get", responses={**responses.STANDARD_ERRORS},
 )
 @api_view(["GET"])
+@pc([IsAuthenticated])
 def logout(request):
     request.user.auth_token.delete()
     return Response(status=status.HTTP_200_OK)
@@ -57,10 +58,10 @@ class UsersViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
     permission_classes = [IsAuthenticated, permission_required("user")]
     serializer_class = serializers.ListUserSerializer
-    OK_CREATE_USER = {201: ""}
+    OK_CREATE_USER = {201: serializers.RegistrationSerializer}
 
     @swagger_auto_schema(
-        request_body=serializers.RegistrationSerializer, response={**OK_CREATE_USER, **responses.STANDARD_ERRORS},
+        request_body=serializers.RegistrationSerializer, responses={**OK_CREATE_USER, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
         """
@@ -78,7 +79,7 @@ class UsersViewSet(viewsets.ModelViewSet):
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         return Response(data=data, status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(responses={200: serializers.ListUserSerializer(many=True)},)
+    @swagger_auto_schema(responses={200: serializers.ListUserSerializer(many=True), **responses.STANDARD_ERRORS})
     def list(self, request):
         """
         Listar usuarios
@@ -92,6 +93,10 @@ class UsersViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+        request_body=serializers.EditOtherUserSerializer,
+        responses={200: serializers.ListUserSerializer(many=False), **responses.STANDARD_ERRORS},
+    )
     def update(self, request, pk=None):
         """
         Editar Usuario
@@ -121,6 +126,7 @@ class UsersViewSet(viewsets.ModelViewSet):
                 return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(responses={200: "", **responses.STANDARD_ERRORS})
     def destroy(self, request, pk=None):
         """
         Dar de baja a un usuario
@@ -135,6 +141,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         retrieved_user.delete()
         return Response(status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(responses={202: responses.NotModifiedSerializer, 200: "", **responses.STANDARD_ERRORS})
     @action(detail=False, methods=["PATCH"], name="status")
     def status(self, request, pk=None):
         """
@@ -149,7 +156,8 @@ class UsersViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             if retrieved_user.is_active == serializer.validated_data["is_active"]:
                 return Response(
-                    data={"detail": "El usuario ya se encuentra en el estado solicitado"}, status=status.HTTP_200_OK,
+                    data={"detail": "El usuario ya se encuentra en el estado solicitado"},
+                    status=status.HTTP_202_ACCEPTED,
                 )
             if retrieved_user == request.user:
                 return Response(
@@ -161,6 +169,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(responses={200: serializers.ListUserSerializer(many=False), **responses.STANDARD_ERRORS})
     def get(self, request, pk=None):
         """
         Ver usuario

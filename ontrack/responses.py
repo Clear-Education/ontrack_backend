@@ -22,6 +22,10 @@ class NotFoundSerializer(serializers.Serializer):
     detail = serializers.CharField()
 
 
+class NotModifiedSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
 STANDARD_ERRORS = {
     400: BadRequestSerializer,
     401: UnauthorizedSerializer,

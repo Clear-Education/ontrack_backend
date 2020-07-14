@@ -12,17 +12,24 @@ from instituciones.models import Institucion
 
 
 class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
-    email = models.EmailField(unique=True)
-    name = models.CharField(max_length=150, null=True)
-    phone = models.CharField(max_length=50, null=True)
-    groups = models.ForeignKey(to=Group, on_delete=models.CASCADE, null=True)
-    institucion = models.ForeignKey(to=Institucion, on_delete=models.CASCADE, null=True)
+    email = models.EmailField(unique=True, null=True, primary_key=False)
+    name = models.CharField(max_length=150, blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    groups = models.ForeignKey(to=Group, on_delete=models.CASCADE, blank=True, null=True)
+    institucion = models.ForeignKey(to=Institucion, on_delete=models.CASCADE, blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
     picture = models.ImageField(blank=True, null=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    date_joined = models.DateTimeField(default=timezone.now)
+    date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True)
+    dni = models.IntegerField(unique=True, primary_key=False, blank=True, null=True)
+    last_name = models.CharField(max_length=150, blank=True, null=True)
+    cargo = models.CharField(max_length=150, blank=True, null=True)
+    legajo = models.IntegerField(unique=True, primary_key=False, blank=True, null=True)
+    direccion = models.CharField(max_length=150, null=True, blank=True)
+    localidad = models.CharField(max_length=150, null=True, blank=True)
+    provincia = models.CharField(max_length=150, null=True, blank=True)
 
     objects = UserManager()
 
