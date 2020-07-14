@@ -33,6 +33,22 @@ class Anio(models.Model):
         ]
 
 
+class Curso(models.Model):
+    nombre = models.CharField(max_length=150)
+    anio = models.ForeignKey(
+        to=Anio, related_name="cursos", on_delete=models.CASCADE
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        permissions = [
+            ("list_curso", "Puede listar cursos"),
+        ]
+
+
 class Materia(models.Model):
     nombre = models.CharField(max_length=150)
     anio = models.ForeignKey(to=Anio, on_delete=models.CASCADE)
