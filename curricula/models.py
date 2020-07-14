@@ -64,9 +64,19 @@ class Materia(models.Model):
         ]
 
 
+class MateriaEvaluacion(models.Model):
+    fecha_alta = models.DateTimeField(auto_now_add=True)
+    fecha_baja = models.DateTimeField(blank=True)
+    materia = models.ForeignKey(to=Materia, on_delete=models.CASCADE)
+
+
 class Evaluacion(models.Model):
     nombre = models.CharField(max_length=150)
-    materia = models.ForeignKey(to=Materia, on_delete=models.CASCADE)
+    materia_evaluacion = models.ForeignKey(
+        to=MateriaEvaluacion,
+        related_name="evaluaciones",
+        on_delete=models.CASCADE,
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     ponderacion = models.FloatField(blank=False)
 
