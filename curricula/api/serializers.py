@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from curricula import models
+from instituciones.api.serializers import InstitucionSerializer
 
 # Serializers Carrera
 
@@ -32,9 +33,7 @@ class CreateCarreraSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "fecha_creacion"]
 
     def create(self, institucion):
-        carrera = models.Carrera(
-            institucion=institucion, **self.validated_data
-        )
+        carrera = models.Carrera(institucion=institucion, **self.validated_data)
         carrera.save()
         return carrera
 
@@ -91,9 +90,7 @@ class CreateAnioSerializer(serializers.ModelSerializer):
     cursos = CreateCursoSerializer(many=True, required=False)
     nombre = serializers.CharField(required=True)
     color = serializers.CharField(required=False)
-    carrera = serializers.PrimaryKeyRelatedField(
-        queryset=models.Carrera.objects.all(), required=True
-    )
+    carrera = serializers.PrimaryKeyRelatedField(queryset=models.Carrera.objects.all(), required=True)
 
     class Meta:
         model = models.Anio
@@ -125,9 +122,7 @@ class EditAnioSerializer(serializers.ModelSerializer):
 
 
 class ListAnioSerializer(serializers.Serializer):
-    carrera = serializers.PrimaryKeyRelatedField(
-        required=True, queryset=models.Carrera.objects.all()
-    )
+    carrera = serializers.PrimaryKeyRelatedField(required=True, queryset=models.Carrera.objects.all())
 
 
 # Serializers Materia + Evaluacion
@@ -145,9 +140,7 @@ class CreateEvaluacionSerializer(serializers.ModelSerializer):
 class CreateMateriaSerializer(serializers.ModelSerializer):
     evaluaciones = CreateEvaluacionSerializer(many=True, required=False)
     nombre = serializers.CharField(required=True)
-    anio = serializers.PrimaryKeyRelatedField(
-        queryset=models.Anio.objects.all(), required=True
-    )
+    anio = serializers.PrimaryKeyRelatedField(queryset=models.Anio.objects.all(), required=True)
     color = serializers.CharField(required=False)
 
     class Meta:
@@ -158,14 +151,10 @@ class CreateMateriaSerializer(serializers.ModelSerializer):
     def validate_evaluaciones(self, value):
         if value is not None:
             if type(value) is not list:
-                raise serializers.ValidationError(
-                    "Evaluaciones debe ser una lista"
-                )
+                raise serializers.ValidationError("Evaluaciones debe ser una lista")
             pond_list = [x["ponderacion"] for x in value]
             if sum(pond_list) != 1:
-                raise serializers.ValidationError(
-                    "Las ponderaciones deben sumar 1"
-                )
+                raise serializers.ValidationError("Las ponderaciones deben sumar 1")
         return value
 
     def create(self):
@@ -204,14 +193,10 @@ class EditMateriaSerializer(serializers.ModelSerializer):
     def validate_evaluaciones(self, value):
         if value is not None:
             if type(value) is not list:
-                raise serializers.ValidationError(
-                    "Evaluaciones debe ser una lista"
-                )
+                raise serializers.ValidationError("Evaluaciones debe ser una lista")
             pond_list = [x["ponderacion"] for x in value]
             if sum(pond_list) != 1:
-                raise serializers.ValidationError(
-                    "Las ponderaciones deben sumar 1"
-                )
+                raise serializers.ValidationError("Las ponderaciones deben sumar 1")
         return value
 
     def update(self, instance, validated_data):
@@ -250,3 +235,26 @@ class MateriaSerializer(serializers.ModelSerializer):
         model = models.Materia
         fields = ["nombre", "anio", "color", "evaluaciones"]
         read_only_fields = ["id", "fecha_creacion"]
+
+
+class AnioLectivoSerializer(serializers.ModelSerializer):
+    institucion = InstitucionSerializer(many=False, required=True)
+
+    class Meta:
+        model = models.AnioLectivo
+        fields = ["nombre", "fecha_desde", "fecha_hasta", "institucion"]
+        read_only_fields = ["id", "fecha_creacion"]
+
+class EditAnioLectivoSerializer(serializers.ModelSerializer):
+    institucion = InstitucionSerializer(many=False, required=False)
+    nombre = models.CharField(required=False)
+    fecha_desde = models.DateField(required=False)
+    fecha_hasta = models.DateField(required=False)
+
+    class Meta:
+        model = models.AnioLectivo
+        fields = ["nombre", "fecha_desde", "fecha_hasta", "institucion"]
+        read_only_fields = ["id", "fecha_creacion"]
+
+    def update(self):
+        pass

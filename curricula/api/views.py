@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from curricula.api import serializers
-from curricula.models import Carrera, Anio, Curso
+from curricula.models import Carrera, Anio, Curso, AnioLectivo
 from instituciones.models import Institucion
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
@@ -22,8 +22,7 @@ class CarreraViewSet(ModelViewSet):
     OK_VIEW = {200: serializers.ViewCarreraSerializer()}
 
     @swagger_auto_schema(
-        request_body=serializers.CreateCarreraSerializer,
-        responses={**OK_CREATED, **responses.STANDARD_ERRORS},
+        request_body=serializers.CreateCarreraSerializer, responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
         """
@@ -42,21 +41,14 @@ class CarreraViewSet(ModelViewSet):
         return Response(status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
-        request_body=serializers.EditCarreraSerializer,
-        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+        request_body=serializers.EditCarreraSerializer, responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
     def update(self, request, pk=None):
         """
         Editar Carrera
         """
-        carrera = get_object_or_404(
-            self.get_queryset(),
-            pk=pk,
-            institucion_id=request.user.institucion.id,
-        )
-        serializer = serializers.EditCarreraSerializer(
-            data=request.data, partial=True
-        )
+        carrera = get_object_or_404(self.get_queryset(), pk=pk, institucion_id=request.user.institucion.id,)
+        serializer = serializers.EditCarreraSerializer(data=request.data, partial=True)
         data = {}
         if serializer.is_valid(raise_exception=True):
             carrera = serializer.update(carrera, serializer.validated_data)
@@ -73,9 +65,7 @@ class CarreraViewSet(ModelViewSet):
         Elimina una carrera
         """
         queryset = Carrera.objects.all()
-        carrera = get_object_or_404(
-            queryset, pk=pk, institucion_id=request.user.institucion.id
-        )
+        carrera = get_object_or_404(queryset, pk=pk, institucion_id=request.user.institucion.id)
         carrera.delete()
         return Response(status=status.HTTP_200_OK)
 
@@ -84,9 +74,7 @@ class CarreraViewSet(ModelViewSet):
         """
         Listar Carreras
         """
-        queryset = Carrera.objects.filter(
-            institucion_id=request.user.institucion.id
-        )
+        queryset = Carrera.objects.filter(institucion_id=request.user.institucion.id)
         serializer = serializers.ViewCarreraSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -96,9 +84,7 @@ class CarreraViewSet(ModelViewSet):
         Ver una institucion
         """
         queryset = Carrera.objects.all()
-        carrera = get_object_or_404(
-            queryset, pk=pk, institucion_id=request.user.institucion.id
-        )
+        carrera = get_object_or_404(queryset, pk=pk, institucion_id=request.user.institucion.id)
         serializer = serializers.ViewCarreraSerializer(carrera)
         return Response(serializer.data)
 
@@ -107,9 +93,7 @@ class CarreraViewSet(ModelViewSet):
 
 create_carrera = CarreraViewSet.as_view({"post": "create"})
 list_carrera = CarreraViewSet.as_view({"get": "list"})
-view_edit_carrera = CarreraViewSet.as_view(
-    {"get": "get", "delete": "destroy", "patch": "update"}
-)
+view_edit_carrera = CarreraViewSet.as_view({"get": "get", "delete": "destroy", "patch": "update"})
 
 
 class AnioViewSet(ModelViewSet):
@@ -121,8 +105,7 @@ class AnioViewSet(ModelViewSet):
     OK_VIEW = {200: serializers.AnioSerializer()}
 
     @swagger_auto_schema(
-        request_body=serializers.CreateAnioSerializer,
-        responses={**OK_CREATED, **responses.STANDARD_ERRORS},
+        request_body=serializers.CreateAnioSerializer, responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
         """
@@ -139,17 +122,14 @@ class AnioViewSet(ModelViewSet):
         return Response(status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
-        request_body=serializers.EditCarreraSerializer,
-        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+        request_body=serializers.EditCarreraSerializer, responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
     def update(self, request, pk=None):
         """
         Editar un anio, sin afectar sus cursos (se editan aparte)
         """
         anio = get_object_or_404(self.get_queryset(), pk=pk)
-        serializer = serializers.EditAnioSerializer(
-            data=request.data, partial=True
-        )
+        serializer = serializers.EditAnioSerializer(data=request.data, partial=True)
         data = {}
         if serializer.is_valid(raise_exception=True):
             serializer.update(anio, serializer.validated_data)
@@ -175,10 +155,7 @@ class AnioViewSet(ModelViewSet):
         """
         Listar Anios
         """
-        queryset = Anio.objects.filter(
-            carrera_id=carrera_id,
-            carrera__institucion_id=request.user.institucion.id,
-        )
+        queryset = Anio.objects.filter(carrera_id=carrera_id, carrera__institucion_id=request.user.institucion.id,)
         serializer = serializers.AnioSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -194,9 +171,7 @@ class AnioViewSet(ModelViewSet):
 
 
 create_anio = AnioViewSet.as_view({"post": "create"})
-view_edit_anio = AnioViewSet.as_view(
-    {"get": "get", "delete": "destroy", "patch": "update"}
-)
+view_edit_anio = AnioViewSet.as_view({"get": "get", "delete": "destroy", "patch": "update"})
 list_anio = AnioViewSet.as_view({"get": "list"})
 
 
@@ -216,8 +191,7 @@ class CursoViewSet(ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-        request_body=serializers.EditCursoSerializer,
-        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+        request_body=serializers.EditCursoSerializer, responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
     def update(self, request, pk=None):
         """
@@ -245,6 +219,40 @@ class CursoViewSet(ModelViewSet):
         return Response(serializer.data)
 
 
-view_edit_curso = CursoViewSet.as_view(
-    {"get": "get", "delete": "destroy", "patch": "update"}
-)
+view_edit_curso = CursoViewSet.as_view({"get": "get", "delete": "destroy", "patch": "update"})
+
+
+class AnioLectivoViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated, permission_required("anio_lectivo")]
+    queryset = Curso.objects.all()
+    OK_EMPTY = {200: ""}
+    OK_VIEW = {200: serializers.CursoSerializer()}
+
+    @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS},)
+    def get(self, request, pk=None):
+        pass
+
+    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
+    def list(self, request):
+        pass
+
+    @swagger_auto_schema(
+        request_body=serializers.EditAnioLectivoSerializer, responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+    )
+    def update(self, request, pk=None):
+        pass
+
+    @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
+    def destroy(self, request, pk=None):
+        pass
+
+    @swagger_auto_schema(
+        request_body=serializers.AnioLectivoSerializer, responses={**OK_CREATED, **responses.STANDARD_ERRORS},
+    )
+    def create(self, request):
+        pass
+
+
+create_anio_lectivo = AnioLectivoViewSet.as_view({"post": "create"})
+list_anio_lectivo = AnioLectivoViewSet.as_view({"get": "list"})
+update_anio_lectivo = AnioLectivoViewSet.as_view({"get": "get", "patch": "update", "delete": "destroy"})
