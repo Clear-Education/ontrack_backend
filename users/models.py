@@ -1,5 +1,4 @@
-from django.contrib.auth.models import (
-    AbstractBaseUser, PermissionsMixin, Group)
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group
 from django.utils import timezone
 from django.db import models
 from .managers import UserManager
@@ -9,27 +8,32 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django_rest_passwordreset.signals import reset_password_token_created
+from instituciones.models import Institucion
 
 
 class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
-    email = models.EmailField(unique=True)
-    name = models.CharField(max_length=150, null=True)
-    phone = models.CharField(max_length=50, null=True)
-    groups = models.ForeignKey(
-        to=Group,
-        on_delete=models.CASCADE,
-        null=True
-        )
+    email = models.EmailField(unique=True, null=True, primary_key=False)
+    name = models.CharField(max_length=150, blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    groups = models.ForeignKey(to=Group, on_delete=models.CASCADE, blank=True, null=True)
+    institucion = models.ForeignKey(to=Institucion, on_delete=models.CASCADE, blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
     picture = models.ImageField(blank=True, null=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    date_joined = models.DateTimeField(default=timezone.now)
+    date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True)
+    dni = models.IntegerField(unique=True, primary_key=False, blank=True, null=True)
+    last_name = models.CharField(max_length=150, blank=True, null=True)
+    cargo = models.CharField(max_length=150, blank=True, null=True)
+    legajo = models.IntegerField(unique=True, primary_key=False, blank=True, null=True)
+    direccion = models.CharField(max_length=150, null=True, blank=True)
+    localidad = models.CharField(max_length=150, null=True, blank=True)
+    provincia = models.CharField(max_length=150, null=True, blank=True)
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     def get_full_name(self):
@@ -42,7 +46,8 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
         # Example Permissions
         permissions = [
             ("createadmin_user", "Can create users with group Admin"),
-            ("list_user", "Can list all users"),
+            ("status_user", "Can change status of User"),
+            ("change_other_user", "Can edit other users info"),
         ]
 
 
@@ -69,18 +74,16 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     """
     # send an e-mail to the user
     context = {
-        'current_user': reset_password_token.user,
-        'email': reset_password_token.user.email,
-        'reset_password_url': "{}?token={}".format(
-            reverse('password_reset:reset-password-request'),
-            reset_password_token.key)
+        "current_user": reset_password_token.user,
+        "email": reset_password_token.user.email,
+        "reset_password_url": "{}?token={}".format(
+            reverse("password_reset:reset-password-request"), reset_password_token.key
+        ),
     }
 
     # render email text
-    email_html_message = render_to_string(
-        'email/user_reset_password.html', context)
-    email_plaintext_message = render_to_string(
-        'email/user_reset_password.txt', context)
+    email_html_message = render_to_string("email/user_reset_password.html", context)
+    email_plaintext_message = render_to_string("email/user_reset_password.txt", context)
 
     msg = EmailMultiAlternatives(
         # title:
@@ -90,7 +93,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
         # from:
         "noreply@somehost.local",
         # to:
-        [reset_password_token.user.email]
+        [reset_password_token.user.email],
     )
     msg.attach_alternative(email_html_message, "text/html")
     msg.send()

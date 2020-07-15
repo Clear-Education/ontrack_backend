@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
 
+class SuccessDetailSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
 class BadRequestSerializer(serializers.Serializer):
     nombre_campo = serializers.CharField()
     detail = serializers.StringRelatedField(many=True)
@@ -19,6 +23,10 @@ class ServerErrorSerializer(serializers.Serializer):
 
 
 class NotFoundSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class NotModifiedSerializer(serializers.Serializer):
     detail = serializers.CharField()
 
 
