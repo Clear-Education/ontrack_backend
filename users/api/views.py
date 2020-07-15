@@ -1,5 +1,9 @@
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, action, permission_classes as pc
+from rest_framework.decorators import (
+    api_view,
+    action,
+    permission_classes as pc,
+)
 from rest_framework import status
 from users.api import serializers
 from rest_framework import viewsets
@@ -37,6 +41,12 @@ def logout(request):
     return Response(status=status.HTTP_200_OK)
 
 
+
+@swagger_auto_schema(
+    method="patch",
+    request_body=serializers.ChangePasswordSerializer,
+    responses={200: responses.SuccessDetailSerializer},
+)
 @api_view(["PATCH"])
 @pc([IsAuthenticated])
 def change_password(request):
@@ -58,7 +68,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
     permission_classes = [IsAuthenticated, permission_required("user")]
     serializer_class = serializers.ListUserSerializer
-    OK_CREATE_USER = {201: serializers.RegistrationSerializer}
+    OK_CREATE_USER = {201: ""}
 
     @swagger_auto_schema(
         request_body=serializers.RegistrationSerializer, responses={**OK_CREATE_USER, **responses.STANDARD_ERRORS},
@@ -71,13 +81,11 @@ class UsersViewSet(viewsets.ModelViewSet):
         serializer = serializers.RegistrationSerializer(data=request.data)
         data = {}
         if serializer.is_valid():
-            user = serializer.save(institucion)
-            data["response"] = "Registration Successful"
-            data["email"] = user.email
+            serializer.save(institucion)
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-        return Response(data=data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(responses={200: serializers.ListUserSerializer(many=True), **responses.STANDARD_ERRORS})
     def list(self, request):
@@ -179,7 +187,10 @@ class UsersViewSet(viewsets.ModelViewSet):
             serializer = serializers.ListUserSerializer(retrieved_user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(data={"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
 
 class GroupViewSet(viewsets.ViewSet):
