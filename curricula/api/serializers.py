@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from curricula import models
 from instituciones.api.serializers import InstitucionSerializer
+import datetime
 
 # Serializers Carrera
 
@@ -238,23 +239,56 @@ class MateriaSerializer(serializers.ModelSerializer):
 
 
 class AnioLectivoSerializer(serializers.ModelSerializer):
-    institucion = InstitucionSerializer(many=False, required=True)
-
     class Meta:
         model = models.AnioLectivo
-        fields = ["nombre", "fecha_desde", "fecha_hasta", "institucion"]
+        fields = ["nombre", "fecha_desde", "fecha_hasta"]
+        extra_kwargs = {
+            "nombre": {"required": True},
+            "fecha_desde": {"required": True},
+            "fecha_hasta": {"required": True},
+        }
         read_only_fields = ["id", "fecha_creacion"]
+
+    def validate(self, data):
+        if data["fecha_desde"] >= data["fecha_hasta"]:
+            raise serializers.ValidationError("La fecha de inicio del Año Lectivo debe ser menor a la fecha fin")
+        return data
+
+    def create(self, institucion):
+        anio_lectivo = models.AnioLectivo(**self.validated_data)
+        anio_lectivo.institucion = institucion
+        anio_lectivo.save()
+
 
 class EditAnioLectivoSerializer(serializers.ModelSerializer):
-    institucion = InstitucionSerializer(many=False, required=False)
-    nombre = models.CharField(required=False)
-    fecha_desde = models.DateField(required=False)
-    fecha_hasta = models.DateField(required=False)
+    nombre = serializers.CharField(required=False)
+    fecha_desde = serializers.DateField(required=False)
+    fecha_hasta = serializers.DateField(required=False)
 
     class Meta:
         model = models.AnioLectivo
-        fields = ["nombre", "fecha_desde", "fecha_hasta", "institucion"]
-        read_only_fields = ["id", "fecha_creacion"]
+        fields = ["nombre", "fecha_desde", "fecha_hasta"]
 
-    def update(self):
-        pass
+    def validate(self, data, anio_lectivo):
+        fecha_desde_temp = data.get("fecha_desde", anio_lectivo.fecha_desde)
+        fecha_hasta_temp = data.get("fecha_hasta", anio_lectivo.fecha_hasta)
+        if fecha_desde_temp >= fecha_hasta_temp:
+            raise serializers.ValidationError("La fecha de inicio del Año Lectivo debe ser menor a la fecha fin")
+        if data.get("fecha_desde", None) is not None or data.get("fecha_hasta", None) is not None:
+            if datetime.datetime.now() > anio_lectivo.fecha_desde.date():
+                raise serializers.ValidationError("No se puede modificar el Año Lectivo luego de que ya comenzó")
+        return data
+
+    def update(self, instance):
+        instance.nombre = self.validated_data.get("nombre", instance.nombre)
+        instance.fecha_desde = self.validated_data.get("fecha_desde", instance.fecha_desde)
+        instance.nombre = self.validated_data.get("fecha_hasta", instance.fecha_hasta)
+        instance.save()
+
+
+class ViewAnioLectivoSerializer(serializers.ModelSerializer):
+    institucion = InstitucionSerializer(many=False)
+
+    class Meta:
+        model = models.AnioLectivo
+        fields = ["id", "nombre", "fecha_desde", "fecha_hasta", "institucion"]

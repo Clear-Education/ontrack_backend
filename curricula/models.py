@@ -72,6 +72,7 @@ class Evaluacion(models.Model):
     nombre = models.CharField(max_length=150)
     materia_evaluacion = models.ForeignKey(
         to=MateriaEvaluacion, related_name="evaluaciones", on_delete=models.CASCADE,
+        null= True, #Only for now
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     ponderacion = models.FloatField(blank=False)

@@ -224,33 +224,55 @@ view_edit_curso = CursoViewSet.as_view({"get": "get", "delete": "destroy", "patc
 
 class AnioLectivoViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, permission_required("anio_lectivo")]
-    queryset = Curso.objects.all()
     OK_EMPTY = {200: ""}
-    OK_VIEW = {200: serializers.CursoSerializer()}
+    OK_VIEW = {200: serializers.ViewAnioLectivoSerializer()}
+    OK_LIST = {200: serializers.ViewAnioLectivoSerializer(many=True)}
+    OK_CREATED = {201: ""}
 
     @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS},)
     def get(self, request, pk=None):
-        pass
+        anio_lectivo = get_object_or_404(AnioLectivo, pk=pk)
+        if anio_lectivo.institucion != request.user.institucion:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = serializers.ViewAnioLectivoSerializer(**anio_lectivo)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
     def list(self, request):
-        pass
+        anio_lectivo_list = AnioLectivo.objects.filter(institucion__exact=request.user.institucion)
+        serializer = serializers.ViewAnioLectivoSerializer(data=anio_lectivo_list, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         request_body=serializers.EditAnioLectivoSerializer, responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
     def update(self, request, pk=None):
-        pass
+        anio_lectivo = get_object_or_404(AnioLectivo, pk=pk)
+        if anio_lectivo.institucion != request.user.institucion:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = serializers.EditAnioLectivoSerializer(request.data)
+        if serializer.is_valid(anio_lectivo):
+            serializer.update(anio_lectivo)
+        return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
     def destroy(self, request, pk=None):
-        pass
+        anio_lectivo = get_object_or_404(AnioLectivo, pk=pk)
+        if anio_lectivo.institucion != request.user.institucion:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        anio_lectivo.delete()
+        return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         request_body=serializers.AnioLectivoSerializer, responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
-        pass
+        serializer = serializers.AnioLectivoSerializer(request.data)
+        if serializers.is_valid():
+            serializer.create(request.user.institucion)
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 create_anio_lectivo = AnioLectivoViewSet.as_view({"post": "create"})
