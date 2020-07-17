@@ -196,10 +196,11 @@ class GroupSerializer(serializers.ModelSerializer):
 class ListUserSerializer(serializers.ModelSerializer):
     institucion = InstitucionSerializer(many=False)
     groups = GroupSerializer(many=False)
-    
+
     class Meta:
         model = User
         fields = [
+            "id",
             "email",
             "name",
             "phone",

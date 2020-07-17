@@ -41,7 +41,6 @@ def logout(request):
     return Response(status=status.HTTP_200_OK)
 
 
-
 @swagger_auto_schema(
     method="patch",
     request_body=serializers.ChangePasswordSerializer,
@@ -120,7 +119,6 @@ class UsersViewSet(viewsets.ModelViewSet):
                 return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         if retrieved_user.institucion == request.user.institucion and retrieved_user.is_active:
             permissions = [perm.codename for perm in request.user.groups.permissions.all()]
-            print(permissions)
             if "change_other_user" not in permissions:
                 return Response(
                     data={"detail": "Accion prohibida para el rol actual!"}, status=status.HTTP_403_FORBIDDEN
@@ -187,10 +185,7 @@ class UsersViewSet(viewsets.ModelViewSet):
             serializer = serializers.ListUserSerializer(retrieved_user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(
-                data={"detail": "No encontrado."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response(data={"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND,)
 
 
 class GroupViewSet(viewsets.ViewSet):
