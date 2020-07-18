@@ -191,7 +191,17 @@ class AnioLectivoTests(APITestCase):
                 "institucion": cls.institucion_1,
             }
         )
-        cls.anio_lectivo_institucion_1.save()
+        cls.anio_lectivo2_institucion_1.save()
+
+        cls.anio_lectivo3_institucion_1 = AnioLectivo.objects.create(
+            **{
+                "nombre": "2030",
+                "fecha_desde": "2030-01-01",
+                "fecha_hasta": "2030-12-31",
+                "institucion": cls.institucion_1,
+            }
+        )
+        cls.anio_lectivo3_institucion_1.save()
 
     def test_create_admin(self):
         """
@@ -320,7 +330,7 @@ class AnioLectivoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin_1)
         response = self.client.get("/api/anio_lectivo/list/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 3)
         self.assertEqual(type(response.data), ReturnList)
 
     def test_get(self):
@@ -337,3 +347,91 @@ class AnioLectivoTests(APITestCase):
         self.assertDictContainsSubset({"id": 1}, response1.data)
         self.assertEqual(response2.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response3.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_admin_correct(self):
+        """
+        Test de actualizar un anio lectivo por un admin correctamente
+        """
+        self.client.force_authenticate(user=self.user_admin_1)
+        id_anio_lectivo = AnioLectivo.objects.get(nombre="2030").id
+
+        data = {"nombre": "1999", "fecha_desde": "01/01/1999", "fecha_hasta": "31/12/1999"}
+        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data1 = {"nombre": "2030", "fecha_desde": "01/01/2030", "fecha_hasta": "31/12/2030"}
+        response1 = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data1, format="json")
+        self.assertEqual(response1.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_admin_wrong_dates_not_passed(self):
+        """
+        Test de actualizar un anio lectivo por un admin con fechas incorrectas y todavía no empezado
+        """
+        self.client.force_authenticate(user=self.user_admin_1)
+        id_anio_lectivo = AnioLectivo.objects.get(nombre="2030").id
+
+        data = {"fecha_desde": "01/12/2030", "fecha_hasta": "01/01/2030"}
+        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_admin_wrong_dates_started_or_passed(self):
+        """
+        Test de actualizar un anio lectivo por un admin con fechas incorrectas y empezado o terminado
+        """
+        self.client.force_authenticate(user=self.user_admin_1)
+        id_anio_lectivo = AnioLectivo.objects.get(nombre="1998").id
+
+        data = {"fecha_desde": "01/01/2021", "fecha_hasta": "01/12/2021"}
+        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_admin_conflicting_dates(self):
+        """
+        Test de actualizar un anio lectivo por un admin con fechas conflictivas con otros anios lectivos
+        """
+        self.client.force_authenticate(user=self.user_admin_1)
+        id_anio_lectivo = AnioLectivo.objects.get(nombre="2030").id
+
+        data = {"fecha_desde": "01/01/2020", "fecha_hasta": "01/12/2020"}
+        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        data = {"fecha_desde": "01/01/2019", "fecha_hasta": "01/12/2019"}
+        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_admin_name_started_or_passed(self):
+        """
+        Test de actualizar un anio lectivo por un admin modificando su nombre si ha empezado o pasado
+        """
+        self.client.force_authenticate(user=self.user_admin_1)
+        id_anio_lectivo = AnioLectivo.objects.get(nombre="1998").id
+
+        data = {"nombre": "1998-1"}
+        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_admin_other_institucion_or_not_existent(self):
+        """
+        Test de actualizar un anio lectivo por un admin de otra institucion o no existente
+        """
+        self.client.force_authenticate(user=self.user_admin_1)
+        id_anio_lectivo = AnioLectivo.objects.get(nombre="2019").id
+
+        data = {"nombre": "1998-1"}
+        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        response = self.client.patch("/api/anio_lectivo/60/", data=data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_docente(self):
+        """
+        Test de actualizar un anio lectivo por un docente
+        """
+        self.client.force_authenticate(user=self.user_docente_1)
+        id_anio_lectivo = AnioLectivo.objects.get(nombre="1998").id
+
+        data = {"nombre": "1998-1"}
+        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

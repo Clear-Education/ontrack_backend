@@ -251,10 +251,17 @@ class AnioLectivoViewSet(ModelViewSet):
         anio_lectivo = get_object_or_404(AnioLectivo, pk=pk)
         if anio_lectivo.institucion != request.user.institucion:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = serializers.EditAnioLectivoSerializer(request.data)
-        if serializer.is_valid(anio_lectivo):
-            updated_anio_lectivo = anio_lectivo.__dict__.update(serializer.validated_data)
-            for institucion_retrieved in AnioLectivo.objects.filter(institucion__exact=request.user.institucion):
+        serializer = serializers.EditAnioLectivoSerializer(data=request.data)
+        serializer.get_existing_anio_lectivo(anio_lectivo)
+        if serializer.is_valid():
+            updated_anio_lectivo = {
+                "nombre": serializer.validated_data.get("nombre", anio_lectivo.nombre),
+                "fecha_desde": serializer.validated_data.get("fecha_desde", anio_lectivo.fecha_desde),
+                "fecha_hasta": serializer.validated_data.get("fecha_hasta", anio_lectivo.fecha_hasta),
+            }
+            for institucion_retrieved in AnioLectivo.objects.filter(
+                institucion__exact=request.user.institucion
+            ).exclude(id__exact=anio_lectivo.id):
                 if (
                     (
                         institucion_retrieved.fecha_desde <= updated_anio_lectivo["fecha_desde"]
@@ -277,7 +284,9 @@ class AnioLectivoViewSet(ModelViewSet):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
             serializer.update(anio_lectivo)
-        return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
     def destroy(self, request, pk=None):

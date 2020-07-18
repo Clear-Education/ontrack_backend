@@ -270,13 +270,18 @@ class EditAnioLectivoSerializer(serializers.ModelSerializer):
         model = models.AnioLectivo
         fields = ["nombre", "fecha_desde", "fecha_hasta"]
 
-    def validate(self, data, anio_lectivo):
-        fecha_desde_temp = data.get("fecha_desde", anio_lectivo.fecha_desde)
-        fecha_hasta_temp = data.get("fecha_hasta", anio_lectivo.fecha_hasta)
+    def get_existing_anio_lectivo(self, anio_lectivo):
+        self.anio_lectivo = anio_lectivo
+
+    def validate(self, data):
+        fecha_desde_temp = data.get("fecha_desde", self.anio_lectivo.fecha_desde)
+        fecha_hasta_temp = data.get("fecha_hasta", self.anio_lectivo.fecha_hasta)
         if fecha_desde_temp >= fecha_hasta_temp:
-            raise serializers.ValidationError("La fecha de inicio del Año Lectivo debe ser menor a la fecha fin")
+            raise serializers.ValidationError(
+                {"detail": "La fecha de inicio del Año Lectivo debe ser menor a la fecha fin"}
+            )
         if data.get("fecha_desde", None) is not None or data.get("fecha_hasta", None) is not None:
-            if datetime.datetime.now() > anio_lectivo.fecha_desde.date():
+            if datetime.date.today() > self.anio_lectivo.fecha_desde:
                 raise serializers.ValidationError("No se puede modificar el Año Lectivo luego de que ya comenzó")
         return data
 
