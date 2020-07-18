@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
+from users.models import User
 
 
 class CarreraViewSet(ModelViewSet):
@@ -223,7 +224,7 @@ view_edit_curso = CursoViewSet.as_view({"get": "get", "delete": "destroy", "patc
 
 
 class AnioLectivoViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated, permission_required("anio_lectivo")]
+    permission_classes = [IsAuthenticated, permission_required("aniolectivo")]
     OK_EMPTY = {200: ""}
     OK_VIEW = {200: serializers.ViewAnioLectivoSerializer()}
     OK_LIST = {200: serializers.ViewAnioLectivoSerializer(many=True)}
@@ -234,13 +235,13 @@ class AnioLectivoViewSet(ModelViewSet):
         anio_lectivo = get_object_or_404(AnioLectivo, pk=pk)
         if anio_lectivo.institucion != request.user.institucion:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = serializers.ViewAnioLectivoSerializer(**anio_lectivo)
+        serializer = serializers.ViewAnioLectivoSerializer(anio_lectivo)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
     def list(self, request):
         anio_lectivo_list = AnioLectivo.objects.filter(institucion__exact=request.user.institucion)
-        serializer = serializers.ViewAnioLectivoSerializer(data=anio_lectivo_list, many=True)
+        serializer = serializers.ViewAnioLectivoSerializer(anio_lectivo_list, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
@@ -252,6 +253,29 @@ class AnioLectivoViewSet(ModelViewSet):
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = serializers.EditAnioLectivoSerializer(request.data)
         if serializer.is_valid(anio_lectivo):
+            updated_anio_lectivo = anio_lectivo.__dict__.update(serializer.validated_data)
+            for institucion_retrieved in AnioLectivo.objects.filter(institucion__exact=request.user.institucion):
+                if (
+                    (
+                        institucion_retrieved.fecha_desde <= updated_anio_lectivo["fecha_desde"]
+                        and institucion_retrieved.fecha_hasta >= updated_anio_lectivo["fecha_desde"]
+                    )
+                    or (
+                        institucion_retrieved.fecha_desde <= updated_anio_lectivo["fecha_hasta"]
+                        and institucion_retrieved.fecha_hasta >= updated_anio_lectivo["fecha_hasta"]
+                    )
+                    or (
+                        updated_anio_lectivo["fecha_desde"] <= institucion_retrieved.fecha_desde
+                        and updated_anio_lectivo["fecha_hasta"] >= institucion_retrieved.fecha_hasta
+                    )
+                ):
+                    return Response(
+                        data={
+                            "detail": "Las fechas entran en conflicto con el Año Lectivo de nombre "
+                            + institucion_retrieved.nombre
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             serializer.update(anio_lectivo)
         return Response(status=status.HTTP_200_OK)
 
@@ -267,8 +291,30 @@ class AnioLectivoViewSet(ModelViewSet):
         request_body=serializers.AnioLectivoSerializer, responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
-        serializer = serializers.AnioLectivoSerializer(request.data)
-        if serializers.is_valid():
+        serializer = serializers.AnioLectivoSerializer(data=request.data)
+        if serializer.is_valid():
+            for institucion_retrieved in AnioLectivo.objects.filter(institucion__exact=request.user.institucion):
+                if (
+                    (
+                        institucion_retrieved.fecha_desde <= serializer.validated_data["fecha_desde"]
+                        and institucion_retrieved.fecha_hasta >= serializer.validated_data["fecha_desde"]
+                    )
+                    or (
+                        institucion_retrieved.fecha_desde <= serializer.validated_data["fecha_hasta"]
+                        and institucion_retrieved.fecha_hasta >= serializer.validated_data["fecha_hasta"]
+                    )
+                    or (
+                        serializer.validated_data["fecha_desde"] <= institucion_retrieved.fecha_desde
+                        and serializer.validated_data["fecha_hasta"] >= institucion_retrieved.fecha_hasta
+                    )
+                ):
+                    return Response(
+                        data={
+                            "detail": "Las fechas entran en conflicto con el Año Lectivo de nombre "
+                            + institucion_retrieved.nombre
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
             serializer.create(request.user.institucion)
             return Response(status=status.HTTP_201_CREATED)
         else:

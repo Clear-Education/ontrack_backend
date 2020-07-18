@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from curricula import models
 from instituciones.api.serializers import InstitucionSerializer
+from ontrack import settings
 import datetime
 
 # Serializers Carrera
@@ -244,8 +245,8 @@ class AnioLectivoSerializer(serializers.ModelSerializer):
         fields = ["nombre", "fecha_desde", "fecha_hasta"]
         extra_kwargs = {
             "nombre": {"required": True},
-            "fecha_desde": {"required": True},
-            "fecha_hasta": {"required": True},
+            "fecha_desde": {"required": True, "input_formats": settings.DATE_INPUT_FORMAT},
+            "fecha_hasta": {"required": True, "input_formats": settings.DATE_INPUT_FORMAT},
         }
         read_only_fields = ["id", "fecha_creacion"]
 
@@ -262,8 +263,8 @@ class AnioLectivoSerializer(serializers.ModelSerializer):
 
 class EditAnioLectivoSerializer(serializers.ModelSerializer):
     nombre = serializers.CharField(required=False)
-    fecha_desde = serializers.DateField(required=False)
-    fecha_hasta = serializers.DateField(required=False)
+    fecha_desde = serializers.DateField(required=False, input_formats=settings.DATE_INPUT_FORMAT)
+    fecha_hasta = serializers.DateField(required=False, input_formats=settings.DATE_INPUT_FORMAT)
 
     class Meta:
         model = models.AnioLectivo
