@@ -333,3 +333,40 @@ class AnioLectivoViewSet(ModelViewSet):
 create_anio_lectivo = AnioLectivoViewSet.as_view({"post": "create"})
 list_anio_lectivo = AnioLectivoViewSet.as_view({"get": "list"})
 update_anio_lectivo = AnioLectivoViewSet.as_view({"get": "get", "patch": "update", "delete": "destroy"})
+
+
+class AlumnoViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated, permission_required("alumno")]
+    OK_EMPTY = {200: ""}
+    OK_VIEW = {200: serializers.ViewAnioLectivoSerializer()}
+    OK_LIST = {200: serializers.ViewAnioLectivoSerializer(many=True)}
+    OK_CREATED = {201: ""}
+
+    @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS},)
+    def get(self, request, pk=None):
+        pass
+
+    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
+    def list(self, request):
+        pass
+
+    @swagger_auto_schema(
+        request_body=serializers.EditAnioLectivoSerializer, responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+    )
+    def update(self, request, pk=None):
+        pass
+
+    @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
+    def destroy(self, request, pk=None):
+        pass
+
+    @swagger_auto_schema(
+        request_body=serializers.AnioLectivoSerializer, responses={**OK_CREATED, **responses.STANDARD_ERRORS},
+    )
+    def create(self, request):
+        pass
+
+
+create_alumno = AnioLectivoViewSet.as_view({"post": "create"})
+list_alumno = AnioLectivoViewSet.as_view({"get": "list"})
+mix_alumno = AnioLectivoViewSet.as_view({"get": "get", "patch": "update", "delete": "destroy"})

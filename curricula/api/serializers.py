@@ -298,3 +298,82 @@ class ViewAnioLectivoSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.AnioLectivo
         fields = ["id", "nombre", "fecha_desde", "fecha_hasta", "institucion"]
+
+
+class CreateAlumnoSerializer(serializers.ModelSerializer):
+    dni = models.IntegerField(required=True)
+    nombre = models.CharField(required=True)
+    apellido = models.CharField(required=True)
+    email = models.EmailField(required=False)
+    legajo = models.CharField(required=False)
+    fecha_nacimiento = models.DateField(required=False, input_formats=settings.DATE_INPUT_FORMAT)
+    direccion = models.CharField(required=False)
+    localidad = models.CharField(required=False)
+    provincia = models.CharField(required=False)
+    fecha_inscripcion = models.DateField(required=False, input_formats=settings.DATE_INPUT_FORMAT)
+
+    class Meta:
+        model = models.Alumno
+        fields = [
+            "dni",
+            "nombre",
+            "apellido",
+            "email",
+            "legajo",
+            "fecha_nacimiento",
+            "direccion",
+            "localidad",
+            "provincia",
+            "fecha_inscripcion",
+        ]
+
+
+class UpdateAlumnoSerializer(serializers.ModelSerializer):
+    dni = models.IntegerField(required=False)
+    nombre = models.CharField(required=False)
+    apellido = models.CharField(required=False)
+    email = models.EmailField(required=False)
+    legajo = models.CharField(required=False)
+    fecha_nacimiento = models.DateField(required=False, input_formats=settings.DATE_INPUT_FORMAT)
+    direccion = models.CharField(required=False)
+    localidad = models.CharField(required=False)
+    provincia = models.CharField(required=False)
+    fecha_inscripcion = models.DateField(required=False, input_formats=settings.DATE_INPUT_FORMAT)
+
+    class Meta:
+        model = models.Alumno
+        fields = [
+            "dni",
+            "nombre",
+            "apellido",
+            "email",
+            "legajo",
+            "fecha_nacimiento",
+            "direccion",
+            "localidad",
+            "provincia",
+            "fecha_inscripcion",
+        ]
+
+
+class ViewAlumnoSerializer(serializers.ModelSerializer):
+    institucion = InstitucionSerializer(many=False)
+
+    class Meta:
+        model = models.Alumno
+        fields = [
+            "id",
+            "dni",
+            "nombre",
+            "apellido",
+            "email",
+            "legajo",
+            "fecha_nacimiento",
+            "direccion",
+            "localidad",
+            "provincia",
+            "fecha_creacion",
+            "fecha_inscripcion",
+            "institucion",
+        ]
+

@@ -12,4 +12,7 @@ urlpatterns = [
     path("anio_lectivo/", views.create_anio_lectivo, name="anio-lectivo-create"),
     path("anio_lectivo/list/", views.list_anio_lectivo, name="anio-lectivo-list"),
     path("anio_lectivo/<int:pk>/", views.update_anio_lectivo, name="anio-lectivo-update"),
+    path("alumno/", views.create_alumno, name="alumno-create"),
+    path("alumno/list/", views.list_alumno, name="alumno-list"),
+    path("alumno/<int:pk>/", views.mix_alumno, name="mix-alumno"),
 ]
