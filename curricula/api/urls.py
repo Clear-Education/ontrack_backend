@@ -3,16 +3,16 @@ from django.urls import path
 
 urlpatterns = [
     path("carrera/", views.create_carrera, name="carrera-create"),
-    path(
-        "carrera/<int:pk>/", views.view_edit_carrera, name="carrera-view-edit"
-    ),
+    path("carrera/<int:pk>/", views.view_edit_carrera, name="carrera-view-edit"),
     path("carrera/list/", views.list_carrera, name="carrera-list"),
     path("anio/", views.create_anio, name="anio-create"),
     path("anio/<int:pk>/", views.view_edit_anio, name="anio-view-edit"),
-    path(
-        "carrera/<int:carrera_id>/anio/list/",
-        views.list_anio,
-        name="carrera-list",
-    ),
+    path("carrera/<int:carrera_id>/anio/list/", views.list_anio, name="carrera-list",),
     path("curso/<int:pk>/", views.view_edit_curso, name="curso-view-edit"),
+    path("anio_lectivo/", views.create_anio_lectivo, name="anio-lectivo-create"),
+    path("anio_lectivo/list/", views.list_anio_lectivo, name="anio-lectivo-list"),
+    path("anio_lectivo/<int:pk>/", views.update_anio_lectivo, name="anio-lectivo-update"),
+    path("alumno/", views.create_alumno, name="alumno-create"),
+    path("alumno/list/", views.list_alumno, name="alumno-list"),
+    path("alumno/<int:pk>/", views.mix_alumno, name="mix-alumno"),
 ]
