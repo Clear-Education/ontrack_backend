@@ -63,10 +63,7 @@ def change_password(request):
 
 
 class UsersViewSet(viewsets.ModelViewSet):
-
-    pagination_class = LimitOffsetPagination
     permission_classes = [IsAuthenticated, permission_required("user")]
-    serializer_class = serializers.ListUserSerializer
     OK_CREATE_USER = {201: ""}
 
     @swagger_auto_schema(
@@ -94,10 +91,10 @@ class UsersViewSet(viewsets.ModelViewSet):
         queryset = User.objects.filter(institucion__exact=request.user.institucion).exclude(pk__exact=request.user.pk)
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = serializers.ListUserSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = serializers.ListUserSerializer(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
@@ -175,7 +172,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(responses={200: serializers.ListUserSerializer(many=False), **responses.STANDARD_ERRORS})
+    @swagger_auto_schema(responses={200: serializers.ListUserSerializer(many=False), **responses.STANDARD_ERRORS},)
     def get(self, request, pk=None):
         """
         Ver usuario
