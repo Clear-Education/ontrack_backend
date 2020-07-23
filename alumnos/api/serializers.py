@@ -1,9 +1,7 @@
 from rest_framework import serializers
 from instituciones.api.serializers import InstitucionSerializer
-from curricula.api.serializers import (
-    CursoSerializer,
-    ViewAnioLectivoSerializer,
-)
+from curricula.api.serializers.anio import CursoSerializer
+from curricula.api.serializers.anio_lectivo import ViewAnioLectivoSerializer
 from alumnos.models import Alumno, AlumnoCurso
 from curricula.models import Curso, AnioLectivo
 from ontrack import settings
