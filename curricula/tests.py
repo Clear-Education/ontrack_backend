@@ -1,6 +1,5 @@
 from rest_framework.test import APITestCase
 from rest_framework.test import APIClient
-from rest_framework.authtoken.models import Token
 from users.models import User, Group
 from instituciones.models import Institucion
 from django.contrib.auth.models import Permission
@@ -18,12 +17,17 @@ class CarreraTests(APITestCase):
         """
         cls.client = APIClient()
         cls.group = Group.objects.create(name="Superadmin")
-        cls.group.permissions.add(*Permission.objects.values_list("id", flat=True))
+        cls.group.permissions.add(
+            *Permission.objects.values_list("id", flat=True)
+        )
         cls.group.save()
         cls.institucion = Institucion.objects.create(nombre="MIT")
         cls.institucion.save()
         cls.user = User.objects.create_user(
-            "juan@juan.com", password="juan123", groups=cls.group, institucion=cls.institucion,
+            "juan@juan.com",
+            password="juan123",
+            groups=cls.group,
+            institucion=cls.institucion,
         )
 
     def setUp(self):
@@ -42,8 +46,12 @@ class CarreraTests(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Carrera.objects.count(), 1)
-        self.assertEqual(Carrera.objects.get().nombre, "Ingenieria en Creatividad")
-        self.assertEqual(Carrera.objects.get().institucion.pk, self.institucion.pk)
+        self.assertEqual(
+            Carrera.objects.get().nombre, "Ingenieria en Creatividad"
+        )
+        self.assertEqual(
+            Carrera.objects.get().institucion.pk, self.institucion.pk
+        )
 
     def test_name_required_create_carrera(self):
         """
@@ -59,10 +67,14 @@ class CarreraTests(APITestCase):
         """
         Test de creacion de instituciones
         """
-        carrera = Carrera.objects.create(nombre="Ingenieria en Baile", institucion=self.institucion)
+        carrera = Carrera.objects.create(
+            nombre="Ingenieria en Baile", institucion=self.institucion
+        )
         carrera.save()
         id_carrera = carrera.pk
-        response = self.client.get("/api/carrera/{}/".format(id_carrera), format="json")
+        response = self.client.get(
+            "/api/carrera/{}/".format(id_carrera), format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["nombre"], "Ingenieria en Baile")
 
@@ -79,7 +91,11 @@ class CarreraTests(APITestCase):
         carrera = Carrera.objects.create(**data)
         carrera.save()
         id_carrera = carrera.pk
-        response = self.client.patch("/api/carrera/{}/".format(id_carrera), {"color": "#00000"}, format="json",)
+        response = self.client.patch(
+            "/api/carrera/{}/".format(id_carrera),
+            {"color": "#00000"},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Carrera.objects.get(pk=id_carrera).color, "#00000")
 
@@ -96,7 +112,11 @@ class CarreraTests(APITestCase):
         inst = Carrera.objects.create(**data)
         inst.save()
         id_carrera = inst.pk
-        response = self.client.patch("/api/carrera/{}/".format(id_carrera), {"nombre": ""}, format="json",)
+        response = self.client.patch(
+            "/api/carrera/{}/".format(id_carrera),
+            {"nombre": ""},
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_delete_carrera(self):
@@ -112,9 +132,13 @@ class CarreraTests(APITestCase):
         inst = Carrera.objects.create(**data)
         inst.save()
         id_carrera = inst.pk
-        response = self.client.delete("/api/carrera/{}/".format(id_carrera), format="json")
+        response = self.client.delete(
+            "/api/carrera/{}/".format(id_carrera), format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.client.get("/api/carrera/{}/".format(id_carrera), format="json")
+        response = self.client.get(
+            "/api/carrera/{}/".format(id_carrera), format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_list_carrera(self):
@@ -134,33 +158,59 @@ class AnioLectivoTests(APITestCase):
         """
         cls.client = APIClient()
         cls.group_admin = Group.objects.create(name="Admin1")
-        cls.group_admin.permissions.add(Permission.objects.get(name="Can add anio lectivo"))
-        cls.group_admin.permissions.add(Permission.objects.get(name="Can change anio lectivo"))
-        cls.group_admin.permissions.add(Permission.objects.get(name="Can delete anio lectivo"))
-        cls.group_admin.permissions.add(Permission.objects.get(name="Puede listar años lectivos"))
-        cls.group_admin.permissions.add(Permission.objects.get(name="Can view anio lectivo"))
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can add anio lectivo")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can change anio lectivo")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can delete anio lectivo")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede listar años lectivos")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can view anio lectivo")
+        )
         cls.group_admin.save()
 
         cls.group_docente = Group.objects.create(name="Docente1")
-        cls.group_admin.permissions.add(Permission.objects.get(name="Puede listar años lectivos"))
-        cls.group_admin.permissions.add(Permission.objects.get(name="Can view anio lectivo"))
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede listar años lectivos")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can view anio lectivo")
+        )
         cls.group_docente.save()
 
         cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
         cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
 
         cls.user_admin_1 = User.objects.create_user(
-            "juan1@juan.com", password="password", groups=cls.group_admin, institucion=cls.institucion_1
+            "juan1@juan.com",
+            password="password",
+            groups=cls.group_admin,
+            institucion=cls.institucion_1,
         )
         cls.user_docente_1 = User.objects.create_user(
-            "juan2@juan.com", password="password", groups=cls.group_docente, institucion=cls.institucion_1
+            "juan2@juan.com",
+            password="password",
+            groups=cls.group_docente,
+            institucion=cls.institucion_1,
         )
 
         cls.user_admin_2 = User.objects.create_user(
-            "juan3@juan.com", password="password", groups=cls.group_admin, institucion=cls.institucion_2
+            "juan3@juan.com",
+            password="password",
+            groups=cls.group_admin,
+            institucion=cls.institucion_2,
         )
         cls.user_docente_2 = User.objects.create_user(
-            "juan4@juan.com", password="password", groups=cls.group_docente, institucion=cls.institucion_2
+            "juan4@juan.com",
+            password="password",
+            groups=cls.group_docente,
+            institucion=cls.institucion_2,
         )
 
         cls.anio_lectivo_institucion_1 = AnioLectivo.objects.create(
@@ -246,9 +296,15 @@ class AnioLectivoTests(APITestCase):
             "nombre": "2018",
             "fecha_desde": "01/01/2018",
         }
-        response1 = self.client.post("/api/anio_lectivo/", data1, format="json")
-        response2 = self.client.post("/api/anio_lectivo/", data2, format="json")
-        response3 = self.client.post("/api/anio_lectivo/", data3, format="json")
+        response1 = self.client.post(
+            "/api/anio_lectivo/", data1, format="json"
+        )
+        response2 = self.client.post(
+            "/api/anio_lectivo/", data2, format="json"
+        )
+        response3 = self.client.post(
+            "/api/anio_lectivo/", data3, format="json"
+        )
         self.assertEqual(response1.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response3.status_code, status.HTTP_400_BAD_REQUEST)
@@ -291,10 +347,18 @@ class AnioLectivoTests(APITestCase):
             "fecha_desde": "01/01/2019",
             "fecha_hasta": "31/12/2019",
         }
-        response1 = self.client.post("/api/anio_lectivo/", data1, format="json")
-        response2 = self.client.post("/api/anio_lectivo/", data2, format="json")
-        response3 = self.client.post("/api/anio_lectivo/", data3, format="json")
-        response4 = self.client.post("/api/anio_lectivo/", data4, format="json")
+        response1 = self.client.post(
+            "/api/anio_lectivo/", data1, format="json"
+        )
+        response2 = self.client.post(
+            "/api/anio_lectivo/", data2, format="json"
+        )
+        response3 = self.client.post(
+            "/api/anio_lectivo/", data3, format="json"
+        )
+        response4 = self.client.post(
+            "/api/anio_lectivo/", data4, format="json"
+        )
         self.assertEqual(response1.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response3.status_code, status.HTTP_400_BAD_REQUEST)
@@ -355,12 +419,28 @@ class AnioLectivoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin_1)
         id_anio_lectivo = AnioLectivo.objects.get(nombre="2030").id
 
-        data = {"nombre": "1999", "fecha_desde": "01/01/1999", "fecha_hasta": "31/12/1999"}
-        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        data = {
+            "nombre": "1999",
+            "fecha_desde": "01/01/1999",
+            "fecha_hasta": "31/12/1999",
+        }
+        response = self.client.patch(
+            "/api/anio_lectivo/{}/".format(id_anio_lectivo),
+            data=data,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        data1 = {"nombre": "2030", "fecha_desde": "01/01/2030", "fecha_hasta": "31/12/2030"}
-        response1 = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data1, format="json")
+        data1 = {
+            "nombre": "2030",
+            "fecha_desde": "01/01/2030",
+            "fecha_hasta": "31/12/2030",
+        }
+        response1 = self.client.patch(
+            "/api/anio_lectivo/{}/".format(id_anio_lectivo),
+            data=data1,
+            format="json",
+        )
         self.assertEqual(response1.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_admin_wrong_dates_not_passed(self):
@@ -371,7 +451,11 @@ class AnioLectivoTests(APITestCase):
         id_anio_lectivo = AnioLectivo.objects.get(nombre="2030").id
 
         data = {"fecha_desde": "01/12/2030", "fecha_hasta": "01/01/2030"}
-        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        response = self.client.patch(
+            "/api/anio_lectivo/{}/".format(id_anio_lectivo),
+            data=data,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_admin_wrong_dates_started_or_passed(self):
@@ -382,7 +466,11 @@ class AnioLectivoTests(APITestCase):
         id_anio_lectivo = AnioLectivo.objects.get(nombre="1998").id
 
         data = {"fecha_desde": "01/01/2021", "fecha_hasta": "01/12/2021"}
-        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        response = self.client.patch(
+            "/api/anio_lectivo/{}/".format(id_anio_lectivo),
+            data=data,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_admin_conflicting_dates(self):
@@ -393,11 +481,19 @@ class AnioLectivoTests(APITestCase):
         id_anio_lectivo = AnioLectivo.objects.get(nombre="2030").id
 
         data = {"fecha_desde": "01/01/2020", "fecha_hasta": "01/12/2020"}
-        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        response = self.client.patch(
+            "/api/anio_lectivo/{}/".format(id_anio_lectivo),
+            data=data,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         data = {"fecha_desde": "01/01/2019", "fecha_hasta": "01/12/2019"}
-        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        response = self.client.patch(
+            "/api/anio_lectivo/{}/".format(id_anio_lectivo),
+            data=data,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_update_admin_name_started_or_passed(self):
@@ -408,7 +504,11 @@ class AnioLectivoTests(APITestCase):
         id_anio_lectivo = AnioLectivo.objects.get(nombre="1998").id
 
         data = {"nombre": "1998-1"}
-        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        response = self.client.patch(
+            "/api/anio_lectivo/{}/".format(id_anio_lectivo),
+            data=data,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_update_admin_other_institucion_or_not_existent(self):
@@ -419,10 +519,16 @@ class AnioLectivoTests(APITestCase):
         id_anio_lectivo = AnioLectivo.objects.get(nombre="2019").id
 
         data = {"nombre": "1998-1"}
-        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        response = self.client.patch(
+            "/api/anio_lectivo/{}/".format(id_anio_lectivo),
+            data=data,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        response = self.client.patch("/api/anio_lectivo/60/", data=data, format="json")
+        response = self.client.patch(
+            "/api/anio_lectivo/60/", data=data, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_docente(self):
@@ -433,5 +539,9 @@ class AnioLectivoTests(APITestCase):
         id_anio_lectivo = AnioLectivo.objects.get(nombre="1998").id
 
         data = {"nombre": "1998-1"}
-        response = self.client.patch("/api/anio_lectivo/{}/".format(id_anio_lectivo), data=data, format="json")
+        response = self.client.patch(
+            "/api/anio_lectivo/{}/".format(id_anio_lectivo),
+            data=data,
+            format="json",
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
