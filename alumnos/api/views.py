@@ -12,6 +12,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
 from users.models import User
+from alumnos.models import Alumno, AlumnoCurso
 
 
 class AlumnoViewSet(ModelViewSet):
@@ -23,11 +24,24 @@ class AlumnoViewSet(ModelViewSet):
 
     @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS},)
     def get(self, request, pk=None):
-        pass
+        alumno = get_object_or_404(Alumno, pk=pk)
+        if alumno.institucion != request.user.institucion:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = serializers.ViewAlumnoSerializer(alumno, many=False)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
     def list(self, request):
-        pass
+        queryset = Alumno.objects.filter(
+            institucion__exact=request.user.institucion
+        )
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = serializers.ViewAlumnoSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = serializers.ViewAlumnoSerializer(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         request_body=serializers.UpdateAlumnoSerializer,
@@ -38,7 +52,11 @@ class AlumnoViewSet(ModelViewSet):
 
     @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
     def destroy(self, request, pk=None):
-        pass
+        retrieved_alumno = get_object_or_404(Alumno, pk=pk)
+        if retrieved_alumno.institucion != request.user.institucion:
+            return Response(status=status.HTTP_404_NOT_FOUND,)
+        retrieved_alumno.delete()
+        return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         request_body=serializers.CreateAlumnoSerializer,
@@ -56,7 +74,7 @@ mix_alumno = AlumnoViewSet.as_view(
 
 
 class AlumnoCursoViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated, permission_required("alumno")]
+    permission_classes = [IsAuthenticated, permission_required("alumnocurso")]
     OK_EMPTY = {200: ""}
     OK_VIEW = {200: serializers.ViewAlumnoCursoSerializer()}
     OK_LIST = {200: serializers.ViewAlumnoCursoSerializer(many=True)}
