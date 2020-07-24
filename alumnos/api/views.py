@@ -48,7 +48,37 @@ class AlumnoViewSet(ModelViewSet):
         responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
     def update(self, request, pk=None):
-        pass
+        retrieved_alumno = get_object_or_404(Alumno, pk=pk)
+        institucion = request.user.institucion
+
+        if retrieved_alumno.institucion != request.user.institucion:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = serializers.UpdateAlumnoSerializer(data=request.data)
+
+        if serializer.is_valid():
+            if serializer.validated_data.get("dni"):
+                try:
+                    Alumno.objects.get(
+                        dni=serializer.validated_data.get("dni")
+                    )
+                    return Response(
+                        data={"detail": "Alumno con el mismo dni existente"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                except Alumno.DoesNotExist:
+                    pass
+                except:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+            serializer.update(retrieved_alumno)
+            return Response(status=status.HTTP_200_OK,)
+        else:
+            return Response(
+                data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
     @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
     def destroy(self, request, pk=None):
@@ -63,7 +93,39 @@ class AlumnoViewSet(ModelViewSet):
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
-        pass
+        institucion = request.user.institucion
+        data = request.data
+        for alumno in data:
+            alumno["institucion"] = institucion.id
+        serializer = serializers.CreateAlumnoSerializer(
+            data=request.data, many=True
+        )
+        if serializer.is_valid():
+            for alumno in serializer.validated_data:
+                try:
+                    Alumno.objects.get(dni=alumno.get("dni"))
+                except Alumno.DoesNotExist:
+                    continue
+                except:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    data={"detail": "Alumno con el mismo dni existente"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if len(
+                set([alumno["dni"] for alumno in serializer.validated_data])
+            ) != len(serializer.validated_data):
+                return Response(
+                    data={"detail": "Alumnos con el mismo dni en conflicto"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            serializer.save()
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            data = serializer.errors
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
 
 
 create_alumno = AlumnoViewSet.as_view({"post": "create"})
@@ -80,24 +142,93 @@ class AlumnoCursoViewSet(ModelViewSet):
     OK_LIST = {200: serializers.ViewAlumnoCursoSerializer(many=True)}
     OK_CREATED = {201: ""}
 
-    @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS})
     def get(self, request, pk=None):
-        pass
+        alumno_curso = get_object_or_404(AlumnoCurso, pk=pk)
+        if alumno_curso.alumno.institucion != request.user.institucion:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = serializers.ViewAlumnoCursoSerializer(
+            alumno_curso, many=False
+        )
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS})
     def list(self, request):
-        pass
+        queryset = AlumnoCursoViewSet.objects.filter(
+            alumno__institucion__exact=request.user.institucion
+        )
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = serializers.ViewAlumnoCursoSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
-    @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
+        serializer = serializers.ViewAlumnoCursoSerializer(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS})
     def destroy(self, request, pk=None):
-        pass
+        retrieved_alumno_curso = get_object_or_404(AlumnoCurso, pk=pk)
+        if (
+            retrieved_alumno_curso.alumno.institucion
+            != request.user.institucion
+        ):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        retrieved_alumno_curso.delete()
+        return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         request_body=serializers.CreateAlumnoCursoSerializer,
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
-        pass
+        serializer = serializers.CreateAlumnoCursoSerializer(
+            data=request.data, many=False
+        )
+        if serializer.is_valid():
+            alumno = get_object_or_404(
+                Alumno, pk=serializer.validated_data["alumno"]
+            )
+            curso = get_object_or_404(
+                Curso, pk=serializer.validated_data["curso"]
+            )
+            anio_lectivo = get_object_or_404(
+                AnioLectivo, pk=serializer.validated_data["anio_lectivo"]
+            )
+            if (
+                len(
+                    set(
+                        request.user.institucion,
+                        alumno.institucion,
+                        anio_lectivo.institucion,
+                        curso.anio.carrera.institucion,
+                    )
+                )
+                != 1
+            ):
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            if (
+                len(
+                    AlumnoCurso.objects.filter(
+                        alumno=alumno, anio_lectivo=anio_lectivo
+                    )
+                )
+                != 0
+            ):
+                return Response(
+                    data={
+                        "detail": "No se puede asignar un alumno a dos cursos distintos en un Año Lectivo"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            serializer.save()
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 create_alumno_curso = AlumnoCursoViewSet.as_view({"post": "create"})
