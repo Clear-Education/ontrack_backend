@@ -176,10 +176,10 @@ class AnioLectivoTests(APITestCase):
         cls.group_admin.save()
 
         cls.group_docente = Group.objects.create(name="Docente1")
-        cls.group_admin.permissions.add(
+        cls.group_docente.permissions.add(
             Permission.objects.get(name="Puede listar años lectivos")
         )
-        cls.group_admin.permissions.add(
+        cls.group_docente.permissions.add(
             Permission.objects.get(name="Can view anio lectivo")
         )
         cls.group_docente.save()
@@ -231,7 +231,7 @@ class AnioLectivoTests(APITestCase):
                 "institucion": cls.institucion_2,
             }
         )
-        cls.anio_lectivo_institucion_1.save()
+        cls.anio_lectivo_institucion_2.save()
 
         cls.anio_lectivo2_institucion_1 = AnioLectivo.objects.create(
             **{

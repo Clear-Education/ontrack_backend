@@ -13,6 +13,7 @@ from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
 from users.models import User
 from alumnos.models import Alumno, AlumnoCurso
+from django.core.validators import validate_integer
 
 
 class AlumnoViewSet(ModelViewSet):
@@ -154,9 +155,57 @@ class AlumnoCursoViewSet(ModelViewSet):
 
     @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS})
     def list(self, request):
-        queryset = AlumnoCursoViewSet.objects.filter(
+        queryset = AlumnoCurso.objects.filter(
             alumno__institucion__exact=request.user.institucion
         )
+        curso = request.query_params.get("curso", None)
+        anio_lectivo = request.query_params.get("anio_lectivo", None)
+        if curso:
+            if curso.isnumeric():
+                curso = int(curso)
+            else:
+                return Response(
+                    data={"curso": "El valor no es numérico"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            curso_retrieved = get_object_or_404(Curso, pk=curso)
+
+            if (
+                curso_retrieved.anio.carrera.institucion
+                != request.user.institucion
+            ):
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        if anio_lectivo:
+            if anio_lectivo.isnumeric():
+                anio_lectivo = int(anio_lectivo)
+            else:
+                return Response(
+                    data={"anio_lectivo": "El valor no es numérico"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            anio_lectivo_retrieved = get_object_or_404(
+                AnioLectivo, pk=anio_lectivo
+            )
+
+            if anio_lectivo_retrieved.institucion != request.user.institucion:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        if curso and anio_lectivo:
+            queryset = queryset.filter(
+                anio_lectivo__pk__exact=anio_lectivo, curso__pk__exact=curso
+            )
+        elif anio_lectivo and not curso:
+            queryset = queryset.filter(anio_lectivo__pk__exact=anio_lectivo)
+        elif curso and not anio_lectivo:
+            queryset = queryset.filter(curso__pk__exact=curso)
+
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = serializers.ViewAlumnoCursoSerializer(page, many=True)
@@ -186,22 +235,22 @@ class AlumnoCursoViewSet(ModelViewSet):
         )
         if serializer.is_valid():
             alumno = get_object_or_404(
-                Alumno, pk=serializer.validated_data["alumno"]
+                Alumno, pk=serializer.validated_data["alumno"].pk
             )
             curso = get_object_or_404(
-                Curso, pk=serializer.validated_data["curso"]
+                Curso, pk=serializer.validated_data["curso"].pk
             )
             anio_lectivo = get_object_or_404(
-                AnioLectivo, pk=serializer.validated_data["anio_lectivo"]
+                AnioLectivo, pk=serializer.validated_data["anio_lectivo"].pk
             )
             if (
                 len(
-                    set(
+                    set([
                         request.user.institucion,
                         alumno.institucion,
                         anio_lectivo.institucion,
                         curso.anio.carrera.institucion,
-                    )
+                    ])
                 )
                 != 1
             ):
