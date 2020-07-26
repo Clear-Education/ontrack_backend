@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from ontrack import responses
 from users.models import User
 from alumnos.models import Alumno, AlumnoCurso
@@ -143,6 +144,20 @@ class AlumnoCursoViewSet(ModelViewSet):
     OK_LIST = {200: serializers.ViewAlumnoCursoSerializer(many=True)}
     OK_CREATED = {201: ""}
 
+    anio_lectivo_parameter = openapi.Parameter(
+        "anio_lectivo",
+        openapi.IN_QUERY,
+        description="Anio lectivo por el que queremos filtrar la búsqueda",
+        type=openapi.TYPE_INTEGER,
+    )
+
+    curso_parameter = openapi.Parameter(
+        "curso",
+        openapi.IN_QUERY,
+        description="Curso por el que queremos filtrar la búsqueda",
+        type=openapi.TYPE_INTEGER,
+    )
+
     @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS})
     def get(self, request, pk=None):
         alumno_curso = get_object_or_404(AlumnoCurso, pk=pk)
@@ -153,7 +168,10 @@ class AlumnoCursoViewSet(ModelViewSet):
         )
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS})
+    @swagger_auto_schema(
+        manual_parameters=[anio_lectivo_parameter, curso_parameter],
+        responses={**OK_LIST, **responses.STANDARD_ERRORS},
+    )
     def list(self, request):
         queryset = AlumnoCurso.objects.filter(
             alumno__institucion__exact=request.user.institucion
@@ -245,12 +263,14 @@ class AlumnoCursoViewSet(ModelViewSet):
             )
             if (
                 len(
-                    set([
-                        request.user.institucion,
-                        alumno.institucion,
-                        anio_lectivo.institucion,
-                        curso.anio.carrera.institucion,
-                    ])
+                    set(
+                        [
+                            request.user.institucion,
+                            alumno.institucion,
+                            anio_lectivo.institucion,
+                            curso.anio.carrera.institucion,
+                        ]
+                    )
                 )
                 != 1
             ):
@@ -275,6 +295,12 @@ class AlumnoCursoViewSet(ModelViewSet):
             serializer.save()
             return Response(status=status.HTTP_201_CREATED)
         else:
+            for item in serializer.errors.values():
+                if item[0].code == "does_not_exist":
+                    return Response(
+                        data={"detail": "No encontrado."},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
             return Response(
                 data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )

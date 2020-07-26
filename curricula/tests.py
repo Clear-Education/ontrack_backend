@@ -266,6 +266,14 @@ class AnioLectivoTests(APITestCase):
         response = self.client.post("/api/anio_lectivo/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+        data = {
+            "nombre": "2019",
+            "fecha_desde": "01/01/2019",
+            "fecha_hasta": "31/12/2019",
+        }
+        response = self.client.post("/api/anio_lectivo/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
     def test_create_docente(self):
         """
         Test de creacion no permitida de anios lectivos por docente
@@ -307,6 +315,14 @@ class AnioLectivoTests(APITestCase):
         )
         self.assertEqual(response1.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response3.status_code, status.HTTP_400_BAD_REQUEST)
+
+        data = {
+            "nombre": "2020",
+            "fecha_desde": "01/01/2056",
+            "fecha_hasta": "31/12/2056",
+        }
+        response = self.client.post("/api/anio_lectivo/", data, format="json")
         self.assertEqual(response3.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_admin_wrong_dates(self):
