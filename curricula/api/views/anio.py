@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from curricula.api.serializers import anio as serializers_anio
 from curricula.api.serializers import carrera as serializers_carrera
-from curricula.models import Anio, Curso
+from curricula.models import Anio, Curso, Carrera
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -75,6 +75,10 @@ class AnioViewSet(ModelViewSet):
         """
         Listar Anios
         """
+        get_object_or_404(
+            Carrera.objects.filter(institucion_id=request.user.institucion.id),
+            pk=carrera_id,
+        )
         queryset = Anio.objects.filter(
             carrera_id=carrera_id,
             carrera__institucion_id=request.user.institucion.id,
@@ -105,6 +109,7 @@ class CursoViewSet(ModelViewSet):
     queryset = Curso.objects.all()
     OK_EMPTY = {200: ""}
     OK_VIEW = {200: serializers_anio.CursoSerializer()}
+    OK_LIST = {200: serializers_anio.CursoSerializer(many=True)}
 
     @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
     def destroy(self, request, pk=None):
@@ -144,7 +149,26 @@ class CursoViewSet(ModelViewSet):
         serializer = serializers_anio.CursoSerializer(curso)
         return Response(serializer.data)
 
+    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
+    def list(self, request, anio_id=None):
+        """
+        Listar Cursos de un Anio
+        """
+        get_object_or_404(
+            Anio.objects.filter(
+                carrera__institucion_id=request.user.institucion.id
+            ),
+            pk=anio_id,
+        )
+        queryset = Curso.objects.filter(
+            anio_id=anio_id,
+            anio__carrera__institucion_id=request.user.institucion.id,
+        )
+        serializer = serializers_anio.CursoSerializer(queryset, many=True)
+        return Response(serializer.data)
+
 
 view_edit_curso = CursoViewSet.as_view(
     {"get": "get", "delete": "destroy", "patch": "update"}
 )
+list_curso = CursoViewSet.as_view({"get": "list"})
