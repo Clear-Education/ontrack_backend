@@ -63,7 +63,10 @@ class CreateAnioSerializer(serializers.ModelSerializer):
     def create(self):
         # Asumo que ya la carrera seleccionada
         # pertenece a la institucion del usuario
-        cursos = self.validated_data.pop("cursos")
+        if "cursos" in self.validated_data:
+            cursos = self.validated_data.pop("cursos")
+        else:
+            cursos = None
         anio = models.Anio(**self.validated_data)
         anio.save()
         if cursos is not None:

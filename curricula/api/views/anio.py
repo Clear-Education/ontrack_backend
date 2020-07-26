@@ -91,7 +91,9 @@ class AnioViewSet(ModelViewSet):
         """
         Ver un anio
         """
-        queryset = Anio.objects.all()
+        queryset = Anio.objects.filter(
+            carrera__institucion_id=request.user.institucion.id
+        )
         anio = get_object_or_404(queryset, pk=pk)
         serializer = serializers_anio.AnioSerializer(anio)
         return Response(serializer.data)
@@ -145,7 +147,10 @@ class CursoViewSet(ModelViewSet):
         """
         Ver un curso
         """
-        curso = get_object_or_404(self.get_queryset(), pk=pk)
+        queryset = Curso.objects.filter(
+            anio__carrera__institucion_id=request.user.institucion.id
+        )
+        curso = get_object_or_404(queryset, pk=pk)
         serializer = serializers_anio.CursoSerializer(curso)
         return Response(serializer.data)
 

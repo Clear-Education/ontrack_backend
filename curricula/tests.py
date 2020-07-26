@@ -3,10 +3,219 @@ from rest_framework.test import APIClient
 from users.models import User, Group
 from instituciones.models import Institucion
 from django.contrib.auth.models import Permission
-from curricula.models import Carrera, AnioLectivo
+from curricula.models import Carrera, AnioLectivo, Anio, Curso
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.utils.serializer_helpers import ReturnList
+
+
+class AnioCursoTest(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Setup de User y permisos para poder ejecutar todas las acciones
+        """
+        cls.client = APIClient()
+        cls.group = Group.objects.create(name="Superadmin")
+        cls.group.permissions.add(
+            *Permission.objects.values_list("id", flat=True)
+        )
+        cls.group.save()
+        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion.save()
+        cls.carrera = Carrera.objects.create(
+            **{
+                "nombre": "Ingenieria en Creatividad",
+                "institucion_id": cls.institucion.pk,
+            }
+        )
+        cls.user = User.objects.create_user(
+            "juan@juan.com",
+            password="juan123",
+            groups=cls.group,
+            institucion=cls.institucion,
+        )
+
+    def setUp(self):
+        """
+            Fuerzo la autenticacion en cada corrida
+        """
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_anio(self):
+        """
+        Test de creacion de Años
+        """
+        url = reverse("anio-create")
+        data = {
+            "nombre": "Primer Año",
+            "carrera": self.carrera.pk,
+        }
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Anio.objects.count(), 1)
+        self.assertEqual(Anio.objects.get().nombre, "Primer Año")
+
+    def test_create_anio_con_cursos(self):
+        """
+        Test de creacion de Años mas Cursos
+        """
+        url = reverse("anio-create")
+        data = {
+            "nombre": "Primer Año",
+            "carrera": self.carrera.pk,
+            "cursos": [{"nombre": "1A"}, {"nombre": "2A",}],
+        }
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Anio.objects.count(), 1)
+
+        self.assertEqual(Curso.objects.count(), 2)
+        self.assertEqual(Curso.objects.get(pk=1).nombre, "1A")
+        response = self.client.get("/api/curso/{}/".format(1), format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["nombre"], "1A")
+
+    def test_edit_anio_complete(self):
+        """
+        Test de edicion de Años
+        """
+        url = reverse("anio-create")
+        data = {
+            "nombre": "Primer Año",
+            "carrera": self.carrera.pk,
+        }
+        self.client.post(url, data, format="json")
+
+        data = {
+            "nombre": "Primer Añejo",
+            "descripcion": "El primero",
+            "color": "rojo-fuerte",
+        }
+
+        response = self.client.patch("/api/anio/1/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Anio.objects.get().nombre, "Primer Añejo")
+
+    def test_edit_anio_invalid_name(self):
+        """
+        Test de edicion de Fallida
+        """
+        url = reverse("anio-create")
+        data = {
+            "nombre": "Primer Año",
+            "carrera": self.carrera.pk,
+        }
+        self.client.post(url, data, format="json")
+
+        data = {
+            "nombre": "",
+            "descripcion": "El primero",
+            "color": "rojo-fuerte",
+        }
+
+        response = self.client.patch("/api/anio/1/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_anio_curso_view_de_otra_institucion(self):
+        """
+        Test para checkear de que no es posible ver un anio de otra Institucion
+        """
+        institucion = Institucion.objects.create(nombre="NYU")
+        institucion.save()
+        carrera = Carrera.objects.create(
+            **{
+                "nombre": "Ingenieria en Creatividad",
+                "institucion_id": institucion.pk,
+            }
+        )
+        carrera.save()
+        anio = Anio.objects.create(
+            **{"nombre": "Primer Año NYU", "carrera_id": carrera.pk,}
+        )
+        anio.save()
+        curso = Curso.objects.create(nombre="1A", anio_id=anio.pk)
+        curso.save()
+        response = self.client.get("/api/anio/{}/".format(anio.pk))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(
+            "/api/curso/{}/".format(curso.pk), format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_edit_curso_de_anio(self):
+        """
+        Test de edicion de un curso
+        """
+        url = reverse("anio-create")
+        data = {
+            "nombre": "Primer Año",
+            "carrera": self.carrera.pk,
+            "cursos": [{"nombre": "1A"}, {"nombre": "2A"}],
+        }
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Anio.objects.count(), 1)
+
+        self.assertEqual(Curso.objects.count(), 2)
+        self.assertEqual(Curso.objects.get(pk=1).nombre, "1A")
+        response = self.client.get("/api/curso/{}/".format(1), format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["nombre"], "1A")
+        data = {
+            "nombre": "1AA",
+        }
+        response = self.client.patch(
+            "/api/curso/{}/".format(1), data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["nombre"], "1AA")
+
+    def test_delete_anio_con_cursos(self):
+        """
+        Test de borrado de anio y cascade a cursos
+        """
+        url = reverse("anio-create")
+        data = {
+            "nombre": "Primer Año",
+            "carrera": self.carrera.pk,
+            "cursos": [{"nombre": "1A"}, {"nombre": "2A",}],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Anio.objects.count(), 1)
+
+        self.assertEqual(Curso.objects.count(), 2)
+        self.assertEqual(Curso.objects.get(pk=1).nombre, "1A")
+        response = self.client.delete("/api/anio/{}/".format(1), format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get("/api/curso/{}/".format(1), format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_curso_de_anio(self):
+        """
+        Test de borrado de anio y cascade a cursos
+        """
+        url = reverse("anio-create")
+        data = {
+            "nombre": "Primer Año",
+            "carrera": self.carrera.pk,
+            "cursos": [{"nombre": "1A"}, {"nombre": "2A"}],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Anio.objects.count(), 1)
+        self.assertEqual(Curso.objects.count(), 2)
+        self.assertEqual(Curso.objects.get(pk=1).nombre, "1A")
+        response = self.client.delete(
+            "/api/curso/{}/".format(1), format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get("/api/curso/{}/".format(1), format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class CarreraTests(APITestCase):
