@@ -20,6 +20,7 @@ class AuthenticationTests(APITestCase):
         self.user = User.objects.create_user(
             "juan@juan.com", password="juan123", groups=self.group
         )
+
         self.token = Token.objects.create(user=self.user)
 
     def test_login(self):
@@ -39,6 +40,7 @@ class AuthenticationTests(APITestCase):
             data=new_user,
             format="json",
             HTTP_AUTHORIZATION="Token " + self.token.key,
+
         )
         self.assertEqual(response.status_code, 201)
 
@@ -54,6 +56,7 @@ class AuthenticationTests(APITestCase):
             data=new_user,
             format="json",
             HTTP_AUTHORIZATION="Token " + self.token.key,
+
         )
         self.assertEqual(response.status_code, 400)
 
@@ -62,12 +65,14 @@ class AuthenticationTests(APITestCase):
             "/api/users/logout/", HTTP_AUTHORIZATION="Token " + self.token.key
         )
 
+
         self.assertEqual(response.status_code, 200)
 
     def test_logout_unauthorized(self):
         response = self.client.get(
             "/api/users/logout/", HTTP_AUTHORIZATION="not_a_token"
         )
+
         self.assertEqual(response.status_code, 401)
 
 
@@ -85,6 +90,7 @@ class PermissionsTests(APITestCase):
         user = User.objects.create_user(
             "juan@juan.com", password="juan123", groups=self.group_otro
         )
+
         token = Token.objects.create(user=user)
         new_user = {
             "email": "pedro@pedro.com",
@@ -97,6 +103,7 @@ class PermissionsTests(APITestCase):
             data=new_user,
             format="json",
             HTTP_AUTHORIZATION="Token " + token.key,
+
         )
         self.assertEqual(response.status_code, 403)
 
@@ -104,6 +111,7 @@ class PermissionsTests(APITestCase):
         user = User.objects.create_user(
             "juan@juan.com", password="juan123", groups=self.group_docente
         )
+
         token = Token.objects.create(user=user)
         new_user = {
             "email": "pedro@pedro.com",
@@ -163,6 +171,7 @@ class UsersTests(APITestCase):
             Permission.objects.get(name="Can view user")
         )
 
+
         cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
         cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
 
@@ -202,6 +211,7 @@ class UsersTests(APITestCase):
             password="password",
             groups=cls.group_docente,
             institucion=cls.institucion_2,
+
         )
 
     def test_create_user_admin_authenticated(self):
@@ -217,6 +227,7 @@ class UsersTests(APITestCase):
             data=new_user,
             format="json",
             HTTP_AUTHORIZATION="Token " + token.key,
+
         )
         self.assertEqual(response.status_code, 201)
 
@@ -231,6 +242,7 @@ class UsersTests(APITestCase):
         response = self.client.post(
             "/api/users/", data=new_user, format="json"
         )
+
         self.assertEqual(response.status_code, 401)
 
     def test_create_user_admin_not_email(self):
@@ -301,6 +313,7 @@ class UsersTests(APITestCase):
         response = self.client.delete(
             "/api/users/1/", HTTP_AUTHORIZATION="Token " + token.key,
         )
+
         self.assertEqual(response.status_code, 403)
 
     def test_destroy_user_error(self):
@@ -308,6 +321,7 @@ class UsersTests(APITestCase):
         response = self.client.delete(
             "/api/users/x/", HTTP_AUTHORIZATION="Token " + token.key,
         )
+
         self.assertEqual(response.status_code, 404)
 
     def test_get_user_admin_failed(self):
@@ -370,6 +384,7 @@ class UsersTests(APITestCase):
     #         HTTP_AUTHORIZATION="Token " + token.key,
     #     )
     #     self.assertEqual(response.status_code, 400)
+
 
     def test_status_user_docente(self):
         token = Token.objects.create(user=self.user_docente_1)
@@ -480,4 +495,5 @@ class UsersTests(APITestCase):
     #         HTTP_AUTHORIZATION="Token " + token.key,
     #     )
     #     self.assertEqual(response.status_code, 403)
+
 
