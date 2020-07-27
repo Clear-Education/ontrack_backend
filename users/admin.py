@@ -5,60 +5,51 @@ from users.models import User
 
 class UserAdmin(BaseUserAdmin):
 
-    list_display = (
-        "email",
-        "name",
-        "phone",
-        "date_of_birth",
-        "is_staff",
-        "is_superuser",
-        "institucion",
-    )
+    list_display = ("email", "name", "last_name", "is_staff", "is_active", "institucion", "groups")
     list_filter = ("is_superuser",)
 
     fieldsets = (
+        (None, {"fields": ("email", "is_staff", "is_superuser", "is_active", "password")}),
         (
-            None,
+            "Personal info",
             {
                 "fields": (
-                    "email",
-                    "is_staff",
-                    "is_superuser",
-                    "is_active",
-                    "password",
+                    "name",
+                    "last_name",
+                    "phone",
+                    "date_of_birth",
+                    "picture",
+                    "provincia",
+                    "localidad",
+                    "direccion",
                 )
             },
         ),
-        (
-            "Personal info",
-            {"fields": ("name", "phone", "date_of_birth", "picture")},
-        ),
-        ("Groups", {"fields": ("groups", "institucion")}),
-        ("Permissions", {"fields": ("user_permissions",)}),
+        ("Groups", {"fields": ("groups", "institucion", "legajo", "cargo")}),
     )
 
     add_fieldsets = (
+        (None, {"fields": ("email", "is_staff", "is_superuser", "password1", "password2")}),
         (
-            None,
+            "Personal info",
             {
                 "fields": (
-                    "email",
-                    "is_staff",
-                    "is_superuser",
-                    "password1",
-                    "password2",
+                    "name",
+                    "last_name",
+                    "phone",
+                    "date_of_birth",
+                    "picture",
+                    "provincia",
+                    "localidad",
+                    "direccion",
                 )
             },
         ),
-        (
-            "Personal info",
-            {"fields": ("name", "phone", "date_of_birth", "picture")},
-        ),
-        ("Groups", {"fields": ("groups", "institucion")}),
+        ("Groups", {"fields": ("groups", "institucion", "legajo", "cargo")}),
         ("Permissions", {"fields": ("user_permissions",)}),
     )
 
-    search_fields = ("email", "name", "phone")
+    search_fields = ("email", "name", "last_name", "phone")
     ordering = ("email",)
     filter_horizontal = ()
 

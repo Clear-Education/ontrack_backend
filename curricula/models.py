@@ -65,7 +65,7 @@ class Materia(models.Model):
 
 
 class AnioLectivo(models.Model):
-    nombre = models.CharField(max_length=150, unique=True, primary_key=False)
+    nombre = models.CharField(max_length=150, primary_key=False)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_desde = models.DateField(blank=True)
     fecha_hasta = models.DateField(blank=True)
