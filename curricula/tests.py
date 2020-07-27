@@ -442,18 +442,12 @@ class AnioCursoTest(APITestCase):
         data = {
             "nombre": "Primer Año",
             "carrera": self.carrera.pk,
-            "cursos": [{"nombre": "1A"}, {"nombre": "2A",}],
+            "cursos": [{"nombre": "1A"}, {"nombre": "2A"}],
         }
-
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Anio.objects.count(), 1)
-
         self.assertEqual(Curso.objects.count(), 2)
-        self.assertEqual(Curso.objects.get(pk=1).nombre, "1A")
-        response = self.client.get("/api/curso/{}/".format(1), format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["nombre"], "1A")
 
     def test_edit_anio_complete(self):
         """
@@ -464,15 +458,17 @@ class AnioCursoTest(APITestCase):
             "nombre": "Primer Año",
             "carrera": self.carrera.pk,
         }
-        self.client.post(url, data, format="json")
-
+        response = self.client.post(url, data, format="json")
+        id_anio = response.data["id"]
         data = {
             "nombre": "Primer Añejo",
             "descripcion": "El primero",
             "color": "rojo-fuerte",
         }
 
-        response = self.client.patch("/api/anio/1/", data, format="json")
+        response = self.client.patch(
+            "/api/anio/{}/".format(id_anio), data, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Anio.objects.get().nombre, "Primer Añejo")
 
@@ -485,15 +481,17 @@ class AnioCursoTest(APITestCase):
             "nombre": "Primer Año",
             "carrera": self.carrera.pk,
         }
-        self.client.post(url, data, format="json")
-
+        response = self.client.post(url, data, format="json")
+        id_anio = response.data["id"]
         data = {
             "nombre": "",
             "descripcion": "El primero",
             "color": "rojo-fuerte",
         }
 
-        response = self.client.patch("/api/anio/1/", data, format="json")
+        response = self.client.patch(
+            "/api/anio/{}/".format(id_anio), data, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_anio_curso_view_de_otra_institucion(self):
@@ -538,15 +536,17 @@ class AnioCursoTest(APITestCase):
         self.assertEqual(Anio.objects.count(), 1)
 
         self.assertEqual(Curso.objects.count(), 2)
-        self.assertEqual(Curso.objects.get(pk=1).nombre, "1A")
-        response = self.client.get("/api/curso/{}/".format(1), format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["nombre"], "1A")
+        for curso in Curso.objects.all():
+            response = self.client.get(
+                "/api/curso/{}/".format(curso.pk), format="json"
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["nombre"], curso.nombre)
         data = {
             "nombre": "1AA",
         }
         response = self.client.patch(
-            "/api/curso/{}/".format(1), data, format="json"
+            "/api/curso/{}/".format(curso.pk), data, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["nombre"], "1AA")
@@ -562,15 +562,20 @@ class AnioCursoTest(APITestCase):
             "cursos": [{"nombre": "1A"}, {"nombre": "2A",}],
         }
         response = self.client.post(url, data, format="json")
+        anio_id = response.data["id"]
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Anio.objects.count(), 1)
 
         self.assertEqual(Curso.objects.count(), 2)
-        self.assertEqual(Curso.objects.get(pk=1).nombre, "1A")
-        response = self.client.delete("/api/anio/{}/".format(1), format="json")
+        response = self.client.delete(
+            "/api/anio/{}/".format(anio_id), format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.client.get("/api/curso/{}/".format(1), format="json")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        for curso in Curso.objects.all():
+            response = self.client.get(
+                "/api/curso/{}/".format(curso.pk), format="json"
+            )
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_curso_de_anio(self):
         """
@@ -586,12 +591,14 @@ class AnioCursoTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Anio.objects.count(), 1)
         self.assertEqual(Curso.objects.count(), 2)
-        self.assertEqual(Curso.objects.get(pk=1).nombre, "1A")
+        curso = Curso.objects.first()
         response = self.client.delete(
-            "/api/curso/{}/".format(1), format="json"
+            "/api/curso/{}/".format(curso.pk), format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response = self.client.get("/api/curso/{}/".format(1), format="json")
+        response = self.client.get(
+            "/api/curso/{}/".format(curso.pk), format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
@@ -966,6 +973,25 @@ class AnioLectivoTests(APITestCase):
         self.assertEqual(response3.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response4.status_code, status.HTTP_201_CREATED)
 
+    def test_get(self):
+        """
+        Test de obtener un anio lectivo
+        """
+        self.client.force_authenticate(user=self.user_admin_1)
+
+        response1 = self.client.get(
+            "/api/anio_lectivo/{}/".format(self.anio_lectivo_institucion_1.pk)
+        )
+        response2 = self.client.get("/api/anio_lectivo/2/")
+        response3 = self.client.get("/api/anio_lectivo/20/")
+
+        self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        self.assertDictContainsSubset(
+            {"id": self.anio_lectivo_institucion_1.pk}, response1.data
+        )
+        self.assertEqual(response2.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response3.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_destroy_admin(self):
         """
         Test de borrar anios_lectivos por un administrador
@@ -998,21 +1024,6 @@ class AnioLectivoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 3)
         self.assertEqual(type(response.data), ReturnList)
-
-    def test_get(self):
-        """
-        Test de obtener un anio lectivo
-        """
-        self.client.force_authenticate(user=self.user_admin_1)
-
-        response1 = self.client.get("/api/anio_lectivo/1/")
-        response2 = self.client.get("/api/anio_lectivo/2/")
-        response3 = self.client.get("/api/anio_lectivo/20/")
-
-        self.assertEqual(response1.status_code, status.HTTP_200_OK)
-        self.assertDictContainsSubset({"id": 1}, response1.data)
-        self.assertEqual(response2.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response3.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_admin_correct(self):
         """
