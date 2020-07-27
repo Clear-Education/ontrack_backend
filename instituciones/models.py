@@ -8,7 +8,7 @@ class Institucion(models.Model):
     pais = models.CharField(max_length=250, blank=True)
     identificador = models.CharField(max_length=250, blank=True)
     descripcion = models.TextField(blank=True)
-    logo = models.ImageField()
+    logo = models.ImageField(blank=True, null=True)
     activa = models.BooleanField(null=False, default=True)
 
     def __str__(self):

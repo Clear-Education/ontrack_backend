@@ -22,13 +22,15 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "jz6bwp7mkb7yli#=jdz)zna296)dwu4-af$g_yjf%*)2&w!*5-"
+SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
 
+DATE_INPUT_FORMAT = ["%d/%m/%Y"]
 
 # Application definition
 
@@ -48,13 +50,18 @@ INSTALLED_APPS = [
     # Custom
     "users",
     "instituciones",
+    "curricula",
+    "alumnos",
 ]
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.TokenAuthentication",),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
-}
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.TokenAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -103,7 +110,11 @@ DATABASES = {
 
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
-        "Auth Token: Token YOUR_TOKEN": {"type": "apiKey", "name": "Authorization", "in": "header"}
+        "Auth Token: Token YOUR_TOKEN": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+        }
     }
 }
 
@@ -112,10 +123,19 @@ SWAGGER_SETTINGS = {
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
+
 ]
 
 

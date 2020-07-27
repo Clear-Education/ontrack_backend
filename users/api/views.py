@@ -27,6 +27,7 @@ class CustomAuthToken(ObtainAuthToken):
         serializer = self.serializer_class(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
+        # TODO : Agregar validacion sobre el estado de su institucion
         token, created = Token.objects.get_or_create(user=user)
         return Response({"token": token.key})
 
@@ -64,6 +65,9 @@ def change_password(request):
 
 class UsersViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, permission_required("user")]
+    serializer_class = serializers.ListUserSerializer
+    queryset = User.objects.all()
+
     OK_CREATE_USER = {201: ""}
 
     @swagger_auto_schema(

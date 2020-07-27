@@ -5,51 +5,60 @@ from users.models import User
 
 class UserAdmin(BaseUserAdmin):
 
-    list_display = ("email", "name", "last_name", "is_staff", "is_active", "institucion", "groups")
+    list_display = (
+        "email",
+        "name",
+        "phone",
+        "date_of_birth",
+        "is_staff",
+        "is_superuser",
+        "institucion",
+    )
     list_filter = ("is_superuser",)
 
     fieldsets = (
-        (None, {"fields": ("email", "is_staff", "is_superuser", "is_active", "password")}),
         (
-            "Personal info",
+            None,
             {
                 "fields": (
-                    "name",
-                    "last_name",
-                    "phone",
-                    "date_of_birth",
-                    "picture",
-                    "provincia",
-                    "localidad",
-                    "direccion",
+                    "email",
+                    "is_staff",
+                    "is_superuser",
+                    "is_active",
+                    "password",
                 )
             },
         ),
-        ("Groups", {"fields": ("groups", "institucion", "legajo", "cargo")}),
-    )
-
-    add_fieldsets = (
-        (None, {"fields": ("email", "is_staff", "is_superuser", "password1", "password2")}),
         (
             "Personal info",
-            {
-                "fields": (
-                    "name",
-                    "last_name",
-                    "phone",
-                    "date_of_birth",
-                    "picture",
-                    "provincia",
-                    "localidad",
-                    "direccion",
-                )
-            },
+            {"fields": ("name", "phone", "date_of_birth", "picture")},
         ),
-        ("Groups", {"fields": ("groups", "institucion", "legajo", "cargo")}),
+        ("Groups", {"fields": ("groups", "institucion")}),
         ("Permissions", {"fields": ("user_permissions",)}),
     )
 
-    search_fields = ("email", "name", "last_name", "phone")
+    add_fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "email",
+                    "is_staff",
+                    "is_superuser",
+                    "password1",
+                    "password2",
+                )
+            },
+        ),
+        (
+            "Personal info",
+            {"fields": ("name", "phone", "date_of_birth", "picture")},
+        ),
+        ("Groups", {"fields": ("groups", "institucion")}),
+        ("Permissions", {"fields": ("user_permissions",)}),
+    )
+
+    search_fields = ("email", "name", "phone")
     ordering = ("email",)
     filter_horizontal = ()
 
