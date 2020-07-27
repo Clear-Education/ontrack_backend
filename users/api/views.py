@@ -21,10 +21,13 @@ from ontrack import responses
 
 class CustomAuthToken(ObtainAuthToken):
     @swagger_auto_schema(
-        request_body=serializers.LoginSerializer, responses={200: serializers.LoginResponseSerializer},
+        request_body=serializers.LoginSerializer,
+        responses={200: serializers.LoginResponseSerializer},
     )
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={"request": request})
+        serializer = self.serializer_class(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
         # TODO : Agregar validacion sobre el estado de su institucion
@@ -55,7 +58,9 @@ def change_password(request):
         serializer.save(request.user)
         request.user.auth_token.delete()
         return Response(
-            data={"detail": "Successful change of password, please log back in with your new credentials"},
+            data={
+                "detail": "Successful change of password, please log back in with your new credentials"
+            },
             status=status.HTTP_200_OK,
         )
     else:
@@ -68,7 +73,8 @@ class UsersViewSet(viewsets.ModelViewSet):
     OK_CREATE_USER = {201: ""}
 
     @swagger_auto_schema(
-        request_body=serializers.RegistrationSerializer, responses={**OK_CREATE_USER, **responses.STANDARD_ERRORS},
+        request_body=serializers.RegistrationSerializer,
+        responses={**OK_CREATE_USER, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
         """
@@ -84,12 +90,19 @@ class UsersViewSet(viewsets.ModelViewSet):
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(responses={200: serializers.ListUserSerializer(many=True), **responses.STANDARD_ERRORS})
+    @swagger_auto_schema(
+        responses={
+            200: serializers.ListUserSerializer(many=True),
+            **responses.STANDARD_ERRORS,
+        }
+    )
     def list(self, request):
         """
         Listar usuarios
         """
-        queryset = User.objects.filter(institucion__exact=request.user.institucion).exclude(pk__exact=request.user.pk)
+        queryset = User.objects.filter(
+            institucion__exact=request.user.institucion
+        ).exclude(pk__exact=request.user.pk)
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = serializers.ListUserSerializer(page, many=True)
@@ -100,7 +113,10 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         request_body=serializers.EditOtherUserSerializer,
-        responses={200: serializers.ListUserSerializer(many=False), **responses.STANDARD_ERRORS},
+        responses={
+            200: serializers.ListUserSerializer(many=False),
+            **responses.STANDARD_ERRORS,
+        },
     )
     def update(self, request, pk=None):
         """
@@ -111,23 +127,41 @@ class UsersViewSet(viewsets.ModelViewSet):
             serializer = serializers.EditUserSerializer(data=request.data)
             if serializer.is_valid():
                 response_user = serializer.update(request.user)
-                response_serializer = serializers.ListUserSerializer(response_user, many=False)
-                return Response(data=response_serializer.data, status=status.HTTP_200_OK)
+                response_serializer = serializers.ListUserSerializer(
+                    response_user, many=False
+                )
+                return Response(
+                    data=response_serializer.data, status=status.HTTP_200_OK
+                )
             else:
-                return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        if retrieved_user.institucion == request.user.institucion and retrieved_user.is_active:
-            permissions = [perm.codename for perm in request.user.groups.permissions.all()]
+                return Response(
+                    data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                )
+        if (
+            retrieved_user.institucion == request.user.institucion
+            and retrieved_user.is_active
+        ):
+            permissions = [
+                perm.codename for perm in request.user.groups.permissions.all()
+            ]
             if "change_other_user" not in permissions:
                 return Response(
-                    data={"detail": "Accion prohibida para el rol actual!"}, status=status.HTTP_403_FORBIDDEN
+                    data={"detail": "Accion prohibida para el rol actual!"},
+                    status=status.HTTP_403_FORBIDDEN,
                 )
             serializer = serializers.EditOtherUserSerializer(data=request.data)
             if serializer.is_valid():
                 response_user = serializer.update(retrieved_user)
-                response_serializer = serializers.ListUserSerializer(response_user, many=False)
-                return Response(data=response_serializer.data, status=status.HTTP_200_OK)
+                response_serializer = serializers.ListUserSerializer(
+                    response_user, many=False
+                )
+                return Response(
+                    data=response_serializer.data, status=status.HTTP_200_OK
+                )
             else:
-                return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                )
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(responses={200: "", **responses.STANDARD_ERRORS})
@@ -141,11 +175,20 @@ class UsersViewSet(viewsets.ModelViewSet):
             request.user.auth_token.delete()
             return Response(status=status.HTTP_200_OK)
         if retrieved_user.institucion != request.user.institucion:
-            return Response(data={"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND,)
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         retrieved_user.delete()
         return Response(status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(responses={202: responses.NotModifiedSerializer, 200: "", **responses.STANDARD_ERRORS})
+    @swagger_auto_schema(
+        responses={
+            202: responses.NotModifiedSerializer,
+            200: "",
+            **responses.STANDARD_ERRORS,
+        }
+    )
     @action(detail=False, methods=["PATCH"], name="status")
     def status(self, request, pk=None):
         """
@@ -153,27 +196,44 @@ class UsersViewSet(viewsets.ModelViewSet):
         """
         retrieved_user = get_object_or_404(User, pk=pk)
         if retrieved_user.institucion != request.user.institucion:
-            return Response(data={"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND,)
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         serializer = serializers.UserStatusSerializer(data=request.data)
 
         if serializer.is_valid():
-            if retrieved_user.is_active == serializer.validated_data["is_active"]:
+            if (
+                retrieved_user.is_active
+                == serializer.validated_data["is_active"]
+            ):
                 return Response(
-                    data={"detail": "El usuario ya se encuentra en el estado solicitado"},
+                    data={
+                        "detail": "El usuario ya se encuentra en el estado solicitado"
+                    },
                     status=status.HTTP_202_ACCEPTED,
                 )
             if retrieved_user == request.user:
                 return Response(
-                    data={"detail": "No se puede cambiar el estado del mismo usuario"},
+                    data={
+                        "detail": "No se puede cambiar el estado del mismo usuario"
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             serializer.update(retrieved_user, serializer.validated_data)
             return Response(status=status.HTTP_200_OK)
         else:
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
-    @swagger_auto_schema(responses={200: serializers.ListUserSerializer(many=False), **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        responses={
+            200: serializers.ListUserSerializer(many=False),
+            **responses.STANDARD_ERRORS,
+        },
+    )
     def get(self, request, pk=None):
         """
         Ver usuario
@@ -183,7 +243,10 @@ class UsersViewSet(viewsets.ModelViewSet):
             serializer = serializers.ListUserSerializer(retrieved_user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(data={"detail": "No encontrado."}, status=status.HTTP_404_NOT_FOUND,)
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
 
 class GroupViewSet(viewsets.ViewSet):
@@ -197,7 +260,9 @@ class GroupViewSet(viewsets.ViewSet):
 
     permission_classes = [IsAuthenticated, permission_required("group")]
 
-    @swagger_auto_schema(responses={200: serializers.GroupSerializer(many=True)},)
+    @swagger_auto_schema(
+        responses={200: serializers.GroupSerializer(many=True)},
+    )
     def list(self, request):
         """
         Ver una lista de todos los grupos que existen
@@ -206,7 +271,9 @@ class GroupViewSet(viewsets.ViewSet):
         serializer = serializers.GroupSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    @swagger_auto_schema(responses={**OK_GET_GROUP, **responses.STANDARD_ERRORS})
+    @swagger_auto_schema(
+        responses={**OK_GET_GROUP, **responses.STANDARD_ERRORS}
+    )
     def get(self, request, pk=None):
         """
         Ver un grupo en especial
@@ -222,6 +289,8 @@ list_users = UsersViewSet.as_view({"get": "list"})
 group_list = GroupViewSet.as_view({"get": "list"})
 group_get = GroupViewSet.as_view({"get": "get"})
 login = CustomAuthToken.as_view()
-update_user = UsersViewSet.as_view({"patch": "update", "delete": "destroy", "get": "get"})
+update_user = UsersViewSet.as_view(
+    {"patch": "update", "delete": "destroy", "get": "get"}
+)
 status_user = UsersViewSet.as_view({"patch": "status"})
 

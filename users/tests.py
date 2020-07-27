@@ -286,7 +286,8 @@ class UsersTests(APITestCase):
             "/api/users/list/", HTTP_AUTHORIZATION="Token " + token.key,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(len(response.data), 4)
 
     def test_destroy_user_docente(self):
         token = Token.objects.create(user=self.user_docente_1)
