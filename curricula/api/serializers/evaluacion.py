@@ -65,14 +65,18 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
         Checkear que las FK sean iguales
         """
 
-        anios_lectivos = [e["anio_lectivo"] for e in data]
-        materias = [e["materia"] for e in data]
+        anios_lectivos = [e["anio_lectivo"].pk for e in data]
+        materias = [e["materia"].pk for e in data]
         if len(set(anios_lectivos)) != 1 or len(set(materias)) != 1:
             raise ValidationError(
                 "La materia y anio lectivo deben ser \
                 las mismas para todas las evaluaciones"
             )
-        total = reduce((lambda x, y: x + y), [e["ponderacion"] for e in data])
+
+        ponderaciones = [e["ponderacion"] for e in data]
+        if not all(map(lambda x: x > 0, ponderaciones)):
+            raise ValidationError("Valores invalidos para ponderacion!")
+        total = reduce((lambda x, y: x + y), ponderaciones)
         if total != 1:
             raise ValidationError(detail="Las ponderaciones no suman 1")
 

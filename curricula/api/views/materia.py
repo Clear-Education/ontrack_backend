@@ -77,10 +77,10 @@ class MateriaViewSet(ModelViewSet):
         """
         Crear una materia
         """
-        serializer = serializers.CreateMateriaSerializer(request.data)
+        serializer = serializers.CreateMateriaSerializer(data=request.data)
         data = {}
 
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             materia = serializer.create()
             data = {"id": materia.id}
         else:
@@ -96,7 +96,9 @@ class MateriaViewSet(ModelViewSet):
         """
         Actualizar los datos de una materia
         """
-        materia = get_object_or_404(self.get_queryset(), pk=pk,)
+        materia = get_object_or_404(
+            self.get_queryset(request.user.institucion), pk=pk,
+        )
         serializer = serializers.EditMateriaSerializer(
             data=request.data, partial=True
         )

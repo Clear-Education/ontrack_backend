@@ -30,6 +30,7 @@ class CustomAuthToken(ObtainAuthToken):
         )
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
+        # TODO : Agregar validacion sobre el estado de su institucion
         token, created = Token.objects.get_or_create(user=user)
         return Response({"token": token.key})
 

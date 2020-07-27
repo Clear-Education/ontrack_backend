@@ -3,10 +3,387 @@ from rest_framework.test import APIClient
 from users.models import User, Group
 from instituciones.models import Institucion
 from django.contrib.auth.models import Permission
-from curricula.models import Carrera, AnioLectivo, Anio, Curso
+from curricula.models import (
+    Carrera,
+    AnioLectivo,
+    Anio,
+    Curso,
+    Materia,
+    Evaluacion,
+)
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.utils.serializer_helpers import ReturnList
+
+
+class MateriaEvaluacionTest(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Setup de User y permisos para poder ejecutar todas las acciones
+        """
+        cls.client = APIClient()
+        cls.group = Group.objects.create(name="Superadmin")
+        cls.group.permissions.add(
+            *Permission.objects.values_list("id", flat=True)
+        )
+        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.carrera = Carrera.objects.create(
+            **{
+                "nombre": "Ingenieria en Creatividad",
+                "institucion_id": cls.institucion.pk,
+            }
+        )
+        cls.anio = Anio.objects.create(
+            **{"nombre": "1er Año", "carrera_id": cls.carrera.pk}
+        )
+        cls.anio_lectivo = AnioLectivo.objects.create(
+            **{
+                "nombre": "2020/2021",
+                "fecha_desde": "2020-12-12",
+                "fecha_hasta": "2021-12-12",
+                "institucion": cls.institucion,
+            }
+        )
+        cls.user = User.objects.create_user(
+            "juan@juan.com",
+            password="juan123",
+            groups=cls.group,
+            institucion=cls.institucion,
+        )
+
+    def setUp(self):
+        """
+            Fuerzo la autenticacion en cada corrida
+        """
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_and_get_materia(self):
+        """
+        Test de creacion de materia
+        """
+        url = reverse("materia-create")
+        data = {
+            "nombre": "Análisis Matemático",
+            "anio": self.anio.pk,
+        }
+
+        response = self.client.post(url, data, format="json")
+        id_materia = response.data["id"]
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Materia.objects.count(), 1)
+        self.assertEqual(Materia.objects.get().nombre, "Análisis Matemático")
+        response = self.client.get("/api/materia/{}/".format(id_materia))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_edit_materia(self):
+        """
+        Test de creacion de materia
+        """
+        url = reverse("materia-create")
+        data = {
+            "nombre": "Análisis Matemático",
+            "anio": self.anio.pk,
+        }
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        id_materia = response.data["id"]
+        self.assertEqual(Materia.objects.count(), 1)
+
+        data = {
+            "nombre": "Análisis Matemático 1",
+            "color": "verde-claro",
+        }
+
+        response = self.client.patch(
+            "/api/materia/{}/".format(id_materia), data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Materia.objects.count(), 1)
+        self.assertEqual(Materia.objects.get().nombre, "Análisis Matemático 1")
+
+    def test_delete_materia(self):
+        """
+        Test de creacion de materia
+        """
+        url = reverse("materia-create")
+        data = {
+            "nombre": "Análisis Matemático",
+            "anio": self.anio.pk,
+        }
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        id_materia = response.data["id"]
+        self.assertEqual(Materia.objects.count(), 1)
+        response = self.client.delete("/api/materia/{}/".format(id_materia))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Materia.objects.count(), 0)
+
+    def test_view_delete_materia_de_otra_institucion(self):
+        """
+        Test para checkear de que no es posible ver o eliminar \
+        una materia de otra Institucion
+        """
+        institucion = Institucion.objects.create(nombre="NYU")
+        institucion.save()
+        carrera = Carrera.objects.create(
+            **{
+                "nombre": "Ingenieria en Creatividad",
+                "institucion_id": institucion.pk,
+            }
+        )
+        carrera.save()
+        anio = Anio.objects.create(
+            **{"nombre": "Primer Año NYU", "carrera_id": carrera.pk}
+        )
+        anio.save()
+        materia = Materia.objects.create(
+            **{"nombre": "Análisis Matemático", "anio_id": anio.pk}
+        )
+        materia.save()
+        # Ver
+        response = self.client.get("/api/materia/{}/".format(materia.pk))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        # Borrar
+        response = self.client.delete("/api/materia/{}/".format(materia.pk))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_create_evaluaciones_success(self):
+        """
+        Test de creacion de evaluaciones
+        """
+        materia = Materia.objects.create(
+            **{"nombre": "Análisis Matemático", "anio_id": self.anio.pk}
+        )
+        materia.save()
+        url = reverse("evaluacion-create")
+        data = [
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.5,
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.5,
+            },
+        ]
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Evaluacion.objects.count(), 2)
+
+    def test_list_evaluaciones(self):
+        """
+        Test de listado de evaluaciones
+        """
+        materia = Materia.objects.create(
+            **{"nombre": "Análisis Matemático", "anio_id": self.anio.pk}
+        )
+        materia.save()
+        url = reverse("evaluacion-create")
+        data = [
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.5,
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.5,
+            },
+        ]
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        response = self.client.get(
+            "/api/materia/{}/evaluacion/list/".format(materia.pk),
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(type(response.data), ReturnList)
+        self.assertEqual(len(response.data), 2)
+
+    def test_delete_evaluaciones(self):
+        """
+        Test de listado de evaluaciones
+        """
+        materia = Materia.objects.create(
+            **{"nombre": "Análisis Matemático", "anio_id": self.anio.pk}
+        )
+        materia.save()
+        url = reverse("evaluacion-create")
+        data = [
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.5,
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.5,
+            },
+        ]
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "materia": materia.pk,
+        }
+        response = self.client.delete(
+            "/api/evaluacion/", data=data, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Evaluacion.objects.count(), 0)
+
+    def test_edit_in_bulk_evaluaciones(self):
+        """
+        Test de listado de evaluaciones
+        """
+        materia = Materia.objects.create(
+            **{"nombre": "Análisis Matemático", "anio_id": self.anio.pk}
+        )
+        materia.save()
+        url = reverse("evaluacion-create")
+        data = [
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.5,
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.3,
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.2,
+            },
+        ]
+        response = self.client.post(url, data, format="json")
+
+        response = self.client.get(
+            "/api/materia/{}/evaluacion/list/?anio_lectivo={}".format(
+                materia.pk, self.anio_lectivo.pk
+            ),
+        )
+        data = []
+        data.append(response.data[0])
+        data[0]["anio_lectivo"] = self.anio_lectivo.pk
+        del data[0]["nombre"]
+        data[0]["materia"] = materia.pk
+        data.append(
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.5,
+            }
+        )
+        response = self.client.put(
+            "/api/evaluacion/", data=data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(
+            "/api/materia/{}/evaluacion/list/?anio_lectivo={}".format(
+                materia.pk, self.anio_lectivo.pk
+            ),
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(type(response.data), ReturnList)
+        self.assertEqual(len(response.data), 2)
+
+    def test_create_evaluaciones_ponderacion_erronea(self):
+        """
+        Test de validacion sobre ponderacion en la creacion de evaluaciones
+        """
+        materia = Materia.objects.create(
+            **{"nombre": "Análisis Matemático", "anio_id": self.anio.pk}
+        )
+        materia.save()
+        url = reverse("evaluacion-create")
+        data = [
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 1,
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0,
+            },
+        ]
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Evaluacion.objects.count(), 0)
+        data = [
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.3,
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.2,
+            },
+        ]
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Evaluacion.objects.count(), 0)
+        data = [
+            {"anio_lectivo": self.anio_lectivo.pk, "materia": materia.pk},
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.2,
+            },
+        ]
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Evaluacion.objects.count(), 0)
+
+    def test_create_evaluaciones_con_pk_erroneas(self):
+        """
+        Test de validacion sobre ponderacion en la creacion de evaluaciones
+        """
+        materia = Materia.objects.create(
+            **{"nombre": "Análisis Matemático", "anio_id": self.anio.pk}
+        )
+        materia.save()
+        materia2 = Materia.objects.create(
+            **{"nombre": "Análisis Matemático 2", "anio_id": self.anio.pk}
+        )
+        materia2.save()
+        url = reverse("evaluacion-create")
+        data = [
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia2.pk,
+                "ponderacion": 1,
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0,
+            },
+        ]
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Evaluacion.objects.count(), 0)
 
 
 class AnioCursoTest(APITestCase):
