@@ -104,7 +104,7 @@ class AlumnoTests(APITestCase):
 
     def test_create_alumno_admin(self):
         """
-        Test de creacion correcta de AlumnoCurso por admin
+        Test de creacion correcta de Alumno por admin
         """
         self.client.force_authenticate(user=self.user_admin)
         data = [
@@ -121,9 +121,260 @@ class AlumnoTests(APITestCase):
                 "fecha_inscripcion": "01/01/2019",
                 "institucion": 1,
             },
+            {
+                "dni": 7,
+                "nombre": "Danilos",
+                "apellido": "Reitanos",
+                "institucion": 2,
+            },
         ]
         response = self.client.post("/api/alumnos/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response = self.client.get("/api/alumnos/6/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("id"), 6)
+        self.assertEqual(
+            response.data.get("institucion").get("id"), self.institucion_1.id
+        )
+        response = self.client.get("/api/alumnos/7/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("id"), 7)
+        self.assertEqual(
+            response.data.get("institucion").get("id"), self.institucion_1.id
+        )
+
+    def test_create_alumno_docente(self):
+        """
+        Test de creacion de Alumno por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        data = [
+            {
+                "dni": 6,
+                "nombre": "Danilo",
+                "apellido": "Reitano",
+                "email": "danilo@danilo.com.ar",
+                "legajo": 1,
+                "fecha_nacimiento": "08/02/1998",
+                "direccion": "Calle",
+                "localidad": "Departamento",
+                "provincia": "Mendoza",
+                "fecha_inscripcion": "01/01/2019",
+                "institucion": 1,
+            },
+            {
+                "dni": 7,
+                "nombre": "Danilos",
+                "apellido": "Reitanos",
+                "institucion": 2,
+            },
+        ]
+        response = self.client.post("/api/alumnos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_alumno_conflictivo(self):
+        """
+        Test de creación de Alumnos con conflictos
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "dni": 10,
+                "nombre": "Danilo",
+                "apellido": "Reitano",
+                "email": "danilo@danilo.com.ar",
+                "legajo": 1,
+                "fecha_nacimiento": "08/02/1998",
+                "direccion": "Calle",
+                "localidad": "Departamento",
+                "provincia": "Mendoza",
+                "fecha_inscripcion": "01/01/2019",
+                "institucion": 1,
+            },
+            {
+                "dni": 10,
+                "nombre": "Danilos",
+                "apellido": "Reitanos",
+                "institucion": 2,
+            },
+        ]
+        response = self.client.post("/api/alumnos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "Alumnos con el mismo dni en conflicto"
+        )
+
+        data = [
+            {
+                "dni": 1,
+                "nombre": "Danilo",
+                "apellido": "Reitano",
+                "email": "danilo@danilo.com.ar",
+                "legajo": 1,
+                "fecha_nacimiento": "08/02/1998",
+                "direccion": "Calle",
+                "localidad": "Departamento",
+                "provincia": "Mendoza",
+                "fecha_inscripcion": "01/01/2019",
+                "institucion": 1,
+            },
+        ]
+        response = self.client.post("/api/alumnos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "Alumno con el mismo dni existente"
+        )
+
+    def test_update_alumno_admin(self):
+        """
+        Test de modificación correcta de Alumno por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        id_alumno = Alumno.objects.get(dni=1).id
+        data = {
+            "dni": 1,
+            "nombre": "Danilor",
+            "apellido": "Reitano",
+            "email": "danilos@danilo.com.ar",
+            "legajo": 1,
+            "fecha_nacimiento": "08/02/1998",
+            "direccion": "Calle",
+            "localidad": "Departamento",
+            "provincia": "Mendoza",
+            "fecha_inscripcion": "01/01/2019",
+        }
+        response = self.client.patch(
+            f"/api/alumnos/{id_alumno}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_alumno_docente(self):
+        """
+        Test de modificación de Alumno por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        id_alumno = Alumno.objects.get(dni=1).id
+        data = {
+            "nombre": "Danilortgh",
+            "direccion": "Calle",
+            "localidad": "Departamento",
+        }
+        response = self.client.patch(
+            f"/api/alumnos/{id_alumno}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_alumno_admin_no_existente_o_distinta_institucion(self):
+        """
+        Test de modificación de Alumno no existente o de otra institucion por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        id_alumno = Alumno.objects.get(dni=5).id
+        data = {
+            "localidad": "Departamento",
+        }
+        response = self.client.patch(
+            f"/api/alumnos/{id_alumno}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        response = self.client.patch(f"/api/alumnos/200/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_alumno_admin_info_conflictiva(self):
+        """
+        Test de modificación correcta de Alumno por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        id_alumno = Alumno.objects.get(dni=1).id
+        data = {
+            "dni": 5,
+            "nombre": "Danilor",
+            "apellido": "Reitano",
+        }
+        response = self.client.patch(
+            f"/api/alumnos/{id_alumno}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_alumno_admin(self):
+        """
+        Test de obtencion correcta de Alumno por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        id_alumno = Alumno.objects.get(dni=1).id
+        response = self.client.get(f"/api/alumnos/{id_alumno}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_alumno_docente(self):
+        """
+        Test de obtencion correcta de Alumno por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        id_alumno = Alumno.objects.get(dni=1).id
+        response = self.client.get(f"/api/alumnos/{id_alumno}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_alumno_admin_no_existente_o_distinta_institucion(self):
+        """
+        Test de obtencion de Alumno no existente o de distinta institucion por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        id_alumno = Alumno.objects.get(dni=5).id
+        response = self.client.get(f"/api/alumnos/{id_alumno}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        response = self.client.get("/api/alumnos/40/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_list_alumno_admin(self):
+        """
+        Test de listado de Alumno por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get("/api/alumnos/list/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("count"), 4)
+
+    def test_list_alumno_docente(self):
+        """
+        Test de listado de Alumno por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        response = self.client.get("/api/alumnos/list/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("count"), 4)
+
+    def test_delete_alumno_admin(self):
+        """
+        Test de borrado de Alumno correcto por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        id_alumno = Alumno.objects.get(dni=1).id
+        response = self.client.delete(f"/api/alumnos/{id_alumno}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_alumno_admin_no_existente_o_distinta_institucion(self):
+        """
+        Test de borrado de Alumno no existente o de distinta institucion por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        id_alumno = Alumno.objects.get(dni=5).id
+        response = self.client.delete(f"/api/alumnos/{id_alumno}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        response = self.client.delete("/api/alumnos/45/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_alumno_docente(self):
+        """
+        Test de borrado de Alumno por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        id_alumno = Alumno.objects.get(dni=2).id
+        response = self.client.delete(f"/api/alumnos/{id_alumno}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class AlumnoCursoTests(APITestCase):

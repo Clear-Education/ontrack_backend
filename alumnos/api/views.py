@@ -63,18 +63,23 @@ class AlumnoViewSet(ModelViewSet):
 
         if serializer.is_valid():
             if serializer.validated_data.get("dni"):
-                try:
-                    Alumno.objects.get(
-                        dni=serializer.validated_data.get("dni")
-                    )
-                    return Response(
-                        data={"detail": "Alumno con el mismo dni existente"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                except Alumno.DoesNotExist:
-                    pass
-                except:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                if retrieved_alumno.dni != serializer.validated_data.get(
+                    "dni"
+                ):
+                    try:
+                        Alumno.objects.get(
+                            dni=serializer.validated_data.get("dni")
+                        )
+                        return Response(
+                            data={
+                                "detail": "Alumno con el mismo dni existente"
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    except Alumno.DoesNotExist:
+                        pass
+                    except:
+                        return Response(status=status.HTTP_400_BAD_REQUEST)
             serializer.update(retrieved_alumno)
             return Response(status=status.HTTP_200_OK,)
         else:
