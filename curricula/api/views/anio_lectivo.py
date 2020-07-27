@@ -109,6 +109,16 @@ class AnioLectivoViewSet(ModelViewSet):
     def create(self, request):
         serializer = serializers.AnioLectivoSerializer(data=request.data)
         if serializer.is_valid():
+            if AnioLectivo.objects.filter(
+                institucion__exact=request.user.institucion,
+                nombre__exact=serializer.validated_data["nombre"],
+            ):
+                return Response(
+                    data={
+                        "detail": "No se pueden crear Años Lectivos con el mismo nombre"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             for institucion_retrieved in AnioLectivo.objects.filter(
                 institucion__exact=request.user.institucion
             ):

@@ -762,10 +762,10 @@ class AnioLectivoTests(APITestCase):
         cls.group_admin.save()
 
         cls.group_docente = Group.objects.create(name="Docente1")
-        cls.group_admin.permissions.add(
+        cls.group_docente.permissions.add(
             Permission.objects.get(name="Puede listar años lectivos")
         )
-        cls.group_admin.permissions.add(
+        cls.group_docente.permissions.add(
             Permission.objects.get(name="Can view anio lectivo")
         )
         cls.group_docente.save()
@@ -817,7 +817,7 @@ class AnioLectivoTests(APITestCase):
                 "institucion": cls.institucion_2,
             }
         )
-        cls.anio_lectivo_institucion_1.save()
+        cls.anio_lectivo_institucion_2.save()
 
         cls.anio_lectivo2_institucion_1 = AnioLectivo.objects.create(
             **{
@@ -848,6 +848,14 @@ class AnioLectivoTests(APITestCase):
             "nombre": "2017",
             "fecha_desde": "01/01/2017",
             "fecha_hasta": "31/12/2017",
+        }
+        response = self.client.post("/api/anio_lectivo/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        data = {
+            "nombre": "2019",
+            "fecha_desde": "01/01/2019",
+            "fecha_hasta": "31/12/2019",
         }
         response = self.client.post("/api/anio_lectivo/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -893,6 +901,14 @@ class AnioLectivoTests(APITestCase):
         )
         self.assertEqual(response1.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response3.status_code, status.HTTP_400_BAD_REQUEST)
+
+        data = {
+            "nombre": "2020",
+            "fecha_desde": "01/01/2056",
+            "fecha_hasta": "31/12/2056",
+        }
+        response = self.client.post("/api/anio_lectivo/", data, format="json")
         self.assertEqual(response3.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_admin_wrong_dates(self):

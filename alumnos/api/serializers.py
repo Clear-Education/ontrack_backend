@@ -2,6 +2,7 @@ from rest_framework import serializers
 from instituciones.api.serializers import InstitucionSerializer
 from curricula.api.serializers.anio import CursoSerializer
 from curricula.api.serializers.anio_lectivo import ViewAnioLectivoSerializer
+from instituciones.models import Institucion
 from alumnos.models import Alumno, AlumnoCurso
 from curricula.models import Curso, AnioLectivo
 from ontrack import settings
@@ -37,6 +38,7 @@ class CreateAlumnoSerializer(serializers.ModelSerializer):
             "localidad",
             "provincia",
             "fecha_inscripcion",
+            "institucion",
         ]
 
 
@@ -70,6 +72,29 @@ class UpdateAlumnoSerializer(serializers.ModelSerializer):
             "provincia",
             "fecha_inscripcion",
         ]
+
+    def update(self, alumno):
+        alumno.dni = self.validated_data.get("dni", alumno.dni)
+        alumno.nombre = self.validated_data.get("nombre", alumno.nombre)
+        alumno.apellido = self.validated_data.get("apellido", alumno.apellido)
+        alumno.email = self.validated_data.get("email", alumno.email)
+        alumno.legajo = self.validated_data.get("legajo", alumno.legajo)
+        alumno.fecha_nacimiento = self.validated_data.get(
+            "fecha_nacimiento", alumno.fecha_nacimiento
+        )
+        alumno.direccion = self.validated_data.get(
+            "direccion", alumno.direccion
+        )
+        alumno.localidad = self.validated_data.get(
+            "localidad", alumno.localidad
+        )
+        alumno.provincia = self.validated_data.get(
+            "provincia", alumno.provincia
+        )
+        alumno.fecha_inscripcion = self.validated_data.get(
+            "fecha_inscripcion", alumno.fecha_inscripcion
+        )
+        alumno.save()
 
 
 class ViewAlumnoSerializer(serializers.ModelSerializer):
