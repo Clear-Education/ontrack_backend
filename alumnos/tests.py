@@ -9,7 +9,123 @@ from alumnos.models import Alumno, AlumnoCurso
 from rest_framework import status
 from rest_framework.utils.serializer_helpers import ReturnList
 
-# Create your tests here.
+
+class AlumnoTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Setup de User y permisos para poder ejecutar todas las acciones
+        """
+        cls.client = APIClient()
+        cls.group_admin = Group.objects.create(name="Admin")
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can add alumno")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can change alumno")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can delete alumno")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede listar alumnos")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can view alumno")
+        )
+        cls.group_admin.save()
+
+        cls.group_docente = Group.objects.create(name="Docente")
+        cls.group_docente.permissions.add(
+            Permission.objects.get(name="Puede listar alumnos")
+        )
+        cls.group_docente.permissions.add(
+            Permission.objects.get(name="Can view alumno")
+        )
+        cls.group_docente.save()
+
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_1.save()
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_2.save()
+
+        cls.user_admin = User.objects.create_user(
+            "admin@admin.com",
+            password="password",
+            groups=cls.group_admin,
+            institucion=cls.institucion_1,
+        )
+        cls.user_docente = User.objects.create_user(
+            "docente@docente.com",
+            password="password",
+            groups=cls.group_docente,
+            institucion=cls.institucion_1,
+        )
+
+        cls.alumno_1 = Alumno.objects.create(
+            dni=1,
+            nombre="Alumno",
+            apellido="1",
+            institucion=cls.institucion_1,
+        )
+        cls.alumno_1.save()
+
+        cls.alumno_2 = Alumno.objects.create(
+            dni=2,
+            nombre="Alumno",
+            apellido="2",
+            institucion=cls.institucion_1,
+        )
+        cls.alumno_2.save()
+
+        cls.alumno_3 = Alumno.objects.create(
+            dni=3,
+            nombre="Alumno",
+            apellido="3",
+            institucion=cls.institucion_1,
+        )
+        cls.alumno_3.save()
+
+        cls.alumno_4 = Alumno.objects.create(
+            dni=4,
+            nombre="Alumno",
+            apellido="4",
+            institucion=cls.institucion_1,
+        )
+        cls.alumno_4.save()
+
+        cls.alumno_5 = Alumno.objects.create(
+            dni=5,
+            nombre="Alumno",
+            apellido="5",
+            institucion=cls.institucion_2,
+        )
+        cls.alumno_5.save()
+
+    def test_create_alumno_admin(self):
+        """
+        Test de creacion correcta de AlumnoCurso por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "dni": 6,
+                "nombre": "Danilo",
+                "apellido": "Reitano",
+                "email": "danilo@danilo.com.ar",
+                "legajo": 1,
+                "fecha_nacimiento": "08/02/1998",
+                "direccion": "Calle",
+                "localidad": "Departamento",
+                "provincia": "Mendoza",
+                "fecha_inscripcion": "01/01/2019",
+                "institucion": 1,
+            },
+        ]
+        response = self.client.post("/api/alumnos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
 class AlumnoCursoTests(APITestCase):
     @classmethod
     def setUpTestData(cls):

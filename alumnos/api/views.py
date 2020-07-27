@@ -95,6 +95,11 @@ class AlumnoViewSet(ModelViewSet):
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
+        if type(request.data) is not list:
+            return Response(
+                data={"detail": "Debe mandarse una lista de alumnos"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         institucion = request.user.institucion
         data = request.data
         for alumno in data:
