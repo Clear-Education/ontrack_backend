@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
 
+class CreatedSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+
+
 class SuccessDetailSerializer(serializers.Serializer):
     detail = serializers.CharField()
 

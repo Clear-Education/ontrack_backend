@@ -19,8 +19,13 @@ class LoginResponseSerializer(serializers.Serializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
-    password2 = serializers.CharField(style={"input_type": "password",}, write_only=True, required=True)
-    groups = serializers.PrimaryKeyRelatedField(many=False, required=True, queryset=Group.objects.all())
+    password2 = serializers.CharField(
+        style={"input_type": "password",}, write_only=True, required=True
+    )
+    groups = serializers.PrimaryKeyRelatedField(
+        many=False, required=True, queryset=Group.objects.all()
+    )
+
 
     class Meta:
         model = User
@@ -48,7 +53,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
         password2 = self.validated_data["password2"]
 
         if password != password2:
-            raise serializers.ValidationError({"password": "Las contraseñas no coinciden!"})
+            raise serializers.ValidationError(
+                {"password": "Las contraseñas no coinciden!"}
+            )
 
         user.name = self.validated_data.get("name", None)
         user.phone = self.validated_data.get("phone", None)
@@ -89,9 +96,13 @@ class EditUserSerializer(serializers.ModelSerializer):
         Editar y retornar una instancia de User
         """
         if self.validated_data["email"] is not None:
-            existing_user_email = User.objects.filter(email__exact=self.validated_data["email"])
+            existing_user_email = User.objects.filter(
+                email__exact=self.validated_data["email"]
+            )
             if len(existing_user_email) > 0:
-                raise serializers.ValidationError({"email": "Ya existe un usuario con ese mail registrado!"})
+                raise serializers.ValidationError(
+                    {"email": "Ya existe un usuario con ese mail registrado!"}
+                )
 
         user.name = self.validated_data.get("name", None)
         user.phone = self.validated_data.get("phone", None)
@@ -132,9 +143,13 @@ class EditOtherUserSerializer(serializers.ModelSerializer):
         Editar y retornar una instancia de User
         """
         if self.validated_data.get("email", None) is not None:
-            existing_user_email = User.objects.filter(email__exact=self.validated_data["email"])
+            existing_user_email = User.objects.filter(
+                email__exact=self.validated_data["email"]
+            )
             if len(existing_user_email) > 0:
-                raise serializers.ValidationError({"email": "Ya existe un usuario con ese mail registrado!"})
+                raise serializers.ValidationError(
+                    {"email": "Ya existe un usuario con ese mail registrado!"}
+                )
 
         user.email = self.validated_data.get("email", user.email)
         user.name = self.validated_data.get("name", None)
@@ -154,9 +169,16 @@ class EditOtherUserSerializer(serializers.ModelSerializer):
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(style={"input_type": "password",}, write_only=True, required=True)
-    new_password = serializers.CharField(style={"input_type": "password",}, write_only=True, required=True)
-    new_password2 = serializers.CharField(style={"input_type": "password",}, write_only=True, required=True)
+    password = serializers.CharField(
+        style={"input_type": "password",}, write_only=True, required=True
+    )
+    new_password = serializers.CharField(
+        style={"input_type": "password",}, write_only=True, required=True
+    )
+    new_password2 = serializers.CharField(
+        style={"input_type": "password",}, write_only=True, required=True
+    )
+
 
     class Meta:
         model = User
@@ -172,13 +194,22 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         new_password2 = self.validated_data["new_password2"]
 
         if not user.check_password(old_password):
-            raise serializers.ValidationError({"password": "La contraseña ingresada es incorrecta!"})
+            raise serializers.ValidationError(
+                {"password": "La contraseña ingresada es incorrecta!"}
+            )
 
         if new_password != new_password2:
-            raise serializers.ValidationError({"password": "Las contraseñas no coinciden!"})
+            raise serializers.ValidationError(
+                {"password": "Las contraseñas no coinciden!"}
+            )
 
         if old_password == new_password:
-            raise serializers.ValidationError({"password": "La nueva contraseña debe ser diferente a la actual!"})
+            raise serializers.ValidationError(
+                {
+                    "password": "La nueva contraseña debe ser diferente a la actual!"
+                }
+            )
+
 
         user.set_password(new_password)
         user.save()
