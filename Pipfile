@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 flake8 = "*"
+black = "*"
 
 [packages]
 django = "3.0.8"
@@ -16,11 +17,6 @@ gunicorn = "*"
 psycopg2 = "*"
 drf-yasg = "*"
 django-heroku = "*"
-django-cors-headers = "*"
-black = "*"
 
 [requires]
 python_version = "3.7"
-
-[pipenv]
-allow_prereleases = true
