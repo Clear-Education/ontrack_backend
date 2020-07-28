@@ -96,7 +96,7 @@ class AlumnoViewSet(ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-        request_body=serializers.CreateAlumnoSerializer,
+        request_body=serializers.CreateAlumnoSerializer(many=True),
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
