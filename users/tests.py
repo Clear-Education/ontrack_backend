@@ -40,7 +40,6 @@ class AuthenticationTests(APITestCase):
             data=new_user,
             format="json",
             HTTP_AUTHORIZATION="Token " + self.token.key,
-
         )
         self.assertEqual(response.status_code, 201)
 
@@ -56,7 +55,6 @@ class AuthenticationTests(APITestCase):
             data=new_user,
             format="json",
             HTTP_AUTHORIZATION="Token " + self.token.key,
-
         )
         self.assertEqual(response.status_code, 400)
 
@@ -64,7 +62,6 @@ class AuthenticationTests(APITestCase):
         response = self.client.get(
             "/api/users/logout/", HTTP_AUTHORIZATION="Token " + self.token.key
         )
-
 
         self.assertEqual(response.status_code, 200)
 
@@ -103,7 +100,6 @@ class PermissionsTests(APITestCase):
             data=new_user,
             format="json",
             HTTP_AUTHORIZATION="Token " + token.key,
-
         )
         self.assertEqual(response.status_code, 403)
 
@@ -171,7 +167,6 @@ class UsersTests(APITestCase):
             Permission.objects.get(name="Can view user")
         )
 
-
         cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
         cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
 
@@ -181,18 +176,21 @@ class UsersTests(APITestCase):
             groups=cls.group_admin,
             institucion=cls.institucion_1,
         )
+        cls.user_admin_1.save()
         cls.user_docente_1 = User.objects.create_user(
             "juan2@juan.com",
             password="password",
             groups=cls.group_docente,
             institucion=cls.institucion_1,
         )
+        cls.user_docente_1.save()
         cls.user_docente_3 = User.objects.create_user(
             "juan3@juan.com",
             password="password",
             groups=cls.group_docente,
             institucion=cls.institucion_1,
         )
+        cls.user_docente_3.save()
 
         cls.user_admin_2 = User.objects.create_user(
             "juan4@juan.com",
@@ -200,19 +198,21 @@ class UsersTests(APITestCase):
             groups=cls.group_admin,
             institucion=cls.institucion_2,
         )
+        cls.user_admin_2.save()
         cls.user_docente_2 = User.objects.create_user(
             "juan5@juan.com",
             password="password",
             groups=cls.group_docente,
             institucion=cls.institucion_2,
         )
+        cls.user_docente_2.save()
         cls.user_docente_4 = User.objects.create_user(
             "juan6@juan.com",
             password="password",
             groups=cls.group_docente,
             institucion=cls.institucion_2,
-
         )
+        cls.user_docente_4.save()
 
     def test_create_user_admin_authenticated(self):
         token = Token.objects.create(user=self.user_admin_1)
@@ -227,7 +227,6 @@ class UsersTests(APITestCase):
             data=new_user,
             format="json",
             HTTP_AUTHORIZATION="Token " + token.key,
-
         )
         self.assertEqual(response.status_code, 201)
 
@@ -298,7 +297,7 @@ class UsersTests(APITestCase):
             "/api/users/list/", HTTP_AUTHORIZATION="Token " + token.key,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(len(response.data["results"]), 3)
         self.assertEqual(len(response.data), 4)
 
     def test_destroy_user_docente(self):
@@ -331,60 +330,60 @@ class UsersTests(APITestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    # def test_get_user_admin_correct(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     response = self.client.get(
-    #         "/api/users/13/", HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertDictContainsSubset({"id": 13}, response.data)
-    #     self.assertEqual(response.status_code, 200)
+    def test_get_user_admin_correct(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        response = self.client.get(
+            f"/api/users/{self.user_docente_1.id}/",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertDictContainsSubset(
+            {"id": self.user_docente_1.id}, response.data
+        )
 
-    # def test_status_user_admin_correct(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     estado = {"is_active": "false"}
-    #     response = self.client.patch(
-    #         "/api/users/13/status/",
-    #         data=estado,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 200)
+    def test_status_user_admin_correct(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        estado = {"is_active": "false"}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_1.id}/status/",
+            data=estado,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 200)
 
-    # def test_status_user_admin_incorrect(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     estado = {"is_active": "false"}
-    #     response = self.client.patch(
-    #         "/api/users/11/status/",
-    #         data=estado,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 400)
+    def test_status_user_admin_incorrect(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        estado = {"is_active": "false"}
+        response = self.client.patch(
+            f"/api/users/{self.user_admin_1.id}/status/",
+            data=estado,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 400)
 
-    # def test_status_user_admin_redundant(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     estado = {"is_active": "true"}
-    #     response = self.client.patch(
-    #         "/api/users/12/status/",
-    #         data=estado,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 202)
-    """
-    Conjunto de tests fallidos a revisar (27/07)
-    """
-    # def test_status_user_admin_bad_request(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     estado = {"is_active": ""}
-    #     response = self.client.patch(
-    #         "/api/users/13/status/",
-    #         data=estado,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 400)
+    def test_status_user_admin_redundant(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        estado = {"is_active": "true"}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_1.id}/status/",
+            data=estado,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 202)
 
+    def test_status_user_admin_bad_request(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        estado = {"is_active": ""}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_1.id}/status/",
+            data=estado,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_status_user_docente(self):
         token = Token.objects.create(user=self.user_docente_1)
@@ -397,103 +396,100 @@ class UsersTests(APITestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    # def test_status_user_admin_other_institution(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     estado = {"is_active": "true"}
-    #     response = self.client.patch(
-    #         "/api/users/15/status/",
-    #         data=estado,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 404)
+    def test_status_user_admin_other_institution(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        estado = {"is_active": "true"}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_2.id}/status/",
+            data=estado,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 404)
 
-    # def test_update_user_admin_not_existing_user(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     data = {"email": "hola@hola.com"}
-    #     response = self.client.patch(
-    #         "/api/users/25/",
-    #         data=data,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 404)
+    def test_update_user_admin_not_existing_user(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        data = {"email": "hola@hola.com"}
+        response = self.client.patch(
+            "/api/users/200/",
+            data=data,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 404)
 
-    # def test_update_user_admin_self(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     data = {"email": "hola@hola.com"}
-    #     response = self.client.patch(
-    #         "/api/users/11/",
-    #         data=data,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 200)
+    def test_update_user_admin_self(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        data = {"email": "hola@hola.com"}
+        response = self.client.patch(
+            f"/api/users/{self.user_admin_1.id}/",
+            data=data,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 200)
 
-    # def test_update_user_admin_other(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     data = {"email": "hola2@hola.com"}
-    #     response = self.client.patch(
-    #         "/api/users/12/",
-    #         data=data,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 200)
+    def test_update_user_admin_other(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        data = {"email": "hola2@hola.com"}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_1.id}/",
+            data=data,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 200)
 
-    # def test_update_user_admin_other_institucion(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     data = {"email": "hola3@hola.com"}
-    #     response = self.client.patch(
-    #         "/api/users/15/",
-    #         data=data,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 400)
+    def test_update_user_admin_other_institucion(self):
+        token = Token.objects.create(user=self.user_admin_1)
+        data = {"email": "hola3@hola.com"}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_4.id}/",
+            data=data,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 404)
 
-    # def test_update_user_admin_other_not_active(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     data = {"email": "hola4@hola.com"}
-    #     response = self.client.patch(
-    #         "/api/users/13/",
-    #         data=data,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 400)
+    def test_update_user_admin_other_not_active(self):
+        token = Token.objects.create(user=self.user_admin_1)
 
-    # def test_update_user_admin_other_not_active(self):
-    #     token = Token.objects.create(user=self.user_admin_1)
-    #     data = {"email": "juan4@juan.com"}
-    #     response = self.client.patch(
-    #         "/api/users/12/",
-    #         data=data,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 400)
+        estado = {"is_active": "false"}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_3.id}/status/",
+            data=estado,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
 
-    # def test_update_user_docente_self(self):
-    #     token = Token.objects.create(user=self.user_docente_1)
-    #     data = {"email": "hola7@hola.com"}
-    #     response = self.client.patch(
-    #         "/api/users/12/",
-    #         data=data,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 200)
+        data = {"email": "hola4@hola.com"}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_3.id}/",
+            data=data,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 400)
 
-    # def test_update_user_docente_self(self):
-    #     token = Token.objects.create(user=self.user_docente_1)
-    #     data = {"email": "hola8@hola.com"}
-    #     response = self.client.patch(
-    #         "/api/users/13/",
-    #         data=data,
-    #         format="json",
-    #         HTTP_AUTHORIZATION="Token " + token.key,
-    #     )
-    #     self.assertEqual(response.status_code, 403)
+    def test_update_user_docente_self(self):
+        token = Token.objects.create(user=self.user_docente_1)
+        data = {"email": "hola7@hola.com"}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_1.id}/",
+            data=data,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 200)
 
+    def test_update_user_docente_other(self):
+        token = Token.objects.create(user=self.user_docente_1)
+        data = {"email": "hola8@hola.com"}
+        response = self.client.patch(
+            f"/api/users/{self.user_docente_3.id}/",
+            data=data,
+            format="json",
+            HTTP_AUTHORIZATION="Token " + token.key,
+        )
+        self.assertEqual(response.status_code, 403)
 
