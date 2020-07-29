@@ -28,6 +28,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+CORS_ORIGIN_ALLOW_ALL = True
+
 ALLOWED_HOSTS = []
 
 DATE_INPUT_FORMAT = ["%d/%m/%Y"]
@@ -75,6 +77,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+
 ROOT_URLCONF = "ontrack.urls"
 
 TEMPLATES = [
@@ -97,7 +100,7 @@ WSGI_APPLICATION = "ontrack.wsgi.application"
 
 
 # Database
-# https://docs.djangoproject.com/en/3.0/ref/settings/#databases
+
 
 DATABASES = {
     "default": {
