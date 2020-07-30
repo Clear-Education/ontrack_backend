@@ -291,7 +291,7 @@ class AlumnoCursoViewSet(ModelViewSet):
             if (
                 len(
                     AlumnoCurso.objects.filter(
-                        alumno=alumno, anio_lectivo=anio_lectivo
+                        alumno__exact=alumno, anio_lectivo__exact=anio_lectivo
                     )
                 )
                 != 0

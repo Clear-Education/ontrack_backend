@@ -17,11 +17,8 @@ class CreateAsistenciaSerializer(serializers.ModelSerializer):
     )
     asistio = serializers.FloatField(required=True)
     descripcion = serializers.CharField(required=False)
-    alumno = serializers.PrimaryKeyRelatedField(
-        queryset=Alumno.objects.all(), many=False, required=True
-    )
-    anio_lectivo = serializers.PrimaryKeyRelatedField(
-        queryset=AnioLectivo.objects.all(), many=False, required=True
+    alumno_curso = serializers.PrimaryKeyRelatedField(
+        queryset=AlumnoCurso.objects.all(), many=False, required=True
     )
 
     class Meta:
@@ -30,15 +27,18 @@ class CreateAsistenciaSerializer(serializers.ModelSerializer):
             "fecha",
             "asistio",
             "descripcion",
-            "alumno",
-            "anio_lectivo",
+            "alumno_curso",
         ]
+
+    def validate_asistio(self, value):
+        if not (0 <= value <= 1):
+            raise serializers.ValidationError(
+                "El valor del campo asistencia solo puede estar entre 0 y 1"
+            )
+        return value
 
 
 class ViewAsistenciaSerializer(serializers.ModelSerializer):
-    alumno = ViewAlumnoSerializer(many=False)
-    anio_lectivo = ViewAnioLectivoSerializer(many=False)
-
     class Meta:
         model = Asistencia
         fields = [
@@ -46,21 +46,16 @@ class ViewAsistenciaSerializer(serializers.ModelSerializer):
             "fecha",
             "asistio",
             "descripcion",
-            "alumno",
-            "anio_lectivo",
+            "alumno_curso",
         ]
 
 
 class AsistenciaAnioLectivoSerializer(serializers.ModelSerializer):
-    alumno = ViewAlumnoSerializer(many=False)
-    anio_lectivo = ViewAnioLectivoSerializer(many=False)
-
     class Meta:
         model = AsistenciaAnioLectivo
         fields = [
             "id",
             "porcentaje",
-            "alumno",
-            "anio_lectivo",
+            "alumno_curso",
         ]
 
