@@ -17,8 +17,12 @@ class AuthenticationTests(APITestCase):
         self.group = Group.objects.create(name="Docente")
         self.group.save()
         self.group.permissions.add(Permission.objects.get(name="Can add user"))
+        self.institucion = Institucion.objects.create(nombre="SNU")
         self.user = User.objects.create_user(
-            "juan@juan.com", password="juan123", groups=self.group
+            "juan@juan.com",
+            password="juan123",
+            groups=self.group,
+            institucion=self.institucion,
         )
 
         self.token = Token.objects.create(user=self.user)

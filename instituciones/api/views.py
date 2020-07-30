@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
+from rest_framework.authtoken.models import Token
 
 
 CREATED_REPONSE = {201: ""}
@@ -92,6 +93,11 @@ class InstitucionViewSet(ModelViewSet):
         )
         if serializer.is_valid():
             serializer.update(institucion, serializer.validated_data)
+            if not serializer.validated_data["activa"]:
+                sessions = Token.objects.filter(
+                    user__institucion_id=institucion.pk
+                )
+                sessions.delete()
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
