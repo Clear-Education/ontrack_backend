@@ -30,9 +30,13 @@ class CustomAuthToken(ObtainAuthToken):
         )
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
-        # TODO : Agregar validacion sobre el estado de su institucion
+        user = User.objects.get(pk=user.pk)
+        if not user.institucion.activa:
+            return Response(status=status.HTTP_404_NOT_FOUND)
         token, created = Token.objects.get_or_create(user=user)
-        return Response({"token": token.key})
+        user.token = token.key
+        response_serializer = serializers.LoginResponseSerializer(user)
+        return Response(data=response_serializer.data)
 
 
 @swagger_auto_schema(
