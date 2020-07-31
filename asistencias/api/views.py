@@ -16,6 +16,7 @@ from alumnos.models import Alumno
 from django.core.validators import validate_integer
 from asistencias.api import serializers
 from asistencias.models import Asistencia, AsistenciaAnioLectivo
+from itertools import chain
 
 
 class AsistenciaViewSet(ModelViewSet):
@@ -27,18 +28,55 @@ class AsistenciaViewSet(ModelViewSet):
 
     @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS},)
     def get(self, request, pk=None):
-        pass
+        asistencia_retrieved = get_object_or_404(Asistencia, pk=pk)
+        if (
+            asistencia_retrieved.alumno_curso.alumno.institucion
+            != request.user.institucion
+        ):
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = serializers.ViewAsistenciaSerializer(asistencia_retrieved)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
     def list(self, request):
         pass
 
     @swagger_auto_schema(
-        request_body=serializers.CreateAsistenciaSerializer,
+        request_body=serializers.UpdateAsistenciaSerializer,
         responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
     def update(self, request, pk=None):
-        pass
+        asistencia_retrieved = get_object_or_404(Asistencia, pk=pk)
+        if (
+            asistencia_retrieved.alumno_curso.alumno.institucion
+            != request.user.institucion
+        ):
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = serializers.UpdateAsistenciaSerializer(data=request.data)
+        if serializer.is_valid():
+            if not serializer.validated_data:
+                return Response(
+                    data={"detail": "Body vacío."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            asistencia_retrieved.asistio = serializer.validated_data.get(
+                "asistio", asistencia_retrieved.asistio
+            )
+            asistencia_retrieved.descripcion = serializer.validated_data.get(
+                "descripcion", asistencia_retrieved.descripcion
+            )
+            asistencia_retrieved.save()
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(
+                data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
     @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
     def destroy(self, request, pk=None):
@@ -49,7 +87,69 @@ class AsistenciaViewSet(ModelViewSet):
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
-        pass
+        serializer = serializers.CreateAsistenciaSerializer(data=request.data)
+        if serializer.is_valid():
+            if (
+                request.user.institucion
+                != serializer.validated_data["alumno_curso"].alumno.institucion
+            ):
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            if serializer.validated_data["fecha"].weekday() >= 5:
+                return Response(
+                    data={
+                        "detail": "No se pueden cargar asistencias para fines de semana"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not (
+                serializer.validated_data[
+                    "alumno_curso"
+                ].anio_lectivo.fecha_desde
+                < serializer.validated_data["fecha"]
+                < serializer.validated_data[
+                    "alumno_curso"
+                ].anio_lectivo.fecha_hasta
+            ):
+                return Response(
+                    data={
+                        "detail": "La fecha especificada no se encuentra dentro del Año Lectivo"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            asistencias_existentes = Asistencia.objects.filter(
+                fecha__exact=serializer.validated_data["fecha"],
+                alumno_curso__id__exact=serializer.validated_data[
+                    "alumno_curso"
+                ].id,
+            )
+            if len(asistencias_existentes) != 0:
+                return Response(
+                    data={
+                        "detail": "Ya existen una asistencia cargada para el alumno en el día especificado. Se debe modificar o borrar dicha asistencia"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            serializer.save()
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            for value in serializer.errors.values():
+                if value and any(
+                    [
+                        True if a.code == "does_not_exist" else False
+                        for a in value
+                    ]
+                ):
+                    return Response(
+                        data={"detail": "No encontrado."},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+
+            return Response(
+                data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
     @swagger_auto_schema(
         request_body=serializers.CreateAsistenciaSerializer(many=True),
@@ -63,6 +163,15 @@ class AsistenciaViewSet(ModelViewSet):
             if len(serializer.validated_data) == 0:
                 return Response(
                     data={"detail": "No se recibió ninguna información"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if len(
+                set([a.get("alumno_curso") for a in serializer.validated_data])
+            ) != len(serializer.validated_data):
+                return Response(
+                    data={
+                        "detail": "No se pueden repetir alumnos en una misma llamada"
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if (
@@ -133,15 +242,27 @@ class AsistenciaViewSet(ModelViewSet):
             if len(asistencias_existentes) != 0:
                 return Response(
                     data={
-                        "detail": """
-                        Ya existen asistencias cargadas para algun alumno de los listados en el día especificado. 
-                        Se debe modificar o borrar dicha asistencia"""
+                        "detail": "Ya existen asistencias cargadas para algun alumno de los listados en el día especificado. Se debe modificar o borrar dicha asistencia"
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             serializer.save()
             return Response(status=status.HTTP_201_CREATED)
         else:
+            values = [a.values() for a in serializer.errors]
+            for value in values:
+                value = list(chain(*value))
+                if value and any(
+                    [
+                        True if a.code == "does_not_exist" else False
+                        for a in value
+                    ]
+                ):
+                    return Response(
+                        data={"detail": "No encontrado."},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+
             return Response(
                 data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )

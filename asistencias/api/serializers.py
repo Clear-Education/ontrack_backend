@@ -38,6 +38,25 @@ class CreateAsistenciaSerializer(serializers.ModelSerializer):
         return value
 
 
+class UpdateAsistenciaSerializer(serializers.ModelSerializer):
+    asistio = serializers.FloatField(required=False)
+    descripcion = serializers.CharField(required=False)
+
+    class Meta:
+        model = Asistencia
+        fields = [
+            "asistio",
+            "descripcion",
+        ]
+
+    def validate_asistio(self, value):
+        if not (0 <= value <= 1):
+            raise serializers.ValidationError(
+                "El valor del campo asistencia solo puede estar entre 0 y 1"
+            )
+        return value
+
+
 class ViewAsistenciaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Asistencia

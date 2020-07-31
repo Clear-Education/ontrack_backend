@@ -145,7 +145,7 @@ class AlumnoTests(APITestCase):
             dni=3,
             nombre="Alumno",
             apellido="3",
-            institucion=cls.institucion_1,
+            institucion=cls.institucion_2,
         )
         cls.alumno_3.save()
 
@@ -190,6 +190,36 @@ class AlumnoTests(APITestCase):
             anio_lectivo=cls.anio_lectivo_3,
         )
         cls.alumno_curso_6.save()
+
+        cls.asistencia_1 = Asistencia.objects.create(
+            fecha="2019-11-15",
+            asistio=1,
+            descripcion="Hola",
+            alumno_curso=cls.alumno_curso_1,
+        )
+        cls.asistencia_1.save()
+
+        cls.asistencia_2 = Asistencia.objects.create(
+            fecha="2019-11-22", asistio=0, alumno_curso=cls.alumno_curso_1,
+        )
+        cls.asistencia_2.save()
+
+        cls.asistencia_3 = Asistencia.objects.create(
+            fecha="2019-11-22", asistio=1, alumno_curso=cls.alumno_curso_3,
+        )
+        cls.asistencia_3.save()
+
+        cls.asistencia_4 = Asistencia.objects.create(
+            fecha="2021-01-05",
+            asistio=1,
+            descripcion="Otra inst",
+            alumno_curso=cls.alumno_curso_6,
+        )
+        cls.asistencia_4.save()
+
+    #############
+    #  CREATE + #
+    #############
 
     def test_create_multiple_asistencias_admin(self):
         """
@@ -293,4 +323,460 @@ class AlumnoTests(APITestCase):
             response.data.get("detail"),
             "No se pueden cargar asistencias para cursos distintos al mismo tiempo",
         )
+
+    def test_create_multiple_asistencias_de_otra_institucion(self):
+        """
+        Test de creacion de Asistencias de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "fecha": "01/11/2019",
+                "asistio": 1,
+                "alumno_curso": self.alumno_curso_6.id,
+            },
+        ]
+        response = self.client.post(
+            "/api/asistencias/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data.get("detail"), "No encontrado.",
+        )
+
+    def test_create_multiple_asistencias_no_existente(self):
+        """
+        Test de creacion de Asistencias no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "fecha": "01/11/2019",
+                "asistio": 1,
+                "alumno_curso": self.alumno_curso_1.id,
+            },
+            {"fecha": "01/11/2019", "asistio": 1, "alumno_curso": 250,},
+        ]
+        response = self.client.post(
+            "/api/asistencias/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data.get("detail"), "No encontrado.",
+        )
+
+    def test_create_multiple_asistencias_rango_incorrecto(self):
+        """
+        Test de creacion de Asistencias con asistio en rango incorrecto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "fecha": "01/11/2019",
+                "asistio": 0,
+                "alumno_curso": self.alumno_curso_1.id,
+            },
+            {
+                "fecha": "01/11/2019",
+                "asistio": -1,
+                "alumno_curso": self.alumno_curso_3.id,
+            },
+        ]
+        response = self.client.post(
+            "/api/asistencias/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            str(response.data[1].get("asistio")[0]),
+            "El valor del campo asistencia solo puede estar entre 0 y 1",
+        )
+
+    def test_create_multiple_asistencias_distintas_fechas(self):
+        """
+        Test de creacion de Asistencias con distintas fechas
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "fecha": "01/11/2019",
+                "asistio": 0,
+                "alumno_curso": self.alumno_curso_1.id,
+            },
+            {
+                "fecha": "08/11/2019",
+                "asistio": 1,
+                "alumno_curso": self.alumno_curso_3.id,
+            },
+        ]
+        response = self.client.post(
+            "/api/asistencias/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data.get("detail"),
+            "No se pueden cargar asistencias para distintas fechas al mismo tiempo",
+        )
+
+    def test_create_multiple_asistencias_alumno_curso_repetido(self):
+        """
+        Test de creacion de Asistencias con alumno_curso repetido
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "fecha": "01/11/2019",
+                "asistio": 0,
+                "alumno_curso": self.alumno_curso_1.id,
+            },
+            {
+                "fecha": "01/11/2019",
+                "asistio": 1,
+                "alumno_curso": self.alumno_curso_1.id,
+            },
+        ]
+        response = self.client.post(
+            "/api/asistencias/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data.get("detail"),
+            "No se pueden repetir alumnos en una misma llamada",
+        )
+
+    def test_create_multiple_asistencias_fecha_fuera_rango(self):
+        """
+        Test de creacion de Asistencias con fecha fuera de rango
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "fecha": "30/07/2020",
+                "asistio": 0,
+                "alumno_curso": self.alumno_curso_1.id,
+            },
+            {
+                "fecha": "30/07/2020",
+                "asistio": 1,
+                "alumno_curso": self.alumno_curso_3.id,
+            },
+        ]
+        response = self.client.post(
+            "/api/asistencias/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data.get("detail"),
+            "La fecha especificada no se encuentra dentro del Año Lectivo",
+        )
+
+    def test_create_multiple_asistencias_fecha_fin_de_semana(self):
+        """
+        Test de creacion de Asistencias con fecha fin de semana
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "fecha": "02/11/2019",
+                "asistio": 0,
+                "alumno_curso": self.alumno_curso_1.id,
+            },
+            {
+                "fecha": "02/11/2019",
+                "asistio": 1,
+                "alumno_curso": self.alumno_curso_3.id,
+            },
+        ]
+        response = self.client.post(
+            "/api/asistencias/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data.get("detail"),
+            "No se pueden cargar asistencias para fines de semana",
+        )
+
+    def test_create_multiple_asistencias_ya_existente(self):
+        """
+        Test de creacion de Asistencias con asistencia ya existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = [
+            {
+                "fecha": "01/11/2019",
+                "asistio": 0,
+                "alumno_curso": self.alumno_curso_1.id,
+            },
+            {
+                "fecha": "01/11/2019",
+                "asistio": 1,
+                "alumno_curso": self.alumno_curso_3.id,
+            },
+        ]
+        response = self.client.post(
+            "/api/asistencias/multiple/", data, format="json"
+        )
+        response = self.client.post(
+            "/api/asistencias/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data.get("detail"),
+            "Ya existen asistencias cargadas para algun alumno de los listados en el día especificado. Se debe modificar o borrar dicha asistencia",
+        )
+
+    #############
+    #   CREATE  #
+    #############
+
+    def test_create_asistencia_admin(self):
+        """
+        Test de creacion correcta de Asistencia por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "fecha": "01/11/2019",
+            "asistio": 1,
+            "alumno_curso": self.alumno_curso_1.id,
+        }
+        response = self.client.post("/api/asistencias/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_asistencia_docente(self):
+        """
+        Test de creacion de Asistencia por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        data = {
+            "fecha": "01/11/2019",
+            "asistio": 1,
+            "alumno_curso": self.alumno_curso_1.id,
+        }
+        response = self.client.post("/api/asistencias/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_campos_faltantes(self):
+        """
+        Test de creacion de Asistencia con campos faltantes
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "asistio": 1,
+            "alumno_curso": self.alumno_curso_3.id,
+        }
+
+        response = self.client.post("/api/asistencias/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data.get("fecha")[0].code, "required")
+
+    def test_create_asistencia_de_otra_institucion(self):
+        """
+        Test de creacion de Asistencia de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "fecha": "01/11/2019",
+            "asistio": 1,
+            "alumno_curso": self.alumno_curso_6.id,
+        }
+        response = self.client.post("/api/asistencias/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data.get("detail"), "No encontrado.",
+        )
+
+    def test_create_asistencia_no_existente(self):
+        """
+        Test de creacion de Asistencia no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "fecha": "01/11/2019",
+            "asistio": 1,
+            "alumno_curso": 250,
+        }
+
+        response = self.client.post("/api/asistencias/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data.get("detail"), "No encontrado.",
+        )
+
+    def test_create_asistencia_rango_incorrecto(self):
+        """
+        Test de creacion de Asistencia con asistio en rango incorrecto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "fecha": "01/11/2019",
+            "asistio": -1,
+            "alumno_curso": self.alumno_curso_3.id,
+        }
+        response = self.client.post("/api/asistencias/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            str(response.data.get("asistio")[0]),
+            "El valor del campo asistencia solo puede estar entre 0 y 1",
+        )
+
+    def test_create_asistencia_fecha_fuera_rango(self):
+        """
+        Test de creacion de Asistencia con fecha fuera de rango
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "fecha": "30/07/2020",
+            "asistio": 0,
+            "alumno_curso": self.alumno_curso_1.id,
+        }
+        response = self.client.post("/api/asistencias/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data.get("detail"),
+            "La fecha especificada no se encuentra dentro del Año Lectivo",
+        )
+
+    def test_create_asistencia_fecha_fin_de_semana(self):
+        """
+        Test de creacion de Asistencia con fecha fin de semana
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "fecha": "02/11/2019",
+            "asistio": 0,
+            "alumno_curso": self.alumno_curso_1.id,
+        }
+        response = self.client.post("/api/asistencias/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data.get("detail"),
+            "No se pueden cargar asistencias para fines de semana",
+        )
+
+    def test_create_asistencia_ya_existente(self):
+        """
+        Test de creacion de Asistencia con asistencia ya existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "fecha": "01/11/2019",
+            "asistio": 0,
+            "alumno_curso": self.alumno_curso_1.id,
+        }
+        response = self.client.post("/api/asistencias/", data, format="json")
+        response = self.client.post("/api/asistencias/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data.get("detail"),
+            "Ya existen una asistencia cargada para el alumno en el día especificado. Se debe modificar o borrar dicha asistencia",
+        )
+
+    #############
+    #    GET    #
+    #############
+
+    def test_get_asistencia_admin(self):
+        """
+        Test de obtención de Asistencia por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(f"/api/asistencias/{self.asistencia_1.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("id"), self.asistencia_1.id)
+
+    def test_get_asistencia_docente(self):
+        """
+        Test de obtención de Asistencia por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        response = self.client.get(f"/api/asistencias/{self.asistencia_1.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("id"), self.asistencia_1.id)
+
+    def test_get_asistencia_otra_institucion(self):
+        """
+        Test de obtención de Asistencia de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(f"/api/asistencias/{self.asistencia_4.id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_asistencia_no_existente(self):
+        """
+        Test de obtención de Asistencia no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get("/api/asistencias/265/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    #############
+    #   UPDATE  #
+    #############
+
+    def test_update_asistencia_admin(self):
+        """
+        Test de modificacion de Asistencia por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "asistio": 1,
+            "descripcion": "cambiado",
+        }
+        response = self.client.patch(
+            f"/api/asistencias/{self.asistencia_1.id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_asistencia_docente(self):
+        """
+        Test de modificacion de Asistencia por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        data = {
+            "asistio": 1,
+            "descripcion": "cambiado",
+        }
+        response = self.client.patch(
+            f"/api/asistencias/{self.asistencia_1.id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_asistencia_otra_institucion(self):
+        """
+        Test de modificacion de Asistencia de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "asistio": 1,
+            "descripcion": "cambiado",
+        }
+        response = self.client.patch(
+            f"/api/asistencias/{self.asistencia_4.id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_asistencia_no_existente(self):
+        """
+        Test de modificacion de Asistencia no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {
+            "asistio": 1,
+            "descripcion": "cambiado",
+        }
+        response = self.client.patch(
+            "/api/asistencias/500/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_asistencia_vacio(self):
+        """
+        Test de modificacion de Asistencia no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = {}
+        response = self.client.patch(
+            f"/api/asistencias/{self.asistencia_1.id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "Body vacío.")
 
