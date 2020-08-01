@@ -4,7 +4,10 @@ from curricula.api.serializers.anio import CursoSerializer
 from curricula.api.serializers.anio_lectivo import ViewAnioLectivoSerializer
 from instituciones.models import Institucion
 from alumnos.models import Alumno, AlumnoCurso
-from alumnos.api.serializers import ViewAlumnoSerializer
+from alumnos.api.serializers import (
+    ViewAlumnoSerializer,
+    ViewAlumnoCursoSerializer,
+)
 from curricula.models import Curso, AnioLectivo
 from asistencias.models import Asistencia, AsistenciaAnioLectivo
 from ontrack import settings
@@ -58,6 +61,8 @@ class UpdateAsistenciaSerializer(serializers.ModelSerializer):
 
 
 class ViewAsistenciaSerializer(serializers.ModelSerializer):
+    alumno_curso = ViewAlumnoCursoSerializer(many=False)
+
     class Meta:
         model = Asistencia
         fields = [

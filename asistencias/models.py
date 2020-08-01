@@ -21,6 +21,10 @@ class Asistencia(models.Model):
                 "create_multiple_asistencia",
                 "Puede crear multiples asistencias",
             ),
+            (
+                "destroy_curso_dia_asistencia",
+                "Puede borrar multiples asistencias",
+            ),
         ]
 
 

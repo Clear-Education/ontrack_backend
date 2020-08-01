@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.utils.serializer_helpers import ReturnList
 
 # Create your tests here.
-class AlumnoTests(APITestCase):
+class AsistenciaTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
         """
@@ -779,4 +779,274 @@ class AlumnoTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["detail"], "Body vacío.")
+
+    #############
+    #   DELETE  #
+    #############
+
+    def test_delete_asistencia_admin(self):
+        """
+        Test de borrado de Asistencia por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.delete(
+            f"/api/asistencias/{self.asistencia_1.id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_asistencia_docente(self):
+        """
+        Test de borrado de Asistencia por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        response = self.client.delete(
+            f"/api/asistencias/{self.asistencia_1.id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_asistencia_inexistente(self):
+        """
+        Test de borrado de Asistencia inexistente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.delete("/api/asistencias/500/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_asistencia_otra_institucion(self):
+        """
+        Test de borrado de Asistencia de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.delete(
+            f"/api/asistencias/{self.asistencia_4.id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    #############
+    #  DELETE+  #
+    #############
+
+    def test_delete_multiple_asistencias_admin(self):
+        """
+        Test de borrado multiple de Asistencias por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        current_asistencias = Asistencia.objects.count()
+        response = self.client.delete(
+            f"/api/asistencias/multiple/?fecha_desde=15-11-2019&curso={self.curso_1.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Asistencia.objects.count(), current_asistencias - 1)
+
+    def test_delete_multiple_asistencias_docente(self):
+        """
+        Test de borrado multiple de Asistencias por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        current_asistencias = Asistencia.objects.count()
+        response = self.client.delete(
+            f"/api/asistencias/multiple/?fecha_desde=15-11-2019&curso={self.curso_1.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(Asistencia.objects.count(), current_asistencias)
+
+    def test_delete_multiple_asistencias_rango_de_fechas(self):
+        """
+        Test de borrado multiple de Asistencias entre un rango de fechas
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        current_asistencias = Asistencia.objects.count()
+        response = self.client.delete(
+            f"/api/asistencias/multiple/?fecha_desde=15-11-2019&fecha_hasta=22-11-2019&curso={self.curso_1.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Asistencia.objects.count(), current_asistencias - 2)
+
+    def test_delete_multiple_asistencias_curso_otra_institucion(self):
+        """
+        Test de borrado multiple de Asistencias de un curso de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        current_asistencias = Asistencia.objects.count()
+        response = self.client.delete(
+            f"/api/asistencias/multiple/?fecha_desde=15-11-2019&fecha_hasta=22-11-2019&curso={self.curso_3.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(Asistencia.objects.count(), current_asistencias)
+
+    def test_delete_multiple_asistencias_curso_no_existente(self):
+        """
+        Test de borrado multiple de Asistencias de un curso no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        current_asistencias = Asistencia.objects.count()
+        response = self.client.delete(
+            f"/api/asistencias/multiple/?fecha_desde=15-11-2019&fecha_hasta=22-11-2019&curso=250"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(Asistencia.objects.count(), current_asistencias)
+
+    def test_delete_multiple_asistencias_fechas_invalidas(self):
+        """
+        Test de borrado multiple de Asistencias con fechas inválidas
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        current_asistencias = Asistencia.objects.count()
+        response = self.client.delete(
+            f"/api/asistencias/multiple/?fecha_desde=22-11-2019&fecha_hasta=15-11-2019&curso={self.curso_1.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Asistencia.objects.count(), current_asistencias)
+        self.assertEqual(
+            response.data["detail"], "Las fechas ingresadas son inválidas"
+        )
+
+    def test_delete_multiple_asistencias_fechas_mal_escritas(self):
+        """
+        Test de borrado multiple de Asistencias con fechas mal escritas
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        current_asistencias = Asistencia.objects.count()
+        response = self.client.delete(
+            f"/api/asistencias/multiple/?fecha_desde=1&fecha_hasta=15-11-2019&curso={self.curso_1.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Asistencia.objects.count(), current_asistencias)
+        self.assertEqual(
+            response.data["detail"],
+            "La fecha ingresada no está correctamente expresada",
+        )
+
+    #############
+    #   LIST    #
+    #############
+
+    def test_list_asistencias_curso_una_fecha(self):
+        """
+        Test de listado de Asistencias curso con una fecha
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/list/?curso={self.curso_1.id}&fecha_desde=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("count"), 1)
+
+    def test_list_asistencias_curso_rango_fechas(self):
+        """
+        Test de listado de Asistencias curso con un rango de fechas
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/list/?curso={self.curso_1.id}&fecha_desde=15-11-2019&fecha_hasta=22-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("count"), 3)
+
+    def test_list_asistencias_alumno_curso_una_fecha(self):
+        """
+        Test de listado de Asistencias alumnocurso con una fecha
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/list/?alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("count"), 1)
+
+    def test_list_asistencias_alumno_curso_rango_fechas(self):
+        """
+        Test de listado de Asistencias alumnocurso con un rango de fechas
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/list/?alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-11-2019&fecha_hasta=22-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get("count"), 2)
+
+    def test_list_asistencias_curso_y_alumno_curso(self):
+        """
+        Test de listado de Asistencias curso y alumno_curso
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/list/?curso={self.curso_1.id}&alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "No se puede listar por curso y por alumno_curso al mismo tiempo",
+        )
+
+    def test_list_asistencias_fechas_invalidas(self):
+        """
+        Test de listado de Asistencias con fechas invalidas
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/list/?curso={self.curso_1.id}&fecha_desde=22-11-2019&fecha_hasta=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "Las fechas ingresadas son inválidas"
+        )
+
+    def test_list_asistencias_fechas_mal_escritas(self):
+        """
+        Test de listado de Asistencias con fechas mal escritas
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/list/?curso={self.curso_1.id}&fecha_desde=1&fecha_hasta=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "La fecha ingresada no está correctamente expresada",
+        )
+
+    def test_list_asistencias_curso_no_existente(self):
+        """
+        Test de listado de Asistencias curso no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            "/api/asistencias/list/?curso=203&fecha_desde=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_list_asistencias_curso_otra_institucion(self):
+        """
+        Test de listado de Asistencias curso de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/list/?curso={self.curso_3.id}&fecha_desde=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_list_asistencias_alumno_curso_no_existente(self):
+        """
+        Test de listado de Asistencias alumnocurso no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            "/api/asistencias/list/?alumno_curso=256&fecha_desde=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_list_asistencias_alumno_curso_otra_institucion(self):
+        """
+        Test de listado de Asistencias alumnocurso de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/list/?alumno_curso={self.alumno_curso_6.id}&fecha_desde=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
 
