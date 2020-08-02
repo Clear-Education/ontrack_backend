@@ -1,5 +1,8 @@
 from django.db import models
 from alumnos.models import AlumnoCurso
+from django.db.models.signals import post_save, post_delete
+from django.core.signals import request_finished
+from django.dispatch import receiver
 
 # Create your models here.
 class Asistencia(models.Model):
@@ -12,7 +15,7 @@ class Asistencia(models.Model):
     )
 
     def __str__(self):
-        return self.alumno.nombre + " " + self.fecha
+        return self.alumno_curso.alumno.nombre + " " + str(self.fecha)
 
     class Meta:
         permissions = [
@@ -36,7 +39,7 @@ class AsistenciaAnioLectivo(models.Model):
     )
 
     def __str__(self):
-        return self.alumno.nombre + " " + self.fecha_creacion
+        return self.alumno_curso.alumno.nombre + " " + str(self.fecha_creacion)
 
     class Meta:
         permissions = [
