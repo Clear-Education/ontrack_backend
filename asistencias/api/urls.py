@@ -11,7 +11,7 @@ urlpatterns = [
     path("<int:pk>/", views.mix_asistencia, name="asistencia-mix"),
     path("list/", views.list_asistencia, name="asistencia-list"),
     path(
-        "stats/hoy/",
+        "stats/porcentaje/",
         views.hoy_asistencia_anio_lectivo,
         name="asistencia-anio-lectivo-hoy",
     ),

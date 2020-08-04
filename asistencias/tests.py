@@ -6,7 +6,7 @@ from users.models import User, Group
 from instituciones.models import Institucion
 from curricula.models import Carrera, AnioLectivo, Curso, Anio
 from alumnos.models import Alumno, AlumnoCurso
-from asistencias.models import Asistencia, AsistenciaAnioLectivo
+from asistencias.models import Asistencia
 from rest_framework import status
 from rest_framework.utils.serializer_helpers import ReturnList
 
@@ -40,6 +40,11 @@ class AsistenciaTests(APITestCase):
         cls.group_admin.permissions.add(
             Permission.objects.get(name="Puede borrar multiples asistencias")
         )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(
+                name="Puede obtener el porcentaje de asistencias"
+            )
+        )
         cls.group_admin.save()
 
         cls.group_docente = Group.objects.create(name="Docente")
@@ -48,6 +53,11 @@ class AsistenciaTests(APITestCase):
         )
         cls.group_docente.permissions.add(
             Permission.objects.get(name="Can view asistencia")
+        )
+        cls.group_docente.permissions.add(
+            Permission.objects.get(
+                name="Puede obtener el porcentaje de asistencias"
+            )
         )
         cls.group_docente.save()
 
@@ -1175,5 +1185,163 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(
             response.data["detail"],
             "Es necesario ingresar un curso o alumno_curso",
+        )
+
+    #############
+    #   STATS   #
+    #############
+
+    def test_stats_asistencias_rango(self):
+        """
+        Test de stats de Asistencia con rango
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-11-2019&fecha_hasta=22-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["porcentaje"], 0.5)
+
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-11-2019&fecha_hasta=21-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["porcentaje"], 1)
+
+    def test_stats_asistencias_sin_rango(self):
+        """
+        Test de stats de Asistencia sin rango
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["porcentaje"], 0.5)
+
+    def test_stats_asistencias_sin_alumno_curso(self):
+        """
+        Test de stats de Asistencia sin alumno_curso
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get("/api/asistencias/stats/porcentaje/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "Es necesario ingresar un alumno_curso"
+        )
+
+    def test_stats_asistencias_alumno_curso_no_numerico(self):
+        """
+        Test de stats de Asistencia alumno_curso no numerico
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            "/api/asistencias/stats/porcentaje/?alumno_curso=x"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "El valor de alumno_curso no es numérico"
+        )
+
+    def test_stats_asistencias_alumno_curso_no_existente(self):
+        """
+        Test de stats de Asistencia alumno_curso no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            "/api/asistencias/stats/porcentaje/?alumno_curso=500"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_stats_asistencias_alumno_curso_otra_institucion(self):
+        """
+        Test de stats de Asistencia alumno_curso de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_6.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_stats_asistencias_fecha_faltante(self):
+        """
+        Test de stats de Asistencia fecha faltante
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "Es necesario ingresar un rango de fechas"
+        )
+
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}&fecha_hasta=15-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "Es necesario ingresar un rango de fechas"
+        )
+
+    def test_stats_asistencias_fecha_mal_escrita(self):
+        """
+        Test de stats de Asistencia fecha mal escrita
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-13-2019&fecha_hasta=22-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "La fecha ingresada no está correctamente expresada",
+        )
+
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-11-2019&fecha_hasta=x"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "La fecha ingresada no está correctamente expresada",
+        )
+
+    def test_stats_asistencias_fecha_fuera_del_anio_lectivo(self):
+        """
+        Test de stats de Asistencia fecha fuera del anio lectivo
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-11-2018&fecha_hasta=22-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "La fecha_desde no se encuentra en el rango del AnioLectivo",
+        )
+
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}&fecha_desde=15-11-2019&fecha_hasta=22-11-2020"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "La fecha_hasta no se encuentra en el rango del AnioLectivo",
+        )
+
+    def test_stats_asistencias_fechas_conflictivas(self):
+        """
+        Test de stats de Asistencia alumno_curso de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(
+            f"/api/asistencias/stats/porcentaje/?alumno_curso={self.alumno_curso_1.id}&fecha_hasta=15-11-2019&fecha_desde=22-11-2019"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "Las fechas ingresadas son inválidas"
         )
 

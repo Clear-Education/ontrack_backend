@@ -9,7 +9,7 @@ from alumnos.api.serializers import (
     ViewAlumnoCursoSerializer,
 )
 from curricula.models import Curso, AnioLectivo
-from asistencias.models import Asistencia, AsistenciaAnioLectivo
+from asistencias.models import Asistencia
 from ontrack import settings
 import datetime
 
@@ -74,12 +74,13 @@ class ViewAsistenciaSerializer(serializers.ModelSerializer):
         ]
 
 
-class AsistenciaAnioLectivoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AsistenciaAnioLectivo
-        fields = [
-            "id",
-            "porcentaje",
-            "alumno_curso",
-        ]
+class AsistenciaAnioLectivoSerializer(serializers.Serializer):
+    porcentaje = serializers.FloatField()
+    alumno_curso = ViewAlumnoCursoSerializer(many=False)
+    fecha_desde = serializers.DateField(
+        required=False, format=settings.DATE_INPUT_FORMAT[0]
+    )
+    fecha_hasta = serializers.DateField(
+        required=False, format=settings.DATE_INPUT_FORMAT[0]
+    )
 
