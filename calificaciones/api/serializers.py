@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from calificaciones import models
-from curricula.models import Evaluacion
+from curricula.models import Evaluacion, Curso
 from alumnos.models import Alumno, AlumnoCurso
 from ontrack import settings
+from django.shortcuts import get_object_or_404
 
 
 class ViewCalficacionSerializer(serializers.ModelSerializer):
@@ -15,7 +16,7 @@ class ViewCalficacionSerializer(serializers.ModelSerializer):
 class CreateCalificacionSerializer(serializers.ModelSerializer):
     # id = serializers.IntegerField(required=False)
     fecha = serializers.DateField(required=True)
-    puntaje = serializers.FloatField(required=True)
+    puntaje = serializers.FloatField(required=True, max_value=10, min_value=0)
 
     alumno = serializers.PrimaryKeyRelatedField(
         queryset=Alumno.objects.all(), required=True
@@ -111,3 +112,53 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
                 "Los alumnos no pertencen al mismo curso!"
             )
         return data
+
+
+class EditCalificacionSerializer(serializers.ModelSerializer):
+    puntaje = serializers.FloatField(required=False)
+    fecha = serializers.DateField(required=False)
+
+    class Meta:
+        model = models.Calificacion
+        fields = ["puntaje", "fecha"]
+        extra_kwargs = {"fecha": {"input_formats": settings.DATE_INPUT_FORMAT}}
+
+
+class DeleteManyCalificacionSerializer(serializers.Serializer):
+    evaluacion = serializers.PrimaryKeyRelatedField(
+        queryset=Evaluacion.objects.all(), required=True
+    )
+    curso = serializers.PrimaryKeyRelatedField(
+        queryset=Curso.objects.all(), required=True
+    )
+
+    def validate(self, data):
+        """
+        Verificar todo con institucion
+        """
+        institucion = self.context["request"].user.institucion_id
+        get_object_or_404(
+            Evaluacion.objects.filter(
+                anio_lectivo__institucion_id=institucion
+            ),
+            pk=data["evaluacion"].pk,
+        )
+        get_object_or_404(
+            Curso.objects.filter(anio__carrera__institucion_id=institucion),
+            pk=data["curso"].pk,
+        )
+        return data
+
+
+class SinglePromedioSerializer(serializers.Serializer):
+    nombre_materia = serializers.CharField(required=True)
+    promedio = serializers.FloatField(required=True, min_value=0, max_value=10)
+
+
+class PromedioCalificacionSerializer(serializers.Serializer):
+
+    promedios = SinglePromedioSerializer(many=True, required=True)
+    promedio_general = serializers.FloatField(
+        required=False, min_value=0, max_value=10
+    )
+    alumno = serializers.IntegerField(required=True)

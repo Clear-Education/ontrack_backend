@@ -26,7 +26,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         many=False, required=True, queryset=Group.objects.all()
     )
 
-
     class Meta:
         model = User
         fields = [
@@ -48,7 +47,11 @@ class RegistrationSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def save(self, institucion):
-        user = User(email=self.validated_data["email"], groups=self.validated_data["groups"], institucion=institucion,)
+        user = User(
+            email=self.validated_data["email"],
+            groups=self.validated_data["groups"],
+            institucion=institucion,
+        )
         password = self.validated_data["password"]
         password2 = self.validated_data["password2"]
 
@@ -179,7 +182,6 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         style={"input_type": "password",}, write_only=True, required=True
     )
 
-
     class Meta:
         model = User
         fields = ["password", "new_password", "new_password2"]
@@ -209,8 +211,6 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
                     "password": "La nueva contraseña debe ser diferente a la actual!"
                 }
             )
-
-
         user.set_password(new_password)
         user.save()
         return user

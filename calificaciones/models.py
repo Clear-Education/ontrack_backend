@@ -1,5 +1,5 @@
 from django.db import models
-from curricula.models import Evaluacion
+from curricula.models import Evaluacion, Materia, AnioLectivo
 from alumnos.models import Alumno
 
 
@@ -21,4 +21,12 @@ class Calificacion(models.Model):
         permissions = [
             ("list_calificacion", "Puede listar calificaciones"),
             ("create_multiple_calificacion", "Puede listar calificaciones"),
+            (
+                "destroy_multiple_calificacion",
+                "Puede eliminar muchas calificaciones",
+            ),
+            (
+                "promedio_calificacion",
+                "Puede solicitar promedio de calificaciones",
+            ),
         ]
