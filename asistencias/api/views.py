@@ -34,7 +34,75 @@ class AsistenciaViewSet(ModelViewSet):
         200: serializers.AsistenciaAnioLectivoSerializer(many=True)
     }
 
-    @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS},)
+    alumno_curso_parameter = openapi.Parameter(
+        "alumno_curso",
+        openapi.IN_QUERY,
+        description="Id del AlumnoCurso por el que queremos filtrar el listado. Sólo es requerido si no se pasa un curso",
+        type=openapi.TYPE_INTEGER,
+        required=True,
+    )
+
+    curso_parameter = openapi.Parameter(
+        "curso",
+        openapi.IN_QUERY,
+        description="Id del Curso por el que queremos filtrar la búsqueda. Sólo es requerido si no se pasa un alumno_curso",
+        type=openapi.TYPE_INTEGER,
+        required=True,
+    )
+
+    fecha_desde_parameter = openapi.Parameter(
+        "fecha_desde",
+        openapi.IN_QUERY,
+        description="Fecha desde la cual queremos filtrar la búsqueda. En caso de no pasar una fecha_desde, fecha_hasta funciona como una fecha individual",
+        type=openapi.TYPE_STRING,
+        required=True,
+        pattern="DD-MM-YYYY",
+    )
+
+    fecha_hasta_parameter = openapi.Parameter(
+        "fecha_hasta",
+        openapi.IN_QUERY,
+        description="Fecha hasta la cual queremos filtrar la búsqueda.",
+        type=openapi.TYPE_STRING,
+        required=False,
+        pattern="DD-MM-YYYY",
+    )
+
+    alumno_curso_parameter_porcentaje = openapi.Parameter(
+        "alumno_curso",
+        openapi.IN_QUERY,
+        description="Id del AlumnoCurso del cual queremos el porcentaje de asistencias",
+        type=openapi.TYPE_INTEGER,
+        required=True,
+    )
+
+    fecha_desde_parameter_porcentaje = openapi.Parameter(
+        "fecha_desde",
+        openapi.IN_QUERY,
+        description="Fecha desde la cual queremos obtener el porcentaje de asistencias. Puede no pasarse ninguna fecha y se infiere el Año Lectivo completo",
+        type=openapi.TYPE_STRING,
+        required=True,
+        pattern="DD-MM-YYYY",
+    )
+
+    fecha_hasta_parameter_porcentaje = openapi.Parameter(
+        "fecha_hasta",
+        openapi.IN_QUERY,
+        description="Fecha hasta la cual queremos obtener el porcentaje de asistencias. Puede no pasarse ninguna fecha y se infiere el Año Lectivo completo",
+        type=openapi.TYPE_STRING,
+        required=True,
+        pattern="DD-MM-YYYY",
+    )
+
+    @swagger_auto_schema(
+        operation_id="get_asistencia",
+        operation_description="""
+        Obtener una asistencia utilizando su id.
+
+        Se deben ignorar los parámetros limit y offset, ya que no aplican a este endpoint.
+        """,
+        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+    )
     def get(self, request, pk=None):
         asistencia_retrieved = get_object_or_404(Asistencia, pk=pk)
         if (
@@ -48,7 +116,22 @@ class AsistenciaViewSet(ModelViewSet):
         serializer = serializers.ViewAsistenciaSerializer(asistencia_retrieved)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        operation_id="list_asistencias",
+        operation_description="""
+        Listar asistencias de un alumno o un curso completo.
+        Es necesario pasar el parametro de alumno_curso (id) o curso (id), pero no ambos al mismo tiempo.
+        Es necesario también pasar la fecha_desde (si no se pasa fecha_hasta, actúa cómo fecha única).
+        Es opcional pasar el parámetro fecha_hasta.
+        """,
+        manual_parameters=[
+            alumno_curso_parameter,
+            curso_parameter,
+            fecha_desde_parameter,
+            fecha_hasta_parameter,
+        ],
+        responses={**OK_LIST, **responses.STANDARD_ERRORS},
+    )
     def list(self, request):
         queryset = Asistencia.objects.filter(
             alumno_curso__alumno__institucion__exact=request.user.institucion
@@ -160,6 +243,11 @@ class AsistenciaViewSet(ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="update_asistencia",
+        operation_description="""
+        Modificar una asistencia obtenida con su id.
+        No es posible modificar el alumno o la fecha, sólo se puede modificar su valor de asistencia (asistió) y su descripción.
+        """,
         request_body=serializers.UpdateAsistenciaSerializer,
         responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
@@ -193,7 +281,11 @@ class AsistenciaViewSet(ModelViewSet):
                 data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-    @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        operation_id="delete_asistencia",
+        operation_description="Borrado de una audiencia obtenida con el id",
+        responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
+    )
     def destroy(self, request, pk=None):
         retrieved_asistencia = get_object_or_404(Asistencia, pk=pk)
         if (
@@ -205,6 +297,13 @@ class AsistenciaViewSet(ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="create_asistencia",
+        operation_description="""
+        Creación de una asistencia.
+        Es necesario ingresar la fecha, valor de la asistencia (asistio) e id del alumno_curso (alumno_curso).
+        Se utiliza la entidad alumno curso porque permite situar al alumno en un curso en particular, durante un Año Lectivo particular.
+        Se pueden pasar como dato opcional la descripción.
+        """,
         request_body=serializers.CreateAsistenciaSerializer(),
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
@@ -274,6 +373,19 @@ class AsistenciaViewSet(ModelViewSet):
             )
 
     @swagger_auto_schema(
+        operation_id="create_multiple_asistencias",
+        operation_description="""
+        Creación múltiple de asitencias.
+        Los datos necesarios son los mismos que en la creación individual, sólo que obligatoriamente se debe pasar una lista de entidades.
+        Como restricciones tiene:
+            - No se pueden repetir alumnos en la misma carga
+            - No se puede pasar una lista vacía
+            - No se pueden cargar asistencias de cursos distintos al mismo tiempo
+            - No se pueden cargar asistencias para distintas fechas al mismo tiempo
+            - No se pueden cargar asistencias para fines de semana
+            - No se pueden cargar asistencias para fechas fuera del rango del Año Lectivo
+            - No se puede cargar una asistencia si ya existe una asistencia para un alumno_curso de la lista. En este caso se debe borrar o modificar la asistencia a través de otros endpoints.
+        """,
         request_body=serializers.CreateAsistenciaSerializer(many=True),
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
@@ -390,6 +502,19 @@ class AsistenciaViewSet(ModelViewSet):
             )
 
     @swagger_auto_schema(
+        operation_id="delete_multiple_asistencias",
+        operation_description="""
+        Borrado múltiple de asistencias.
+        Como parámetro obligatorio es pasar alumno_curso o curso, pero no ambos al mismo tiempo, ya que el endpoint está diseñado para el borrado de
+        todas las asistencias de un curso o de un alumno.
+        Es necesario pasar por lo menos la fecha_desde, que actúa como fecha única si no se pasa fecha_hasta
+        """,
+        manual_parameters=[
+            alumno_curso_parameter,
+            curso_parameter,
+            fecha_desde_parameter,
+            fecha_hasta_parameter,
+        ],
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def destroy_curso_dia(self, request):
@@ -499,7 +624,21 @@ class AsistenciaViewSet(ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-        responses={**OK_VIEW_PORCENTAJE, **responses.STANDARD_ERRORS}
+        operation_id="get_porcentaje_asistencias",
+        operation_description="""
+        Obtener el porcentaje de asistencias de un alumno en un determinado lapso de tiempo.
+        Es necesario ingresar el alumno_curso, sobre el cual se obtiene el porcentaje calculado desde el inicio al fin del AnioLectivo.
+        Se puede refinar el porcentaje pasando los parámetros fecha_desde y fecha_hasta (con valores dentro del AnioLectivo). En este
+        caso, es necesario pasar ambas fechas, o ninguna.
+
+        Se deben ignorar los parámetros limit y offset, ya que no aplican a este endpoint.
+        """,
+        manual_parameters=[
+            alumno_curso_parameter_porcentaje,
+            fecha_desde_parameter_porcentaje,
+            fecha_hasta_parameter_porcentaje,
+        ],
+        responses={**OK_VIEW_PORCENTAJE, **responses.STANDARD_ERRORS},
     )
     def porcentaje(self, request, pk=None):
         queryset = Asistencia.objects.filter(
