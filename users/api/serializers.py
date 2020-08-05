@@ -87,7 +87,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.cargo = self.validated_data.get("cargo", None)
         user.legajo = self.validated_data.get("legajo", None)
         user.direccion = self.validated_data.get("direccion", None)
-        user.localidad = self.validated_data.get("namlocalidade", None)
+        user.localidad = self.validated_data.get("localidad", None)
         user.provincia = self.validated_data.get("provincia", None)
 
         user.set_password(password)
@@ -96,7 +96,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class EditUserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=False)
+    dni = serializers.IntegerField(required=False)
+    legajo = serializers.IntegerField(required=False)
 
     class Meta:
         model = User
@@ -146,7 +148,9 @@ class EditUserSerializer(serializers.ModelSerializer):
 
 
 class EditOtherUserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=False)
+    dni = serializers.IntegerField(required=False)
+    legajo = serializers.IntegerField(required=False)
 
     class Meta:
         model = User
