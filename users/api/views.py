@@ -21,6 +21,12 @@ from ontrack import responses
 
 class CustomAuthToken(ObtainAuthToken):
     @swagger_auto_schema(
+        operation_id="login",
+        operation_description="""
+        Ingreso al sistema a través de credenciales (email y contraseña).
+        Devuelve un token que debe ser utilizado en todas las llamadas a la API para identificarse.
+        También devuelve la entidad usuario
+        """,
         request_body=serializers.LoginSerializer,
         responses={200: serializers.LoginResponseSerializer},
     )
@@ -36,7 +42,12 @@ class CustomAuthToken(ObtainAuthToken):
 
 
 @swagger_auto_schema(
-    method="get", responses={**responses.STANDARD_ERRORS},
+    operation_id="logout",
+    operation_description="""
+    Desautenticarse en el sistema.
+    """,
+    method="get",
+    responses={**responses.STANDARD_ERRORS},
 )
 @api_view(["GET"])
 @pc([IsAuthenticated])
@@ -46,6 +57,11 @@ def logout(request):
 
 
 @swagger_auto_schema(
+    operation_id="change_password",
+    operation_description="""
+    Cambiar la contraseña de un usuario.
+    Se debe ingresar la contraseña actual y la nueva contraseña repetida por seguridad.
+    """,
     method="patch",
     request_body=serializers.ChangePasswordSerializer,
     responses={200: responses.SuccessDetailSerializer},
@@ -73,13 +89,16 @@ class UsersViewSet(viewsets.ModelViewSet):
     OK_CREATE_USER = {201: ""}
 
     @swagger_auto_schema(
+        operation_id="create_usuario",
+        operation_description="""
+        Creación de un nuevo usuario
+        Se debe pasar obligatoriamente el email, la contraseña (repetida por seguridad) y el grupo (id del grupo o "tipo de cuenta").
+        El mail no puede estar repetido con ningún otro usuario.
+        """,
         request_body=serializers.RegistrationSerializer,
         responses={**OK_CREATE_USER, **responses.STANDARD_ERRORS},
     )
     def create(self, request):
-        """
-        Crear nuevos usuarios
-        """
         institucion = request.user.institucion
         serializer = serializers.RegistrationSerializer(data=request.data)
         data = {}
@@ -91,15 +110,14 @@ class UsersViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
+        operation_id="list_usuarios",
+        operation_description="Listar usuarios de la institución.",
         responses={
             200: serializers.ListUserSerializer(many=True),
             **responses.STANDARD_ERRORS,
-        }
+        },
     )
     def list(self, request):
-        """
-        Listar usuarios
-        """
         queryset = User.objects.filter(
             institucion__exact=request.user.institucion
         )
@@ -113,6 +131,25 @@ class UsersViewSet(viewsets.ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="update_usuario",
+        operation_description="""
+        Modificar un Usuario utilizando su id.
+        En este endpoint se puede modificar el propio usuario que se encuentra logueado u otro de la institución (si se tiene permisos).
+        Los campos a ingresar son:
+        -  email
+        -  name
+        -  phone
+        -  date_of_birth
+        -  picture
+        -  dni
+        -  last_name
+        -  cargo
+        -  legajo
+        -  direccion
+        -  localidad
+        -  provincia
+        -  groups (solo en el caso de editar otro usuario)
+        """,
         request_body=serializers.EditOtherUserSerializer,
         responses={
             200: serializers.ListUserSerializer(many=False),
@@ -120,9 +157,6 @@ class UsersViewSet(viewsets.ModelViewSet):
         },
     )
     def update(self, request, pk=None):
-        """
-        Editar Usuario
-        """
         retrieved_user = get_object_or_404(User, pk=pk)
         if retrieved_user == request.user:
             serializer = serializers.EditUserSerializer(data=request.data)
@@ -180,11 +214,12 @@ class UsersViewSet(viewsets.ModelViewSet):
                 )
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(responses={200: "", **responses.STANDARD_ERRORS})
+    @swagger_auto_schema(
+        operation_id="delete_usuario",
+        operation_description="Borrar un Usuario utilizando su id.",
+        responses={200: "", **responses.STANDARD_ERRORS},
+    )
     def destroy(self, request, pk=None):
-        """
-        Dar de baja a un usuario
-        """
         retrieved_user = get_object_or_404(User, pk=pk)
         if retrieved_user == request.user:
             retrieved_user.delete()
@@ -199,17 +234,21 @@ class UsersViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="change_status_usuario",
+        operation_description="""
+        Modificar el estado de un Usuario utilizando su id.
+        En este endpoint se permite dar de baja al usuario o volverlo a dar de alta.
+        Esto se realiza con el campo is_activo que recibe un booleano que indica el estado en el que se deséa que quede el usuario
+        El usuario dado de baja lógicamente, ya no podrá interactuar con el sistema.
+        """,
         responses={
             202: responses.NotModifiedSerializer,
             200: "",
             **responses.STANDARD_ERRORS,
-        }
+        },
     )
     @action(detail=False, methods=["PATCH"], name="status")
     def status(self, request, pk=None):
-        """
-        Cambiar el estado del usuario
-        """
         retrieved_user = get_object_or_404(User, pk=pk)
         if retrieved_user.institucion != request.user.institucion:
             return Response(
@@ -245,15 +284,18 @@ class UsersViewSet(viewsets.ModelViewSet):
             )
 
     @swagger_auto_schema(
+        operation_id="get_usuario",
+        operation_description="""
+        Obtener un Usuario utilizando su id.
+
+        Se deben ignorar los parámetros limit y offset, ya que no aplican a este endpoint.
+        """,
         responses={
             200: serializers.ListUserSerializer(many=False),
             **responses.STANDARD_ERRORS,
         },
     )
     def get(self, request, pk=None):
-        """
-        Ver usuario
-        """
         retrieved_user = get_object_or_404(User, pk=pk)
         if request.user.institucion == retrieved_user.institucion:
             serializer = serializers.ListUserSerializer(retrieved_user)
@@ -277,23 +319,21 @@ class GroupViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated, permission_required("group")]
 
     @swagger_auto_schema(
+        operation_id="list_grupo",
+        operation_description='Listar los grupos o "Tipo de Cuenta" existentes.',
         responses={200: serializers.GroupSerializer(many=True)},
     )
     def list(self, request):
-        """
-        Ver una lista de todos los grupos que existen
-        """
         queryset = Group.objects.all()
         serializer = serializers.GroupSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @swagger_auto_schema(
-        responses={**OK_GET_GROUP, **responses.STANDARD_ERRORS}
+        operation_id="get_grupo",
+        operation_description='Obtener un Grupo o "Tipo de Cuenta" utilizando su id.',
+        responses={**OK_GET_GROUP, **responses.STANDARD_ERRORS},
     )
     def get(self, request, pk=None):
-        """
-        Ver un grupo en especial
-        """
         queryset = Group.objects.all()
         group = get_object_or_404(queryset, pk=pk)
         serializer = serializers.GroupSerializer(group)

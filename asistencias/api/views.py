@@ -378,13 +378,13 @@ class AsistenciaViewSet(ModelViewSet):
         Creación múltiple de asitencias.
         Los datos necesarios son los mismos que en la creación individual, sólo que obligatoriamente se debe pasar una lista de entidades.
         Como restricciones tiene:
-            - No se pueden repetir alumnos en la misma carga
-            - No se puede pasar una lista vacía
-            - No se pueden cargar asistencias de cursos distintos al mismo tiempo
-            - No se pueden cargar asistencias para distintas fechas al mismo tiempo
-            - No se pueden cargar asistencias para fines de semana
-            - No se pueden cargar asistencias para fechas fuera del rango del Año Lectivo
-            - No se puede cargar una asistencia si ya existe una asistencia para un alumno_curso de la lista. En este caso se debe borrar o modificar la asistencia a través de otros endpoints.
+        -  No se pueden repetir alumnos en la misma carga
+        -  No se puede pasar una lista vacía
+        -  No se pueden cargar asistencias de cursos distintos al mismo tiempo
+        -  No se pueden cargar asistencias para distintas fechas al mismo tiempo
+        -  No se pueden cargar asistencias para fines de semana
+        -  No se pueden cargar asistencias para fechas fuera del rango del Año Lectivo
+        -  No se puede cargar una asistencia si ya existe una asistencia para un alumno_curso de la lista. En este caso se debe borrar o modificar la asistencia a través de otros endpoints.
         """,
         request_body=serializers.CreateAsistenciaSerializer(many=True),
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},

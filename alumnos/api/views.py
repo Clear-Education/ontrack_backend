@@ -24,7 +24,15 @@ class AlumnoViewSet(ModelViewSet):
     OK_LIST = {200: serializers.ViewAlumnoSerializer(many=True)}
     OK_CREATED = {201: ""}
 
-    @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        operation_id="get_alumno",
+        operation_description="""
+        Obtener un Alumno utilizando su id.
+
+        Se deben ignorar los parámetros limit y offset, ya que no aplican a este endpoint.
+        """,
+        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+    )
     def get(self, request, pk=None):
         alumno = get_object_or_404(Alumno, pk=pk)
         if alumno.institucion != request.user.institucion:
@@ -32,7 +40,11 @@ class AlumnoViewSet(ModelViewSet):
         serializer = serializers.ViewAlumnoSerializer(alumno, many=False)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        operation_id="list_alumnos",
+        operation_description="Listar los alumnos de la institucion.",
+        responses={**OK_LIST, **responses.STANDARD_ERRORS},
+    )
     def list(self, request):
         queryset = Alumno.objects.filter(
             institucion__exact=request.user.institucion
@@ -46,6 +58,21 @@ class AlumnoViewSet(ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="update_alumno",
+        operation_description="""
+        Modificar un Alumno utilizando su id.
+        Se pueden modificar los siguientes campos:
+        -  dni (debe estar disponible)
+        -  nombre
+        -  apellido
+        -  email
+        -  legajo
+        -  fecha_nacimiento
+        -  direccion
+        -  localidad
+        -  provincia
+        -  fecha_inscripcion
+        """,
         request_body=serializers.UpdateAlumnoSerializer,
         responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
@@ -87,7 +114,11 @@ class AlumnoViewSet(ModelViewSet):
                 data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-    @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        operation_id="delete_alumno",
+        operation_description="Borrar un Alumno utilizando su id.",
+        responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
+    )
     def destroy(self, request, pk=None):
         retrieved_alumno = get_object_or_404(Alumno, pk=pk)
         if retrieved_alumno.institucion != request.user.institucion:
@@ -96,6 +127,23 @@ class AlumnoViewSet(ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="create_alumnos",
+        operation_description="""
+        Crear varios Alumnos al mismo tiempo.
+        Se debe mandar una lista de objetos, por más que se esté creando sólo un alumno.
+        Los alumnos creados no deben tener DNIs iguales entre ellos ni iguales con alumnos ya existentes.
+        Se pueden modificar los siguientes campos:
+        -  dni (debe estar disponible y es obligatorio)
+        -  nombre (obligatorio)
+        -  apellido (obligatorio)
+        -  email
+        -  legajo
+        -  fecha_nacimiento
+        -  direccion
+        -  localidad
+        -  provincia
+        -  fecha_inscripcion
+        """,
         request_body=serializers.CreateAlumnoSerializer(many=True),
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
@@ -168,7 +216,15 @@ class AlumnoCursoViewSet(ModelViewSet):
         type=openapi.TYPE_INTEGER,
     )
 
-    @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS})
+    @swagger_auto_schema(
+        operation_id="get_alumno_curso",
+        operation_description="""
+        Obtener un AlumnoCurso utilizando su id.
+
+        Se deben ignorar los parámetros limit y offset, ya que no aplican a este endpoint.
+        """,
+        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+    )
     def get(self, request, pk=None):
         alumno_curso = get_object_or_404(AlumnoCurso, pk=pk)
         if alumno_curso.alumno.institucion != request.user.institucion:
@@ -179,6 +235,12 @@ class AlumnoCursoViewSet(ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="list_alumo_curso",
+        operation_description="""
+        Listar los AlumnoCurso de la institución.
+        Se pueden pasar por query params curso (id del curso) y anio_lectivo (id del anio_lectivo).
+        Ninguno de los parámetros es obligatorio y se pueden usar ambos al mismo tiempo para restringir más el listado.
+        """,
         manual_parameters=[anio_lectivo_parameter, curso_parameter],
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
@@ -242,7 +304,11 @@ class AlumnoCursoViewSet(ModelViewSet):
         serializer = serializers.ViewAlumnoCursoSerializer(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS})
+    @swagger_auto_schema(
+        operation_id="delete_alumno_curso",
+        operation_description="Borrar un AlumnoCurso utilizando su id.",
+        responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
+    )
     def destroy(self, request, pk=None):
         retrieved_alumno_curso = get_object_or_404(AlumnoCurso, pk=pk)
         if (
@@ -254,6 +320,15 @@ class AlumnoCursoViewSet(ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="create_alumno_curso",
+        operation_description="""
+        Crear un AlumnoCurso (Asignar un Alumno a un Curso específico para un Año Lectivo).
+        No se puede asignar un alumno a dos cursos distintos en un Año Lectivo.
+        Todos los campos son obligatorios y son:
+        -  alumno (id del alumno)
+        -  curso (id del curso)
+        -  anio_lectivo (id del anio_lectivo)
+        """,
         request_body=serializers.CreateAlumnoCursoSerializer,
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
