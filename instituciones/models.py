@@ -4,10 +4,12 @@ from django.db import models
 class Institucion(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     nombre = models.CharField(max_length=100, null=False, default="")
-    direccion = models.CharField(max_length=250, blank=True)
-    pais = models.CharField(max_length=250, blank=True)
+    direccion = models.CharField(
+        max_length=250, blank=True, verbose_name="Dirección"
+    )
+    pais = models.CharField(max_length=250, blank=True, verbose_name="País")
     identificador = models.CharField(max_length=250, blank=True)
-    descripcion = models.TextField(blank=True)
+    descripcion = models.TextField(blank=True, verbose_name="Descripción")
     logo = models.ImageField(blank=True, null=True)
     activa = models.BooleanField(null=False, default=True)
 
@@ -16,6 +18,7 @@ class Institucion(models.Model):
 
     class Meta:
         ordering = ["fecha_creacion"]
+        verbose_name_plural = "Instituciones"
         permissions = [
             ("status_institucion", "Cambiar el estado Instituciones"),
             ("list_institucion", "Puede listar Instituciones"),

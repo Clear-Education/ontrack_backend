@@ -23,6 +23,11 @@ urlpatterns = [
     path("api/users/", include("users.api.urls")),
     path("api/institucion/", include("instituciones.api.urls")),
     path("api/alumnos/", include("alumnos.api.urls")),
-    path("", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
+    path(
+        "",
+        schema_view.with_ui("swagger", cache_timeout=0),
+        name="schema-swagger-ui",
+    ),
     path("api/", include("curricula.api.urls")),
+    path("api/asistencias/", include("asistencias.api.urls")),
 ]

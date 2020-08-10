@@ -17,7 +17,15 @@ class AnioLectivoViewSet(ModelViewSet):
     OK_LIST = {200: serializers.ViewAnioLectivoSerializer(many=True)}
     OK_CREATED = {201: ""}
 
-    @swagger_auto_schema(responses={**OK_VIEW, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        operation_id="get_anio_lectivo",
+        operation_description="""
+        Obtener un Año Lectivo utilizando su id.
+
+        Se deben ignorar los parámetros limit y offset, ya que no aplican a este endpoint.
+        """,
+        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+    )
     def get(self, request, pk=None):
         anio_lectivo = get_object_or_404(AnioLectivo, pk=pk)
         if anio_lectivo.institucion != request.user.institucion:
@@ -25,7 +33,15 @@ class AnioLectivoViewSet(ModelViewSet):
         serializer = serializers.ViewAnioLectivoSerializer(anio_lectivo)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        operation_id="list_anio_lectivo",
+        operation_description="""
+        Listar las asistencia de una institucion.
+
+        Se deben ignorar los parámetros limit y offset, ya que no aplican a este endpoint.
+        """,
+        responses={**OK_LIST, **responses.STANDARD_ERRORS},
+    )
     def list(self, request):
         anio_lectivo_list = AnioLectivo.objects.filter(
             institucion__exact=request.user.institucion
@@ -36,6 +52,13 @@ class AnioLectivoViewSet(ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="update_anio_lectivo",
+        operation_description="""
+        Modificar un Año Lectivo utilizando su id.
+        Sólo se puede modificar el nombre, su fecha_desde y fecha_hasta, siempre y cuando la fecha desde venga después de la fecha hasta, 
+        y no interfiera con otros Años Lectivos de la institucion (no pueden estar superpuestos por fechas).
+        Tampoco puede ser modificado si en su rango de fechas actual, el año lectivo ya comenzó o pasó completamente.
+        """,
         request_body=serializers.EditAnioLectivoSerializer,
         responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
@@ -94,7 +117,11 @@ class AnioLectivoViewSet(ModelViewSet):
                 data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-    @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        operation_id="delete_anio_lectivo",
+        operation_description="Borrar un Año Lectivo utilizando su id.",
+        responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
+    )
     def destroy(self, request, pk=None):
         anio_lectivo = get_object_or_404(AnioLectivo, pk=pk)
         if anio_lectivo.institucion != request.user.institucion:
@@ -103,6 +130,12 @@ class AnioLectivoViewSet(ModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        operation_id="create_anio_lectivo",
+        operation_description="""
+        Crear un Año Lectivo.
+        Los campos a ingresar son: nombre, fecha_desde y fecha_hasta. Todos son obligatorios.
+        No se pueden crear dos Años Lectivos con el mismo nombre, ni con fechas superpuestas.
+        """,
         request_body=serializers.AnioLectivoSerializer,
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
