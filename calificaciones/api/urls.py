@@ -19,4 +19,9 @@ urlpatterns = [
         views.promedio_calificaciones,
         name="calificaciones-promedio",
     ),
+    path(
+        "stats/nota-final/",
+        views.notafinal_calificaciones,
+        name="calificaciones-notafinal",
+    ),
 ]

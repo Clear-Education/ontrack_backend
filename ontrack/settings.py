@@ -57,7 +57,7 @@ INSTALLED_APPS = [
     "instituciones",
     "curricula",
     "alumnos",
-    "calificaciones"
+    "calificaciones",
 ]
 
 REST_FRAMEWORK = {
@@ -69,6 +69,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     "PAGE_SIZE": 100,
+    "NON_FIELD_ERRORS_KEY": "detail",
 }
 
 MIDDLEWARE = [

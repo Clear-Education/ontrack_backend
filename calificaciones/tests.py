@@ -1028,3 +1028,206 @@ class MateriaEvaluacionTest(APITestCase):
             response.data["detail"],
             "Es necesario especificar el id del anio_lectivo",
         )
+
+    # Nota FINAL
+    def test_notafinal_alumno_aniolectivo_calificaciones(self):
+        """
+        Test para obtener la nota final de calificaciones segun alumno y año_lectivo
+        Se debe recibir una nota final por cada materia y un promedio general del año lectivo
+        """
+        calificaciones = [
+            {
+                "alumno_id": self.alumno1.pk,
+                "evaluacion_id": self.evaluacion1.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno1.pk,
+                "evaluacion_id": self.evaluacion2.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 7,
+            },
+            {
+                "alumno_id": self.alumno1.pk,
+                "evaluacion_id": self.evaluacion11.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 10,
+            },
+            {
+                "alumno_id": self.alumno1.pk,
+                "evaluacion_id": self.evaluacion3.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 8,
+            },
+            {
+                "alumno_id": self.alumno2.pk,
+                "evaluacion_id": self.evaluacion1.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno2.pk,
+                "evaluacion_id": self.evaluacion2.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno3.pk,
+                "evaluacion_id": self.evaluacion2.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno3.pk,
+                "evaluacion_id": self.evaluacion1.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno4.pk,
+                "evaluacion_id": self.evaluacion_alt.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+        ]
+        for calificacion in calificaciones:
+            calificacion = Calificacion.objects.create(**calificacion)
+            calificacion.save()
+        url = "/api/calificaciones/stats/nota-final/?alumno={}&anio_lectivo={}".format(
+            self.alumno1.pk, self.anio_lectivo.pk
+        )
+
+        response = self.client.get(url, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(type(response.data["notas_finales"]), list)
+
+        for p in response.data["notas_finales"]:
+            self.assertIn("nombre_materia", p)
+            self.assertIn("nota_final", p)
+            if (
+                p["nombre_materia"] == "Análisis Matemático"
+                or p["nombre_materia"] == "Econometrics"
+            ):
+                if p["nombre_materia"] == "Análisis Matemático":
+                    self.assertEqual(
+                        p["nota_final"], 9 * 0.5 + 7 * 0.3 + 8 * 0.2
+                    )
+                elif p["nombre_materia"] == "Econometrics":
+                    self.assertEqual(p["nota_final"], 10)
+            else:
+                self.assertEqual(True, False)
+        self.assertEqual(response.data["alumno"], self.alumno1.pk)
+        self.assertEqual(response.data["promedio_general"], 9.1)
+
+    def test_notafinal_alumno_materia_aniolectivo_calificaciones(self):
+        """
+        Test para obtener la nota final de calificaciones segun alumno, materia y año_lectivo
+        Se debe recibir la nota final del alumno en la materia
+        """
+        calificaciones = [
+            {
+                "alumno_id": self.alumno1.pk,
+                "evaluacion_id": self.evaluacion1.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno1.pk,
+                "evaluacion_id": self.evaluacion2.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 7,
+            },
+            {
+                "alumno_id": self.alumno1.pk,
+                "evaluacion_id": self.evaluacion11.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 10,
+            },
+            {
+                "alumno_id": self.alumno1.pk,
+                "evaluacion_id": self.evaluacion3.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 8,
+            },
+            {
+                "alumno_id": self.alumno2.pk,
+                "evaluacion_id": self.evaluacion1.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno2.pk,
+                "evaluacion_id": self.evaluacion2.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno3.pk,
+                "evaluacion_id": self.evaluacion2.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno3.pk,
+                "evaluacion_id": self.evaluacion1.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+            {
+                "alumno_id": self.alumno4.pk,
+                "evaluacion_id": self.evaluacion_alt.pk,
+                "fecha": "2020-12-12",
+                "puntaje": 9,
+            },
+        ]
+        for calificacion in calificaciones:
+            calificacion = Calificacion.objects.create(**calificacion)
+            calificacion.save()
+        url = "/api/calificaciones/stats/nota-final/?alumno={}&anio_lectivo={}&materia={}".format(
+            self.alumno1.pk, self.anio_lectivo.pk, self.materia.pk
+        )
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for p in response.data["notas_finales"]:
+            self.assertIn("nombre_materia", p)
+            self.assertIn("nota_final", p)
+            self.assertEqual(p["nombre_materia"], "Análisis Matemático")
+            self.assertEqual(p["nota_final"], 8.2)
+
+        self.assertNotIn("promedio_general", response.data)
+
+        self.assertEqual(response.data["alumno"], self.alumno1.pk)
+
+    def test_notafinal_missing_alumno_calificaciones(self):
+        """
+        Test para obtener la nota final de calificaciones segun alumno, materia y año_lectivo
+        Debe verificar que el alumno no se pasó y emitir el error
+        """
+
+        url = "/api/calificaciones/stats/nota-final/?&anio_lectivo={}&materia={}".format(
+            self.anio_lectivo.pk, self.materia.pk
+        )
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "Es necesario especificar el id del alumno",
+        )
+
+    def test_notafinal_missing_aniolectivo_calificaciones(self):
+        """
+        Test para obtener la nota final de calificaciones segun alumno, materia y año_lectivo
+        Debe verificar que el alumno no se pasó y emitir el error
+        """
+
+        url = "/api/calificaciones/stats/nota-final/?&alumno={}&materia={}".format(
+            self.alumno1.pk, self.materia.pk
+        )
+        response = self.client.get(url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "Es necesario especificar el id del anio_lectivo",
+        )

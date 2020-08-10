@@ -24,6 +24,7 @@ class CalificacionViewSet(ModelViewSet):
     OK_LIST = {200: serializers.ViewCalficacionSerializer(many=True)}
     OK_VIEW = {200: serializers.ViewCalficacionSerializer()}
     OK_PROMEDIO = {200: serializers.PromedioCalificacionSerializer}
+    OK_NOTA_FINAL = {200: serializers.NotaFinalCalificacionSerializer}
 
     anio_lectivo_param = openapi.Parameter(
         "anio_lectivo",
@@ -317,6 +318,32 @@ class CalificacionViewSet(ModelViewSet):
         responses={**OK_PROMEDIO, **responses.STANDARD_ERRORS},
     )
     def promedio(self, request):
+        """
+        Consultar el promedio de un alumno en un año lectivo especifico
+        - Si se agrega el parámetro materia, solo se responde para esa materia en especifico
+        
+        * Si paso alumno y anio_lectivo
+            Recibo:
+                promedios : [ // uno por cada materia que haya cursado en ese año
+                    "promedio": Int,
+                    "nombre_materia": String
+                    ]
+                promedio_general : Float
+                alumno : Integer
+        * Si paso alumno, anio_lectivo Y MATERIA
+            Recibo: 
+                promedios : [ // lista de UN solo elemento
+                    {
+                        "promedio": Int,
+                        "nombre_materia": String
+                    }
+                ]
+                alumno : Integer
+
+        * Como se calcula el promedio?
+            Se suman las notas que se obtuvieron en la materia \
+            y se divide por la cantidad 
+        """
         alumno = request.query_params.get("alumno", None)
         anio_lectivo = request.query_params.get("anio_lectivo", None)
         materia = request.query_params.get("materia", None)
@@ -435,6 +462,154 @@ class CalificacionViewSet(ModelViewSet):
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         return Response(data=data, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+        manual_parameters=[anio_lectivo_param, materia_param, alumno_param],
+        responses={**OK_NOTA_FINAL, **responses.STANDARD_ERRORS},
+    )
+    def notafinal(self, request):
+        """
+        Consultar la nota final de un alumno en un año lectivo especifico
+        - Si se agrega el parámetro materia, solo se responde para esa materia en especifico
+
+        * Si paso alumno y anio_lectivo
+            Recibo:
+                notas_finales: // uno por cada materia que haya cursado en ese año
+                    ["nota_final": Int,
+                    "nombre_materia": String]
+                promedio_general : Float
+                alumno : Integer
+
+        * Si paso alumno, anio_lectivo Y MATERIA
+            Recibo: 
+                notas_finales // lista de UN solo elemento
+                    "nota_final": Int,
+                    "nombre_materia": String
+                alumno : Integer
+        * Como se calcula el promedio?
+            Se multiplican las notas que se obtuvieron en la materia \
+            con la ponderación de su correspondiente evaluacion.
+        
+        * Al comienzo esta "Nota FInal" va a ser muy baja, por lo que solo sirve\
+            cuando haya terminado el ciclo lectivo / cursado
+        """
+        alumno = request.query_params.get("alumno", None)
+        anio_lectivo = request.query_params.get("anio_lectivo", None)
+        materia = request.query_params.get("materia", None)
+
+        institucion_id = request.user.institucion_id
+        # Filtro base para validar institucion
+        queryset = Calificacion.objects.filter(
+            alumno__institucion_id=institucion_id
+        )
+
+        data = {"notas_finales": []}
+
+        if alumno and anio_lectivo:
+            if materia:
+                # Lista las calificaciones que el alumno \
+                # obtuvo para esa materia en ese año_lectivo
+                alumno = get_object_or_404(
+                    Alumno.objects.filter(institucion_id=institucion_id),
+                    pk=alumno,
+                )
+                anio_lectivo = get_object_or_404(
+                    AnioLectivo.objects.filter(institucion_id=institucion_id),
+                    pk=anio_lectivo,
+                )
+                materia = get_object_or_404(
+                    Materia.objects.filter(
+                        anio__carrera__institucion_id=institucion_id
+                    ),
+                    pk=materia,
+                )
+                queryset = queryset.filter(
+                    alumno_id=alumno.pk,
+                    evaluacion__anio_lectivo_id=anio_lectivo.pk,
+                    evaluacion__materia_id=materia.pk,
+                )
+
+                calificaciones = queryset
+                # calcular nota final para la materia
+                total = map(
+                    lambda x: x.puntaje * x.evaluacion.ponderacion,
+                    [c for c in calificaciones],
+                )
+                data["notas_finales"].append(
+                    {
+                        "nombre_materia": materia.nombre,
+                        "nota_final": sum(total),
+                    }
+                )
+
+                data["alumno"] = alumno.pk
+
+            else:
+                # Lista las calificaciones \
+                # del alumno para todas las evaluaciones de ese año lectivo
+                alumno = get_object_or_404(
+                    Alumno.objects.filter(institucion_id=institucion_id),
+                    pk=alumno,
+                )
+                anio_lectivo = get_object_or_404(
+                    AnioLectivo.objects.filter(institucion_id=institucion_id),
+                    pk=anio_lectivo,
+                )
+                queryset = queryset.filter(
+                    alumno_id=alumno.pk,
+                    evaluacion__anio_lectivo_id=anio_lectivo.pk,
+                )
+
+                calificaciones = queryset
+                materias = [
+                    (c.evaluacion.materia_id, c.evaluacion.materia.nombre)
+                    for c in calificaciones
+                ]
+                materias = set(materias)
+                overall = 0
+                for m_id, m_nombre in materias:
+                    # calcular nota final para la materia
+                    c_iter = [
+                        c
+                        for c in calificaciones
+                        if (m_id == c.evaluacion.materia_id)
+                    ]
+
+                    total = map(
+                        lambda x: x.puntaje * x.evaluacion.ponderacion, c_iter
+                    )
+                    nota_final = sum(total)
+                    data["notas_finales"].append(
+                        {"nombre_materia": m_nombre, "nota_final": nota_final}
+                    )
+                    overall += nota_final
+                data["alumno"] = alumno.pk
+                data["promedio_general"] = overall / len(materias)
+
+        else:
+            if alumno:  # Falta anio_lectivo
+                return Response(
+                    data={
+                        "detail": "Es necesario especificar el id del anio_lectivo"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:  # Falta alumno
+                return Response(
+                    data={
+                        "detail": "Es necesario especificar el id del alumno"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        # Armar respuesta
+
+        serializer = serializers.NotaFinalCalificacionSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            data = serializer.data
+        else:
+            data = serializer.errors
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data=data, status=status.HTTP_200_OK)
+
 
 create_calificaciones = CalificacionViewSet.as_view({"post": "create"})
 create_calificaciones_multiple = CalificacionViewSet.as_view(
@@ -446,3 +621,4 @@ view_edit_calificacion = CalificacionViewSet.as_view(
 list_calificaciones = CalificacionViewSet.as_view({"get": "list"})
 
 promedio_calificaciones = CalificacionViewSet.as_view({"get": "promedio"})
+notafinal_calificaciones = CalificacionViewSet.as_view({"get": "notafinal"})

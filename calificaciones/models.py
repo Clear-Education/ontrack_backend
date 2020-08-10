@@ -29,4 +29,5 @@ class Calificacion(models.Model):
                 "promedio_calificacion",
                 "Puede solicitar promedio de calificaciones",
             ),
+            ("notafinal_calificacion", "Puede solicitar notas finales",),
         ]

@@ -162,3 +162,21 @@ class PromedioCalificacionSerializer(serializers.Serializer):
         required=False, min_value=0, max_value=10
     )
     alumno = serializers.IntegerField(required=True)
+
+
+class SingleNotaFinalCalificacionSerializer(serializers.Serializer):
+    nombre_materia = serializers.CharField(required=True)
+    nota_final = serializers.FloatField(
+        required=True, min_value=0, max_value=10
+    )
+
+
+class NotaFinalCalificacionSerializer(serializers.Serializer):
+
+    notas_finales = SingleNotaFinalCalificacionSerializer(
+        many=True, required=True
+    )
+    promedio_general = serializers.FloatField(
+        required=False, min_value=0, max_value=10
+    )
+    alumno = serializers.IntegerField(required=True)
