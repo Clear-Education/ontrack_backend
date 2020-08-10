@@ -278,6 +278,7 @@ class ListUserSerializer(serializers.ModelSerializer):
             "localidad",
             "provincia",
             "institucion",
+            "is_active",
         ]
 
 
