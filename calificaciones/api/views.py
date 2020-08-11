@@ -247,6 +247,7 @@ class CalificacionViewSet(ModelViewSet):
                 ),
                 pk=evaluacion,
             )
+
             queryset = queryset.filter(
                 evaluacion_id=evaluacion.pk,
                 alumno__alumnocurso__curso_id=curso.pk,

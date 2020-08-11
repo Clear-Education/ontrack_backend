@@ -62,6 +62,7 @@ class MateriaEvaluacionTest(APITestCase):
                 "ponderacion": 0.5,
             }
         )
+        cls.evaluacion1.save()
         cls.evaluacion11 = Evaluacion.objects.create(
             **{
                 "anio_lectivo": cls.anio_lectivo,
@@ -525,9 +526,8 @@ class MateriaEvaluacionTest(APITestCase):
             calificacion = Calificacion.objects.create(**calificacion)
             calificacion.save()
         url = "/api/calificaciones/list/?evaluacion={}&curso={}".format(
-            self.curso.pk, self.evaluacion1.pk
+            self.evaluacion1.pk, self.curso.pk
         )
-
         response = self.client.get(url, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
