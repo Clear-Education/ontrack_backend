@@ -13,14 +13,33 @@ class LoginSerializer(serializers.ModelSerializer):
         fields = ["username", "password"]
 
 
-class LoginResponseSerializer(serializers.Serializer):
+class LoginResponseSerializer(serializers.ModelSerializer):
     token = serializers.CharField()
+
+    class Meta:
+        model = User
+        fields = [
+            "email",
+            "groups",
+            "name",
+            "phone",
+            "date_of_birth",
+            "dni",
+            "last_name",
+            "cargo",
+            "legajo",
+            "direccion",
+            "localidad",
+            "provincia",
+            "token",
+            "institucion",
+        ]
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     password2 = serializers.CharField(
-        style={"input_type": "password",}, write_only=True, required=True
+        style={"input_type": "password"}, write_only=True, required=True
     )
     groups = serializers.PrimaryKeyRelatedField(
         many=False, required=True, queryset=Group.objects.all()
@@ -68,7 +87,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.cargo = self.validated_data.get("cargo", None)
         user.legajo = self.validated_data.get("legajo", None)
         user.direccion = self.validated_data.get("direccion", None)
-        user.localidad = self.validated_data.get("namlocalidade", None)
+        user.localidad = self.validated_data.get("localidad", None)
         user.provincia = self.validated_data.get("provincia", None)
 
         user.set_password(password)
@@ -77,6 +96,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class EditUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=False)
+    dni = serializers.IntegerField(required=False)
+    legajo = serializers.IntegerField(required=False)
+
     class Meta:
         model = User
         fields = [
@@ -101,28 +124,34 @@ class EditUserSerializer(serializers.ModelSerializer):
         if self.validated_data["email"] is not None:
             existing_user_email = User.objects.filter(
                 email__exact=self.validated_data["email"]
-            )
+            ).exclude(id__exact=user.id)
             if len(existing_user_email) > 0:
                 raise serializers.ValidationError(
                     {"email": "Ya existe un usuario con ese mail registrado!"}
                 )
 
-        user.name = self.validated_data.get("name", None)
-        user.phone = self.validated_data.get("phone", None)
-        user.date_of_birth = self.validated_data.get("date_of_birth", None)
-        user.dni = self.validated_data.get("dni", None)
-        user.last_name = self.validated_data.get("last_name", None)
-        user.cargo = self.validated_data.get("cargo", None)
-        user.legajo = self.validated_data.get("legajo", None)
-        user.direccion = self.validated_data.get("direccion", None)
-        user.localidad = self.validated_data.get("namlocalidade", None)
-        user.provincia = self.validated_data.get("provincia", None)
+        user.name = self.validated_data.get("name", user.name)
+        user.phone = self.validated_data.get("phone", user.phone)
+        user.date_of_birth = self.validated_data.get(
+            "date_of_birth", user.date_of_birth
+        )
+        user.dni = self.validated_data.get("dni", user.dni)
+        user.last_name = self.validated_data.get("last_name", user.last_name)
+        user.cargo = self.validated_data.get("cargo", user.cargo)
+        user.legajo = self.validated_data.get("legajo", user.legajo)
+        user.direccion = self.validated_data.get("direccion", user.direccion)
+        user.localidad = self.validated_data.get("localidad", user.localidad)
+        user.provincia = self.validated_data.get("provincia", user.provincia)
         user.picture = self.validated_data.get("picture", user.picture)
         user.save()
         return user
 
 
 class EditOtherUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=False)
+    dni = serializers.IntegerField(required=False)
+    legajo = serializers.IntegerField(required=False)
+
     class Meta:
         model = User
         fields = [
@@ -148,23 +177,25 @@ class EditOtherUserSerializer(serializers.ModelSerializer):
         if self.validated_data.get("email", None) is not None:
             existing_user_email = User.objects.filter(
                 email__exact=self.validated_data["email"]
-            )
+            ).exclude(id__exact=user.id)
             if len(existing_user_email) > 0:
                 raise serializers.ValidationError(
                     {"email": "Ya existe un usuario con ese mail registrado!"}
                 )
 
         user.email = self.validated_data.get("email", user.email)
-        user.name = self.validated_data.get("name", None)
-        user.phone = self.validated_data.get("phone", None)
-        user.date_of_birth = self.validated_data.get("date_of_birth", None)
-        user.dni = self.validated_data.get("dni", None)
-        user.last_name = self.validated_data.get("last_name", None)
-        user.cargo = self.validated_data.get("cargo", None)
-        user.legajo = self.validated_data.get("legajo", None)
-        user.direccion = self.validated_data.get("direccion", None)
-        user.localidad = self.validated_data.get("namlocalidade", None)
-        user.provincia = self.validated_data.get("provincia", None)
+        user.name = self.validated_data.get("name", user.name)
+        user.phone = self.validated_data.get("phone", user.phone)
+        user.date_of_birth = self.validated_data.get(
+            "date_of_birth", user.date_of_birth
+        )
+        user.dni = self.validated_data.get("dni", user.dni)
+        user.last_name = self.validated_data.get("last_name", user.last_name)
+        user.cargo = self.validated_data.get("cargo", user.cargo)
+        user.legajo = self.validated_data.get("legajo", user.legajo)
+        user.direccion = self.validated_data.get("direccion", user.direccion)
+        user.localidad = self.validated_data.get("localidad", user.localidad)
+        user.provincia = self.validated_data.get("provincia", user.provincia)
         user.picture = self.validated_data.get("picture", user.picture)
         user.groups = self.validated_data.get("groups", user.groups)
         user.save()
@@ -246,6 +277,7 @@ class ListUserSerializer(serializers.ModelSerializer):
             "localidad",
             "provincia",
             "institucion",
+            "is_active",
         ]
 
 

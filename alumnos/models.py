@@ -33,7 +33,7 @@ class AlumnoCurso(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.alumno + " del curso " + self.curso
+        return self.alumno.nombre + " del curso " + self.curso.nombre
 
     class Meta:
         permissions = [("list_alumnocurso", "Puede listar alumnocurso")]

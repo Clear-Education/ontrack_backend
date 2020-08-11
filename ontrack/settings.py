@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "curricula",
     "alumnos",
     "calificaciones",
+    "asistencias",
 ]
 
 REST_FRAMEWORK = {
@@ -89,7 +90,7 @@ ROOT_URLCONF = "ontrack.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [os.path.join(BASE_DIR, "users/templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

@@ -1,15 +1,36 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from users.models import User
+from django_rest_passwordreset.models import ResetPasswordToken
+from softdelete.models import ChangeSet, SoftDeleteRecord
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import Group
 
 
 class UserAdmin(BaseUserAdmin):
 
-    list_display = ("email", "name", "last_name", "is_staff", "is_active", "institucion", "groups")
+    list_display = (
+        "email",
+        "name",
+        "last_name",
+        "institucion",
+        "groups",
+    )
     list_filter = ("is_superuser",)
 
     fieldsets = (
-        (None, {"fields": ("email", "is_staff", "is_superuser", "is_active", "password")}),
+        (
+            None,
+            {
+                "fields": (
+                    "email",
+                    "is_staff",
+                    "is_superuser",
+                    "is_active",
+                    "password",
+                )
+            },
+        ),
         (
             "Personal info",
             {
@@ -29,7 +50,7 @@ class UserAdmin(BaseUserAdmin):
     )
 
     add_fieldsets = (
-        (None, {"fields": ("email", "is_staff", "is_superuser", "password1", "password2")}),
+        (None, {"fields": ("email", "password1", "password2",)},),
         (
             "Personal info",
             {
@@ -46,13 +67,18 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
         ("Groups", {"fields": ("groups", "institucion", "legajo", "cargo")}),
-        ("Permissions", {"fields": ("user_permissions",)}),
     )
 
-    search_fields = ("email", "name", "last_name", "phone")
+    search_fields = ("email", "name", "last_name", "institucion")
     ordering = ("email",)
+    list_filter = ()
     filter_horizontal = ()
 
 
+# admin.site.unregister(Group)
 admin.site.register(User, UserAdmin)
+admin.site.unregister(ResetPasswordToken)
+admin.site.unregister(ChangeSet)
+admin.site.unregister(SoftDeleteRecord)
+admin.site.unregister(Token)
 
