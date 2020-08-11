@@ -2,7 +2,7 @@ from django.db import models
 from curricula.models import Curso, AnioLectivo
 from instituciones.models import Institucion
 
-# Create your models here.
+
 class Alumno(models.Model):
     dni = models.IntegerField(unique=True, primary_key=False, blank=True)
     nombre = models.CharField(max_length=150, blank=True)

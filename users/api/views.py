@@ -204,19 +204,11 @@ class UsersViewSet(viewsets.ModelViewSet):
                 return Response(
                     data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
                 )
-        if (
-            retrieved_user.institucion == request.user.institucion
-            and retrieved_user.is_active
-        ):
-            permissions = [
-                perm.codename for perm in request.user.groups.permissions.all()
-            ]
-            if "change_other_user" not in permissions:
-                return Response(
-                    data={"detail": "Accion prohibida para el rol actual!"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(
+                data={"detail": "El usuario a editar no está activo"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     @swagger_auto_schema(
         operation_id="delete_usuario",
@@ -245,6 +237,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         Esto se realiza con el campo is_activo que recibe un booleano que indica el estado en el que se deséa que quede el usuario
         El usuario dado de baja lógicamente, ya no podrá interactuar con el sistema.
         """,
+        request_body=serializers.UserStatusSerializer,
         responses={
             202: responses.NotModifiedSerializer,
             200: "",

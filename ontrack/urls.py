@@ -29,5 +29,6 @@ urlpatterns = [
         name="schema-swagger-ui",
     ),
     path("api/", include("curricula.api.urls")),
+    path("api/calificaciones/", include("calificaciones.api.urls")),
     path("api/asistencias/", include("asistencias.api.urls")),
 ]
