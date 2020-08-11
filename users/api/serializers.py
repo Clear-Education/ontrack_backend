@@ -242,7 +242,6 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
                     "password": "La nueva contraseña debe ser diferente a la actual!"
                 }
             )
-
         user.set_password(new_password)
         user.save()
         return user
