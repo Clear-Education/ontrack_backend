@@ -26,6 +26,7 @@ urlpatterns = [
         name="carrera-list",
     ),
     # Curso
+    path("curso/", anio.create_curso, name="curso-create"),
     path("curso/<int:pk>/", anio.view_edit_curso, name="curso-view-edit"),
     path("anio/<int:anio_id>/curso/list/", anio.list_curso, name="curso-list"),
     # Materia
