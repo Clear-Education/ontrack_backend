@@ -16,8 +16,29 @@ class AnioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Anio
-        fields = ["nombre", "carrera", "color", "cursos"]
-        read_only_fields = ["id", "fecha_creacion"]
+        fields = ["id", "nombre", "carrera", "color", "cursos"]
+        read_only_fields = ["fecha_creacion"]
+
+
+class CreateSingleCursoSerializer(serializers.ModelSerializer):
+    # anio = serializers.PrimaryKeyRelatedField(
+    #     queryset=models.Anio.objects.all(),
+    # )
+    nombre = serializers.CharField(required=True)
+    anio = serializers.PrimaryKeyRelatedField(
+        queryset=models.Anio.objects.all(), required=True
+    )
+
+    class Meta:
+        model = models.Curso
+        fields = ["nombre", "anio"]
+
+    def create(self):
+        # Asumo que ya la carrera seleccionada
+        # pertenece a la institucion del usuario
+        curso = models.Curso(**self.validated_data)
+        curso.save()
+        return curso
 
 
 class CreateCursoSerializer(serializers.ModelSerializer):
