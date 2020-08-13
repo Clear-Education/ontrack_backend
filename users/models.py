@@ -40,7 +40,7 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
     date_of_birth = models.DateField(
         blank=True, null=True, verbose_name="Fecha de Nacimiento"
     )
-    picture = models.ImageField(
+    picture = models.FileField(
         blank=True, null=True, verbose_name="Foto de Perfil"
     )
     is_staff = models.BooleanField(default=False)

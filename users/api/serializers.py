@@ -88,6 +88,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.last_name = self.validated_data.get("last_name", None)
         user.cargo = self.validated_data.get("cargo", None)
         user.legajo = self.validated_data.get("legajo", None)
+        user.picture = self.validated_data.get("picture", None)
         user.direccion = self.validated_data.get("direccion", None)
         user.localidad = self.validated_data.get("localidad", None)
         user.provincia = self.validated_data.get("provincia", None)
