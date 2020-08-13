@@ -112,6 +112,35 @@ class CursoViewSet(ModelViewSet):
     OK_EMPTY = {200: ""}
     OK_VIEW = {200: serializers_anio.CursoSerializer()}
     OK_LIST = {200: serializers_anio.CursoSerializer(many=True)}
+    OK_CREATED = {201: serializers_anio.CursoSerializer()}
+
+    @swagger_auto_schema(
+        request_body=serializers_anio.CreateSingleCursoSerializer,
+        responses={**OK_CREATED, **responses.STANDARD_ERRORS},
+    )
+    def create(self, request):
+        """
+        Crear un curso
+        """
+
+        serializer = serializers_anio.CreateSingleCursoSerializer(
+            data=request.data
+        )
+        data = {}
+
+        if serializer.is_valid(raise_exception=True):
+            get_object_or_404(
+                Anio.objects.filter(
+                    carrera__institucion_id=request.user.institucion.id
+                ),
+                pk=serializer.validated_data["anio"].pk,
+            )
+            instance = serializer.create()
+        else:
+            data = serializer.errors
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+        s = serializers_anio.CursoSerializer(instance=instance)
+        return Response(data=s.data, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
     def destroy(self, request, pk=None):
@@ -177,3 +206,4 @@ view_edit_curso = CursoViewSet.as_view(
     {"get": "get", "delete": "destroy", "patch": "update"}
 )
 list_curso = CursoViewSet.as_view({"get": "list"})
+create_curso = CursoViewSet.as_view({"post": "create"})
