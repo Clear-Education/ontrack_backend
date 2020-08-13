@@ -28,6 +28,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+DEVELOPER_ADMIN = True
+
 CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ALLOW_CREDENTIALS = True
