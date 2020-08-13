@@ -37,7 +37,7 @@ class CustomAuthToken(ObtainAuthToken):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
         user = User.objects.get(pk=user.pk)
-        if not user.institucion.activa:
+        if not user.is_superuser and not user.institucion.activa:
             return Response(status=status.HTTP_404_NOT_FOUND)
         token, created = Token.objects.get_or_create(user=user)
         user.token = token.key
