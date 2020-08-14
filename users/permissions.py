@@ -8,27 +8,30 @@ def permission_required(resource_name, raise_exception=False):
 
         def map_action(self, action):
             ROUTED_VIEWSET_ACTION_MAPPING = {
-                'list': 'view',
-                'get': 'view',
-                'retrieve': 'view',
-                'partial_update': 'change',
-                'update': 'change',
-                'create': 'add',
-                'destroy': 'delete'
-                }
+                "list": "view",
+                "get": "view",
+                "retrieve": "view",
+                "partial_update": "change",
+                "update": "change",
+                "create": "add",
+                "destroy": "delete",
+            }
             if action in list(ROUTED_VIEWSET_ACTION_MAPPING.keys()):
                 action = ROUTED_VIEWSET_ACTION_MAPPING[action]
             return action
 
         def has_permission(self, request, view):
-
+            if request.user.is_superuser:
+                return True
             permissions = [
-                perm.codename for perm in request.user.groups.permissions.all()]
-            view_codename = self.map_action(view.action) + '_' + resource_name
+                perm.codename for perm in request.user.groups.permissions.all()
+            ]
+            view_codename = self.map_action(view.action) + "_" + resource_name
             if view_codename in permissions:
                 return True
             return False
 
         def has_object_permission(self, request, view, obj):
             return True
+
     return RoleBasedPermission

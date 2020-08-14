@@ -1,5 +1,6 @@
 from django.contrib import admin
 from calificaciones.models import Calificacion
+from ontrack import settings
 
-# Register your models here.
-admin.site.register(Calificacion)
+if settings.DEVELOPER_ADMIN:
+    admin.site.register(Calificacion)
