@@ -5,7 +5,9 @@ from rest_framework.exceptions import ValidationError
 
 
 class ViewEvaluacionSerializer(serializers.ModelSerializer):
-    anio_lectivo = serializers.StringRelatedField()
+    anio_lectivo = serializers.PrimaryKeyRelatedField(
+        queryset=models.AnioLectivo.objects.all()
+    )
 
     class Meta:
         model = models.Evaluacion
