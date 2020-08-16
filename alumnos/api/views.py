@@ -74,7 +74,7 @@ class AlumnoViewSet(ModelViewSet):
         -  fecha_inscripcion
         """,
         request_body=serializers.UpdateAlumnoSerializer,
-        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+        responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
     )
     def update(self, request, pk=None):
         retrieved_alumno = get_object_or_404(Alumno, pk=pk)
@@ -108,7 +108,7 @@ class AlumnoViewSet(ModelViewSet):
                     except:
                         return Response(status=status.HTTP_400_BAD_REQUEST)
             serializer.update(retrieved_alumno)
-            return Response(status=status.HTTP_200_OK,)
+            return Response(status=status.HTTP_200_OK)
         else:
             return Response(
                 data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
@@ -163,6 +163,7 @@ class AlumnoViewSet(ModelViewSet):
         if serializer.is_valid():
             for alumno in serializer.validated_data:
                 try:
+                    # TODO optimize with a single query
                     Alumno.objects.get(dni=alumno.get("dni"))
                 except Alumno.DoesNotExist:
                     continue
@@ -182,7 +183,13 @@ class AlumnoViewSet(ModelViewSet):
                 )
 
             serializer.save()
-            return Response(status=status.HTTP_201_CREATED)
+            ids = {
+                b.dni: b.id
+                for b in Alumno.objects.filter(
+                    dni__in=[a.get("dni") for a in serializer.validated_data]
+                )
+            }
+            return Response(data=ids, status=status.HTTP_201_CREATED)
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)

@@ -131,19 +131,6 @@ class AlumnoTests(APITestCase):
         response = self.client.post("/api/alumnos/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        response = self.client.get("/api/alumnos/6/")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("id"), 6)
-        self.assertEqual(
-            response.data.get("institucion").get("id"), self.institucion_1.id
-        )
-        response = self.client.get("/api/alumnos/7/")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get("id"), 7)
-        self.assertEqual(
-            response.data.get("institucion").get("id"), self.institucion_1.id
-        )
-
     def test_create_alumno_docente(self):
         """
         Test de creacion de Alumno por docente
