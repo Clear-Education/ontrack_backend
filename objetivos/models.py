@@ -1,6 +1,6 @@
 from django.db import models
-from seguimientos.models import Seguimiento
 from alumnos.models import AlumnoCurso
+from seguimientos.models import Seguimiento
 
 
 class TipoObjetivo(models.Model):

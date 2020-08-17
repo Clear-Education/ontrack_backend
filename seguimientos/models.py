@@ -45,7 +45,7 @@ class RolSeguimiento(models.Model):
 
 
 class IntegranteSeguimiento(models.Model):
-    fecha_hasta = models.DateField()
+    fecha_hasta = models.DateField(null=True)
     fecha_desde = models.DateField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     seguimiento = models.ForeignKey(to=Seguimiento, on_delete=models.CASCADE)

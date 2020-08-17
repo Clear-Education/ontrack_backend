@@ -80,6 +80,9 @@ class CreateObjetivoSerializer(serializers.ModelSerializer):
             "tipo_objetivo",
         ]
 
+    def create(self, validated_data):
+        return Objetivo.objects.create(**validated_data)
+
 
 class UpdateObjetivoSerializer(serializers.ModelSerializer):
     valor_objetivo_cuantitativo = serializers.FloatField(required=False)
@@ -135,3 +138,7 @@ class UpdateAlumnoObjetivoSerializer(serializers.Serializer):
         queryset=Alumno.objects.all(), many=False, required=False
     )
     alcanzada = serializers.BooleanField(required=True)
+
+
+class ReturnId(serializers.Serializer):
+    id = serializers.IntegerField()
