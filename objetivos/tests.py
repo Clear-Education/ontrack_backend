@@ -167,6 +167,17 @@ class AsistenciaTests(APITestCase):
             encargado=cls.user_admin,
         )
 
+        cls.seguimiento_4 = Seguimiento.objects.create(
+            nombre="seguimiento_4",
+            en_progreso=True,
+            institucion=cls.institucion_1,
+            fecha_inicio=datetime.date(2020, 1, 1),
+            fecha_cierre=datetime.date(2020, 12, 31),
+            descripcion=".",
+            anio_lectivo=cls.anio_lectivo_1,
+            encargado=cls.user_admin,
+        )
+
         cls.rol_1 = RolSeguimiento.objects.create(
             nombre="Encargado de Seguimiento"
         )
@@ -197,6 +208,27 @@ class AsistenciaTests(APITestCase):
 
         cls.integrante_4 = IntegranteSeguimiento.objects.create(
             seguimiento=cls.seguimiento_2,
+            usuario=cls.user_admin,
+            rol=cls.rol_1,
+            fecha_desde=datetime.date(2020, 1, 1),
+        )
+
+        cls.integrante_5 = IntegranteSeguimiento.objects.create(
+            seguimiento=cls.seguimiento_4,
+            usuario=cls.user_admin,
+            rol=cls.rol_2,
+            fecha_desde=datetime.date(2020, 1, 1),
+        )
+
+        cls.integrante_6 = IntegranteSeguimiento.objects.create(
+            seguimiento=cls.seguimiento_4,
+            usuario=cls.user_docente,
+            rol=cls.rol_1,
+            fecha_desde=datetime.date(2020, 1, 1),
+        )
+
+        cls.integrante_7 = IntegranteSeguimiento.objects.create(
+            seguimiento=cls.seguimiento_3,
             usuario=cls.user_admin,
             rol=cls.rol_1,
             fecha_desde=datetime.date(2020, 1, 1),
@@ -234,6 +266,21 @@ class AsistenciaTests(APITestCase):
             seguimiento=cls.seguimiento_1,
             tipo_objetivo=cls.tipo_objetivo_2,
         )
+        cls.objetivo_3 = Objetivo.objects.create(
+            descripcion="conductaa",
+            seguimiento=cls.seguimiento_3,
+            tipo_objetivo=cls.tipo_objetivo_1,
+        )
+        cls.objetivo_4 = Objetivo.objects.create(
+            descripcion="conductaaa",
+            seguimiento=cls.seguimiento_4,
+            tipo_objetivo=cls.tipo_objetivo_1,
+        )
+        cls.objetivo_5 = Objetivo.objects.create(
+            descripcion="conductaaa",
+            seguimiento=cls.seguimiento_2,
+            tipo_objetivo=cls.tipo_objetivo_1,
+        )
 
         cls.alumno_objetivo_1 = AlumnoObjetivo.objects.create(
             objetivo=cls.objetivo_2,
@@ -241,9 +288,15 @@ class AsistenciaTests(APITestCase):
             valor=65,
             alcanzada=False,
         )
+        cls.alumno_objetivo_2 = AlumnoObjetivo.objects.create(
+            objetivo=cls.objetivo_2,
+            alumno_curso=cls.alumno_curso_2,
+            valor=50,
+            alcanzada=False,
+        )
 
     #############
-    #  CREATE + #
+    #   CREATE  #
     #############
 
     def test_create_objetivo_admin(self):
@@ -260,3 +313,371 @@ class AsistenciaTests(APITestCase):
         }
         response = self.client.post("/api/objetivos/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["id"])
+
+    def test_create_objetivo_docente(self):
+        """
+        Test de creacion de Objetivo por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        seguimiento = self.seguimiento_4.id
+        tipo_objetivo = self.tipo_objetivo_3.id
+        data = {
+            "valor_objetivo_cuantitativo": 85,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_objetivo_otra_institucion(self):
+        """
+        Test de creacion de Objetivo para un seguimiento de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_3.id
+        tipo_objetivo = self.tipo_objetivo_3.id
+        data = {
+            "valor_objetivo_cuantitativo": 85,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_create_objetivo_no_en_progreso(self):
+        """
+        Test de creacion de Objetivo para un seguimiento que no está en progreso
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_2.id
+        tipo_objetivo = self.tipo_objetivo_3.id
+        data = {
+            "valor_objetivo_cuantitativo": 85,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "No se puede modificar un Seguimiento que no se encuentra en progreso",
+        )
+
+    def test_create_objetivo_no_integrante(self):
+        """
+        Test de creacion de Objetivo para un seguimiento del que no es integrante
+        """
+        self.client.force_authenticate(user=self.user_admin_2)
+        seguimiento = self.seguimiento_2.id
+        tipo_objetivo = self.tipo_objetivo_3.id
+        data = {
+            "valor_objetivo_cuantitativo": 85,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_create_objetivo_no_encargado(self):
+        """
+        Test de creacion de Objetivo para un seguimiento del que no es encargado
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_4.id
+        tipo_objetivo = self.tipo_objetivo_3.id
+        data = {
+            "valor_objetivo_cuantitativo": 85,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.data["detail"], "No tiene permiso para crear un objetivo"
+        )
+
+    def test_create_objetivo_cualitativo_sin_descripcion(self):
+        """
+        Test de creacion de Objetivo cualitativo sin descripción
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_1.id
+        tipo_objetivo = self.tipo_objetivo_1.id
+        data = {
+            "valor_objetivo_cuantitativo": 85,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "Para este tipo de objetivos es necesario fijar una descripción",
+        )
+
+    def test_create_objetivo_cuantitativo_sin_valor(self):
+        """
+        Test de creacion de Objetivo cuantitativo sin valor
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_1.id
+        tipo_objetivo = self.tipo_objetivo_3
+        data = {
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo.id,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            f"No se ingreso un valor, o no se encuentra en el rango permitido de {float(tipo_objetivo.valor_minimo)} a {float(tipo_objetivo.valor_maximo)}",
+        )
+
+    def test_create_objetivo_cuantitativo_fuera_rango(self):
+        """
+        Test de creacion de Objetivo cuantitativo valor fuera de rango
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_1.id
+        tipo_objetivo = self.tipo_objetivo_3
+        data = {
+            "valor_objetivo_cuantitativo": 120,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo.id,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            f"No se ingreso un valor, o no se encuentra en el rango permitido de {float(tipo_objetivo.valor_minimo)} a {float(tipo_objetivo.valor_maximo)}",
+        )
+
+    def test_create_objetivo_cuantitativo_no_multiple(self):
+        """
+        Test de creacion de Objetivo cuantitativo no multiple
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_1.id
+        tipo_objetivo = self.tipo_objetivo_2
+        data = {
+            "valor_objetivo_cuantitativo": 90,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo.id,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "Ya existe un objetivo de este mismo tipo en el seguimiento. No está permitido tener dos objetivos del mismo tipo",
+        )
+
+    def test_create_objetivo_tipo_no_existente(self):
+        """
+        Test de creacion de Objetivo cuantitativo con tipo no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_1.id
+        tipo_objetivo = 500
+        data = {
+            "valor_objetivo_cuantitativo": 90,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_objetivo_seguimiento_no_existente(self):
+        """
+        Test de creacion de Objetivo cuantitativo con seguimiento no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = 500
+        tipo_objetivo = self.tipo_objetivo_1.id
+        data = {
+            "valor_objetivo_cuantitativo": 90,
+            "seguimiento": seguimiento,
+            "tipo_objetivo": tipo_objetivo,
+        }
+        response = self.client.post("/api/objetivos/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    #############
+    #   UPDATE  #
+    #############
+
+    def test_update_objetivo_cualitativo(self):
+        """
+        Test de modificación de Objetivo cualitativo
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_1.id
+        data = {
+            "valor_objetivo_cuantitativo": 85,
+            "descripcion": "Cualitativo 2",
+        }
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo_id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        objetivo = Objetivo.objects.get(pk=objetivo_id)
+        self.assertEqual(objetivo.descripcion, "Cualitativo 2")
+        self.assertIsNone(objetivo.valor_objetivo_cuantitativo)
+
+    def test_update_objetivo_cuantitativo(self):
+        """
+        Test de modificación de Objetivo cuantitativo
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_2.id
+        data = {
+            "valor_objetivo_cuantitativo": 60,
+        }
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo_id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        objetivo = Objetivo.objects.get(pk=objetivo_id)
+        self.assertEqual(objetivo.valor_objetivo_cuantitativo, 60)
+        objetivo_alumno_1 = AlumnoObjetivo.objects.get(
+            pk=self.alumno_objetivo_1.id
+        )
+        self.assertTrue(objetivo_alumno_1.alcanzada)
+        objetivo_alumno_2 = AlumnoObjetivo.objects.get(
+            pk=self.alumno_objetivo_2.id
+        )
+        self.assertFalse(objetivo_alumno_2.alcanzada)
+
+    def test_update_objetivo_cuantitativo_valor_fuera_rango(self):
+        """
+        Test de modificación de Objetivo cuantitativo con su valor fuera de rango
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_2.id
+        tipo_objetivo = self.tipo_objetivo_2
+        data = {
+            "valor_objetivo_cuantitativo": 110,
+        }
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo_id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            f"No se encuentra en el rango permitido de {float(tipo_objetivo.valor_minimo)} a {float(tipo_objetivo.valor_maximo)}",
+        )
+
+    def test_update_objetivo_no_existente(self):
+        """
+        Test de modificación de Objetivo no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = 500
+        data = {
+            "valor_objetivo_cuantitativo": 110,
+        }
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo_id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+    def test_update_objetivo_no_integrante(self):
+        """
+        Test de modificación de Objetivo de un seguimiento del cual no se es parte
+        """
+        self.client.force_authenticate(user=self.user_admin_2)
+        objetivo_id = self.objetivo_4.id
+        data = {
+            "descripcion": "desc",
+        }
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo_id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+    def test_update_objetivo_docente(self):
+        """
+        Test de modificación de Objetivo docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        objetivo_id = self.objetivo_1.id
+        data = {
+            "decripcion": "desc",
+        }
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo_id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_objetivo_no_encargado(self):
+        """
+        Test de modificación de Objetivo sin ser encargado
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_4.id
+        data = {
+            "decripcion": "desc",
+        }
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo_id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.data["detail"],
+            "No tiene permiso para modificar el objetivo",
+        )
+
+    def test_update_objetivo_otra_institucion(self):
+        """
+        Test de modificación de Objetivo de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_3.id
+        data = {
+            "decripcion": "desc",
+        }
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo_id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+    def test_update_objetivo_no_en_progreso(self):
+        """
+        Test de modificación de Objetivo de un seguimiento que no está en progreso
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_5.id
+        data = {
+            "decripcion": "desc",
+        }
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo_id}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "No se puede modificar un Seguimiento que no se encuentra en progreso",
+        )
+
+    #############
+    #    LIST   #
+    #############
+
+    #############
+    #   DELETE  #
+    #############
+
+    #############
+    #    GET    #
+    #############

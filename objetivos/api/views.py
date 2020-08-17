@@ -72,6 +72,8 @@ class ObjetivoViewSet(ModelViewSet):
         operation_id="list_objetivos",
         operation_description="""
         Se listan los objetivos de un seguimiento por su id.
+
+        No se pueden listar objetivos de un seguimiento en el que no se es integrante
         """,
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
@@ -79,7 +81,8 @@ class ObjetivoViewSet(ModelViewSet):
         seguimiento = get_object_or_404(Seguimiento, pk=pk)
 
         if (
-            len(
+            seguimiento.institucion != request.user.institucion
+            or len(
                 IntegranteSeguimiento.objects.filter(
                     seguimiento__id__exact=seguimiento.id,
                     usuario__exact=request.user,
@@ -142,7 +145,9 @@ class ObjetivoViewSet(ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        serializer = serializers.UpdateObjetivoSerializer(data=request.data)
+        serializer = serializers.UpdateObjetivoSerializer(
+            objetivo_retrieved, data=request.data
+        )
         if serializer.is_valid():
             tipo_objetivo = objetivo_retrieved.tipo_objetivo
             valor = serializer.validated_data.get(
@@ -162,12 +167,12 @@ class ObjetivoViewSet(ModelViewSet):
                 ):
                     return Response(
                         data={
-                            "detail": f"No se ingreso un valor, o no se encuentra en el rango permitido de {tipo_objetivo.valor_minimo} a {tipo_objetivo.valor_maximo}"
+                            "detail": f"No se encuentra en el rango permitido de {tipo_objetivo.valor_minimo} a {tipo_objetivo.valor_maximo}"
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
-            serializer.save(objetivo_retrieved, validated_data)
+            serializer.save()
 
             if valor:
                 objetivos_actualizar = (
@@ -175,17 +180,16 @@ class ObjetivoViewSet(ModelViewSet):
                         objetivo__id__exact=objetivo_retrieved.id,
                         objetivo__tipo_objetivo__cuantitativo=True,
                     )
-                    .order_by("-fecha_creacion")
+                    .order_by("alumno_curso", "-fecha_creacion")
                     .distinct("alumno_curso")
                 )
-
                 for objetivo_alumno in objetivos_actualizar:
                     if (
                         objetivo_alumno.valor >= valor
                         and not objetivo_alumno.alcanzada
                     ):
                         objetivo_alumno.alcanzada = True
-                        objetivo.save()
+                        objetivo_alumno.save()
 
             return Response(status=status.HTTP_200_OK)
 
@@ -196,7 +200,11 @@ class ObjetivoViewSet(ModelViewSet):
 
     @swagger_auto_schema(
         operation_id="delete_objetivo",
-        operation_description="Borrado de un Objetivo con su id",
+        operation_description="""
+        Borrado de un Objetivo con su id
+
+        Solo puede borrar si es encargado y el seguimiento está en progreso.
+        """,
         responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
     )
     def destroy(self, request, pk=None):
