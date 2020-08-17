@@ -126,3 +126,5 @@ dmypy.json
 db.sqlite3
 
 /entrypoint.sh
+
+media/

@@ -15,7 +15,6 @@ class Seguimiento(models.Model):
     nombre = models.CharField(max_length=256)
     en_progreso = models.BooleanField()
     alumnos = models.ManyToManyField(to=AlumnoCurso)
-    encargado = models.ForeignKey(to=User, on_delete=models.CASCADE)
     # Redundante ya que tiene AlumnoCurso pero por las dudas
     anio_lectivo = models.ForeignKey(to=AnioLectivo, on_delete=models.CASCADE)
     institucion = models.ForeignKey(to=Institucion, on_delete=models.CASCADE)
@@ -45,7 +44,7 @@ class RolSeguimiento(models.Model):
 
 
 class IntegranteSeguimiento(models.Model):
-    fecha_hasta = models.DateField()
+    fecha_hasta = models.DateField(null=True)
     fecha_desde = models.DateField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     seguimiento = models.ForeignKey(to=Seguimiento, on_delete=models.CASCADE)
