@@ -5,5 +5,15 @@ from seguimientos.api import views
 
 
 urlpatterns = [
-    # path("", views.create_institucion, name="institucion-create"),
+    path("", views.create_seguimiento, name="seguimiento-create"),
+    path(
+        "<int:pk>/", views.view_edit_seguimiento, name="seguimiento-view-edit"
+    ),
+    path("list/", views.list_seguimiento, name="seguimiento-list"),
+    # Rol
+    path("rol/", views.create_rol, name="rolseguimiento-create"),
+    path(
+        "rol/<int:pk>/", views.view_edit_rol, name="rolseguimiento-view-edit"
+    ),
+    path("rol/list/", views.list_rol, name="rolseguimiento-list"),
 ]
