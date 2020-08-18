@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from instituciones.api.serializers import InstitucionSerializer
-from curricula.api.serializers.anio import CursoSerializer
+from curricula.api.serializers.anio import CursoSerializerWithCarrera
 from curricula.api.serializers.anio_lectivo import ViewAnioLectivoSerializer
 from instituciones.models import Institucion
 from alumnos.models import Alumno, AlumnoCurso
@@ -141,7 +141,7 @@ class CreateAlumnoCursoSerializer(serializers.ModelSerializer):
 
 class ViewAlumnoCursoSerializer(serializers.ModelSerializer):
     alumno = ViewAlumnoSerializer(many=False)
-    curso = CursoSerializer(many=False)
+    curso = CursoSerializerWithCarrera(many=False)
     anio_lectivo = ViewAnioLectivoSerializer(many=False)
 
     class Meta:
