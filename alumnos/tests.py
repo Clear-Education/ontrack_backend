@@ -712,11 +712,18 @@ class AlumnoCursoTests(APITestCase):
         Test de listado correcto de AlumnoCurso por admin
         """
         self.client.force_authenticate(user=self.user_admin)
+
+        curso_1 = self.curso_1.id
+        curso_3 = self.curso_3.id
+        alumno = self.alumno_1.id
+        anio_lectivo_2 = self.anio_lectivo_2.id
+        anio_lectivo_1 = self.anio_lectivo_1.id
+
         response = self.client.get("/api/alumnos/curso/list/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 6)
 
-        response = self.client.get("/api/alumnos/curso/list/?curso=1")
+        response = self.client.get(f"/api/alumnos/curso/list/?curso={curso_1}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 3)
 
@@ -724,16 +731,22 @@ class AlumnoCursoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["curso"], "El valor no es numérico")
 
-        response = self.client.get("/api/alumnos/curso/list/?curso=3")
+        response = self.client.get(f"/api/alumnos/curso/list/?curso={curso_3}")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
-        response = self.client.get("/api/alumnos/curso/list/?anio_lectivo=2")
+        response = self.client.get(
+            f"/api/alumnos/curso/list/?anio_lectivo={anio_lectivo_2}"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 3)
 
+        response = self.client.get(f"/api/alumnos/curso/list/?alumno={alumno}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 2)
+
         response = self.client.get(
-            "/api/alumnos/curso/list/?curso=1&anio_lectivo=1"
+            f"/api/alumnos/curso/list/?curso={curso_1}&anio_lectivo={anio_lectivo_1}"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 2)

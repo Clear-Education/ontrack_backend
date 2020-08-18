@@ -223,6 +223,13 @@ class AlumnoCursoViewSet(ModelViewSet):
         type=openapi.TYPE_INTEGER,
     )
 
+    alumno_parameter = openapi.Parameter(
+        "alumno",
+        openapi.IN_QUERY,
+        description="Alumno por el que queremos filtrar la búsqueda",
+        type=openapi.TYPE_INTEGER,
+    )
+
     @swagger_auto_schema(
         operation_id="get_alumno_curso",
         operation_description="""
@@ -245,10 +252,14 @@ class AlumnoCursoViewSet(ModelViewSet):
         operation_id="list_alumo_curso",
         operation_description="""
         Listar los AlumnoCurso de la institución.
-        Se pueden pasar por query params curso (id del curso) y anio_lectivo (id del anio_lectivo).
-        Ninguno de los parámetros es obligatorio y se pueden usar ambos al mismo tiempo para restringir más el listado.
+        Se pueden pasar por query params curso (id del curso), el anio_lectivo (id del anio_lectivo) y el alumno (id del alumno).
+        Ninguno de los parámetros es obligatorio y se pueden usar todos al mismo tiempo para restringir más el listado.
         """,
-        manual_parameters=[anio_lectivo_parameter, curso_parameter],
+        manual_parameters=[
+            anio_lectivo_parameter,
+            curso_parameter,
+            alumno_parameter,
+        ],
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
     def list(self, request):
@@ -257,6 +268,8 @@ class AlumnoCursoViewSet(ModelViewSet):
         )
         curso = request.query_params.get("curso", None)
         anio_lectivo = request.query_params.get("anio_lectivo", None)
+        alumno = request.query_params.get("alumno", None)
+
         if curso:
             if curso.isnumeric():
                 curso = int(curso)
@@ -275,6 +288,24 @@ class AlumnoCursoViewSet(ModelViewSet):
                     data={"detail": "No encontrado."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
+            queryset = queryset.filter(curso__pk__exact=curso)
+
+        if alumno:
+            if alumno.isnumeric():
+                alumno = int(alumno)
+            else:
+                return Response(
+                    data={"alumno": "El valor no es numérico"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            alumno_retrieved = get_object_or_404(Alumno, pk=alumno)
+
+            if alumno_retrieved.institucion != request.user.institucion:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            queryset = queryset.filter(alumno__pk__exact=alumno)
 
         if anio_lectivo:
             if anio_lectivo.isnumeric():
@@ -293,15 +324,7 @@ class AlumnoCursoViewSet(ModelViewSet):
                     data={"detail": "No encontrado."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-
-        if curso and anio_lectivo:
-            queryset = queryset.filter(
-                anio_lectivo__pk__exact=anio_lectivo, curso__pk__exact=curso
-            )
-        elif anio_lectivo and not curso:
             queryset = queryset.filter(anio_lectivo__pk__exact=anio_lectivo)
-        elif curso and not anio_lectivo:
-            queryset = queryset.filter(curso__pk__exact=curso)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
