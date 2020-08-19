@@ -674,10 +674,161 @@ class AsistenciaTests(APITestCase):
     #    LIST   #
     #############
 
+    def test_list_correcto(self):
+        """
+        Test de listado de Objetivo correcto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento_id = self.seguimiento_1.id
+        response = self.client.get(
+            f"/api/objetivos/list/seguimiento/{seguimiento_id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_list_no_existente(self):
+        """
+        Test de listado de Objetivo con seguimiento no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento_id = 2000
+        response = self.client.get(
+            f"/api/objetivos/list/seguimiento/{seguimiento_id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_list_otra_institucion(self):
+        """
+        Test de listado de Objetivo de un seguimiento de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento_id = self.seguimiento_3.id
+        response = self.client.get(
+            f"/api/objetivos/list/seguimiento/{seguimiento_id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_list_no_integrante(self):
+        """
+        Test de listado de Objetivo no integrante
+        """
+        self.client.force_authenticate(user=self.user_admin_2)
+        seguimiento_id = self.seguimiento_4.id
+        response = self.client.get(
+            f"/api/objetivos/list/seguimiento/{seguimiento_id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
     #############
     #   DELETE  #
     #############
 
+    def test_delete_correcto(self):
+        """
+        Test de borrado de Objetivo correcto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_1.id
+        response = self.client.delete(f"/api/objetivos/{objetivo_id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_no_existente(self):
+        """
+        Test de borrado de Objetivo no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = 5000
+        response = self.client.delete(f"/api/objetivos/{objetivo_id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_delete_otra_institucion(self):
+        """
+        Test de borrado de Objetivo de un seguimiento de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_3.id
+        response = self.client.delete(f"/api/objetivos/{objetivo_id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_delete_no_integrante(self):
+        """
+        Test de borrado de Objetivo no integrante
+        """
+        self.client.force_authenticate(user=self.user_admin_2)
+        objetivo_id = self.objetivo_4.id
+        response = self.client.delete(f"/api/objetivos/{objetivo_id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_delete_no_encargado(self):
+        """
+        Test de borrado de Objetivo no encargado
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_4.id
+        response = self.client.delete(f"/api/objetivos/{objetivo_id}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.data["detail"], "No tiene permiso para borrar un objetivo"
+        )
+
+    def test_delete_no_en_progreso(self):
+        """
+        Test de listado de Objetivo no en progreso
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_5.id
+        response = self.client.delete(f"/api/objetivos/{objetivo_id}/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "No se puede modificar un Seguimiento que no se encuentra en progreso",
+        )
+
     #############
     #    GET    #
     #############
+
+    def test_get_correcto(self):
+        """
+        Test de obtencion de Objetivo correcto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_1.id
+        response = self.client.get(f"/api/objetivos/{objetivo_id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_no_existente(self):
+        """
+        Test de obtencion de Objetivo no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(f"/api/objetivos/600/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_get_otra_institucion(self):
+        """
+        Test de obtencion de Objetivo de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo_id = self.objetivo_3.id
+        response = self.client.get(f"/api/objetivos/{objetivo_id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_get_no_integrante(self):
+        """
+        Test de obtencion de Objetivo no integrante
+        """
+        self.client.force_authenticate(user=self.user_admin_2)
+        objetivo_id = self.objetivo_4.id
+        response = self.client.get(f"/api/objetivos/{objetivo_id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
