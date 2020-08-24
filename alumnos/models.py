@@ -36,4 +36,10 @@ class AlumnoCurso(models.Model):
         return self.alumno.nombre + " del curso " + self.curso.nombre
 
     class Meta:
-        permissions = [("list_alumnocurso", "Puede listar alumnocurso")]
+        permissions = [
+            ("list_alumnocurso", "Puede listar alumnocurso"),
+            (
+                "create_multiple_alumnocurso",
+                "Puede crear multiples alumnocurso",
+            ),
+        ]
