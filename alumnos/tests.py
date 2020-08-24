@@ -385,6 +385,9 @@ class AlumnoCursoTests(APITestCase):
             Permission.objects.get(name="Puede listar alumnos")
         )
         cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede crear multiples alumnocurso")
+        )
+        cls.group_admin.permissions.add(
             Permission.objects.get(name="Can view alumno")
         )
         cls.group_admin.permissions.add(
@@ -472,6 +475,8 @@ class AlumnoCursoTests(APITestCase):
         cls.curso_3 = Curso.objects.create(nombre="Curso3", anio=cls.anio_2)
         cls.curso_3.save()
 
+        cls.curso_4 = Curso.objects.create(nombre="Curso4", anio=cls.anio_1)
+
         cls.anio_lectivo_1 = AnioLectivo.objects.create(
             nombre="2019",
             fecha_desde="2019-01-01",
@@ -495,6 +500,13 @@ class AlumnoCursoTests(APITestCase):
             institucion=cls.institucion_2,
         )
         cls.anio_lectivo_3.save()
+
+        cls.anio_lectivo_4 = AnioLectivo.objects.create(
+            nombre="2022",
+            fecha_desde="2022-01-01",
+            fecha_hasta="2022-12-31",
+            institucion=cls.institucion_1,
+        )
 
         cls.alumno_1 = Alumno.objects.create(
             dni=1,
@@ -584,6 +596,315 @@ class AlumnoCursoTests(APITestCase):
             anio_lectivo=cls.anio_lectivo_3,
         )
         cls.alumno_curso_7.save()
+
+    def test_create_multiple_alumno_curso_admin(self):
+        """
+        Test de creacion multiple de AlumnoCurso por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        alumno_1 = Alumno.objects.get(apellido="1").pk
+        alumno_2 = Alumno.objects.get(apellido="2").pk
+        curso = Curso.objects.get(nombre="Curso2").pk
+        anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+            {
+                "alumno": alumno_2,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_multiple_alumno_curso_docente(self):
+        """
+        Test de creacion multiple de AlumnoCurso por docente
+        """
+        self.client.force_authenticate(user=self.user_docente)
+        alumno_1 = Alumno.objects.get(apellido="1").pk
+        alumno_2 = Alumno.objects.get(apellido="2").pk
+        curso = Curso.objects.get(nombre="Curso2").pk
+        anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+            {
+                "alumno": alumno_2,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_create_multiple_alumno_curso_vacio(self):
+        """
+        Test de creacion multiple de AlumnoCurso vacio
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        data = []
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "No se recibió ninguna información"
+        )
+
+    def test_create_multiple_alumno_curso_not_existing(self):
+        """
+        Test de creacion multiple de AlumnoCurso no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        alumno_1 = Alumno.objects.get(apellido="1").pk
+        alumno_2 = Alumno.objects.get(apellido="2").pk
+        curso = Curso.objects.get(nombre="Curso2").pk
+        anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
+        data = [
+            {"alumno": 400, "curso": curso, "anio_lectivo": anio_lectivo,},
+            {
+                "alumno": alumno_2,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+            {"alumno": alumno_2, "curso": 5000, "anio_lectivo": anio_lectivo,},
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+            {"alumno": alumno_2, "curso": curso, "anio_lectivo": 5000,},
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_create_multiple_alumno_curso_distintos(self):
+        """
+        Test de creacion multiple de AlumnoCurso distintos
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        alumno_1 = Alumno.objects.get(apellido="1").pk
+        alumno_2 = Alumno.objects.get(apellido="2").pk
+        curso_1 = Curso.objects.get(nombre="Curso2").pk
+        curso_2 = Curso.objects.get(nombre="Curso1").pk
+        anio_lectivo_1 = AnioLectivo.objects.get(nombre="2022").pk
+        anio_lectivo_2 = AnioLectivo.objects.get(nombre="2019").pk
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso_1,
+                "anio_lectivo": anio_lectivo_1,
+            },
+            {
+                "alumno": alumno_2,
+                "curso": curso_2,
+                "anio_lectivo": anio_lectivo_1,
+            },
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "No se puede asignar a distintos cursos en una misma llamada",
+        )
+
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso_1,
+                "anio_lectivo": anio_lectivo_1,
+            },
+            {
+                "alumno": alumno_2,
+                "curso": curso_1,
+                "anio_lectivo": anio_lectivo_2,
+            },
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "No se puede asignar a distintos Años Lectivos en una misma llamada",
+        )
+
+    def test_create_multiple_alumno_curso_repetido(self):
+        """
+        Test de creacion multiple de AlumnoCurso repetido
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        alumno_1 = Alumno.objects.get(apellido="1").pk
+        alumno_2 = Alumno.objects.get(apellido="2").pk
+        curso = Curso.objects.get(nombre="Curso2").pk
+        anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+            {
+                "alumno": alumno_1,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "No se puede asignar más de una vez a un Alumno en una misma llamada",
+        )
+
+    def test_create_multiple_alumno_curso_instituciones_distintas(self):
+        """
+        Test de creacion multiple de AlumnoCurso instituciones distintas
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        alumno_1 = Alumno.objects.get(apellido="1").pk
+        alumno_2 = Alumno.objects.get(apellido="5").pk
+        curso = Curso.objects.get(nombre="Curso2").pk
+        anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+            {
+                "alumno": alumno_2,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_create_multiple_alumno_curso_instituciones_distinta_con_curso_anio_lectivo(
+        self,
+    ):
+        """
+        Test de creacion multiple de AlumnoCurso instituciones distinas curso y anio lectivo
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        alumno_1 = Alumno.objects.get(apellido="1").pk
+        alumno_2 = Alumno.objects.get(apellido="5").pk
+        curso_1 = Curso.objects.get(nombre="Curso2").pk
+        curso_2 = Curso.objects.get(nombre="Curso3").pk
+        anio_lectivo_1 = AnioLectivo.objects.get(nombre="2022").pk
+        anio_lectivo_2 = AnioLectivo.objects.get(nombre="2021").pk
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso_1,
+                "anio_lectivo": anio_lectivo_2,
+            }
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso_2,
+                "anio_lectivo": anio_lectivo_1,
+            }
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+        data = [
+            {
+                "alumno": alumno_2,
+                "curso": curso_1,
+                "anio_lectivo": anio_lectivo_1,
+            }
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_create_multiple_alumno_curso_distintos_cursos_un_anio(self):
+        """
+        Test de creacion multiple de AlumnoCurso multiples cursos en un año
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        alumno_1 = Alumno.objects.get(apellido="3").pk
+        alumno_2 = Alumno.objects.get(apellido="4").pk
+        curso = Curso.objects.get(nombre="Curso4").pk
+        anio_lectivo = AnioLectivo.objects.get(nombre="2020").pk
+        data = [
+            {
+                "alumno": alumno_2,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+            {
+                "alumno": alumno_1,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "No se puede asignar un alumno a dos cursos distintos en un Año Lectivo",
+        )
 
     def test_create_alumno_curso_admin(self):
         """

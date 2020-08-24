@@ -15,6 +15,7 @@ from ontrack import responses
 from users.models import User
 from alumnos.models import Alumno, AlumnoCurso
 from django.core.validators import validate_integer
+from itertools import chain
 
 
 class AlumnoViewSet(ModelViewSet):
@@ -420,8 +421,122 @@ class AlumnoCursoViewSet(ModelViewSet):
                 data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
+    @swagger_auto_schema(
+        operation_id="create_multile_alumno_curso",
+        operation_description="""
+        Crear multiples AlumnoCurso (Asignar un Alumno a un Curso específico para un Año Lectivo).
+        No se puede asignar un alumno a dos cursos distintos en un Año Lectivo.
+        Todos los campos son obligatorios y son:
+        -  alumno (id del alumno)
+        -  curso (id del curso)
+        -  anio_lectivo (id del anio_lectivo)
+        """,
+        request_body=serializers.CreateAlumnoCursoSerializer(many=True),
+        responses={**OK_CREATED, **responses.STANDARD_ERRORS},
+    )
+    @action(detail=False, methods=["POST"], name="create_multiple")
+    def create_multiple(self, request):
+        serializer = serializers.CreateAlumnoCursoSerializer(
+            data=request.data, many=True
+        )
+        if serializer.is_valid():
+            if len(serializer.validated_data) == 0:
+                return Response(
+                    data={"detail": "No se recibió ninguna información"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            cursos = list(
+                set([a.get("curso") for a in serializer.validated_data])
+            )
+            if len(cursos) != 1:
+                return Response(
+                    data={
+                        "detail": "No se puede asignar a distintos cursos en una misma llamada"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            anios_lectivos = list(
+                set([a.get("anio_lectivo") for a in serializer.validated_data])
+            )
+            if len(anios_lectivos) != 1:
+                return Response(
+                    data={
+                        "detail": "No se puede asignar a distintos Años Lectivos en una misma llamada"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            alumnos = [a.get("alumno") for a in serializer.validated_data]
+            if len(set(a.id for a in alumnos)) != len(alumnos):
+                return Response(
+                    data={
+                        "detail": "No se puede asignar más de una vez a un Alumno en una misma llamada"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            institucion_alumnos = list(set(a.institucion for a in alumnos))
+            if len(institucion_alumnos) != 1:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            if (
+                len(
+                    set(
+                        [
+                            request.user.institucion,
+                            institucion_alumnos[0],
+                            anios_lectivos[0].institucion,
+                            cursos[0].anio.carrera.institucion,
+                        ]
+                    )
+                )
+                != 1
+            ):
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            for alumno in alumnos:
+                if (
+                    len(
+                        AlumnoCurso.objects.filter(
+                            alumno__exact=alumno,
+                            anio_lectivo__exact=anios_lectivos[0],
+                        )
+                    )
+                    != 0
+                ):
+                    return Response(
+                        data={
+                            "detail": "No se puede asignar un alumno a dos cursos distintos en un Año Lectivo"
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            serializer.save()
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            values = [a.values() for a in serializer.errors]
+            for value in values:
+                value = list(chain(*value))
+                if value and any(
+                    [
+                        True if a.code == "does_not_exist" else False
+                        for a in value
+                    ]
+                ):
+                    return Response(
+                        data={"detail": "No encontrado."},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+            return Response(
+                data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 create_alumno_curso = AlumnoCursoViewSet.as_view({"post": "create"})
+create_multiple_alumno_curso = AlumnoCursoViewSet.as_view(
+    {"post": "create_multiple"}
+)
 list_alumno_curso = AlumnoCursoViewSet.as_view({"get": "list"})
 mix_alumno_curso = AlumnoCursoViewSet.as_view(
     {"get": "get", "delete": "destroy"}
