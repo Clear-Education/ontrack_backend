@@ -25,6 +25,13 @@ class AlumnoViewSet(ModelViewSet):
     OK_LIST = {200: serializers.ViewAlumnoSerializer(many=True)}
     OK_CREATED = {201: ""}
 
+    anio_lectivo_parameter = openapi.Parameter(
+        "anio_lectivo",
+        openapi.IN_QUERY,
+        description="Anio lectivo por el que queremos filtrar la búsqueda. Alumnos que no tienen curso en dicho año lectivo",
+        type=openapi.TYPE_INTEGER,
+    )
+
     @swagger_auto_schema(
         operation_id="get_alumno",
         operation_description="""
@@ -43,13 +50,46 @@ class AlumnoViewSet(ModelViewSet):
 
     @swagger_auto_schema(
         operation_id="list_alumnos",
-        operation_description="Listar los alumnos de la institucion.",
+        operation_description="""
+        Listar los alumnos de la institucion.
+
+        Es posible pasar un query_param "anio_lectivo", el cual devolverá los alumnos que no estén asignados
+        a un curso para dicho Año Lectivo.
+        """,
+        manual_parameters=[anio_lectivo_parameter],
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
     def list(self, request):
         queryset = Alumno.objects.filter(
             institucion__exact=request.user.institucion
         )
+
+        anio_lectivo = request.query_params.get("anio_lectivo", None)
+
+        if anio_lectivo:
+            if anio_lectivo.isnumeric():
+                anio_lectivo = int(anio_lectivo)
+            else:
+                return Response(
+                    data={"detail": "El valor de Año Lectivo no es numérico"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            anio_lectivo_retrieved = get_object_or_404(
+                AnioLectivo, pk=anio_lectivo
+            )
+
+            if anio_lectivo_retrieved.institucion != request.user.institucion:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            alumno_curso_list = AlumnoCurso.objects.filter(
+                anio_lectivo__pk__exact=anio_lectivo,
+            )
+            queryset = queryset.exclude(
+                id__in=[ac.alumno.id for ac in alumno_curso_list]
+            )
+
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = serializers.ViewAlumnoSerializer(page, many=True)
