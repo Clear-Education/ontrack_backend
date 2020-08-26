@@ -45,9 +45,7 @@ class AlumnoTests(APITestCase):
         cls.group_docente.save()
 
         cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_1.save()
         cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
-        cls.institucion_2.save()
 
         cls.user_admin = User.objects.create_user(
             "admin@admin.com",
@@ -62,13 +60,45 @@ class AlumnoTests(APITestCase):
             institucion=cls.institucion_1,
         )
 
+        cls.carrera_1 = Carrera.objects.create(
+            nombre="Carrera1",
+            descripcion=".",
+            institucion=cls.institucion_1,
+            color=".",
+        )
+
+        cls.anio_1 = Anio.objects.create(
+            nombre="Anio1", carrera=cls.carrera_1, color="."
+        )
+
+        cls.curso_1 = Curso.objects.create(nombre="Curso1", anio=cls.anio_1)
+
+        cls.anio_lectivo_1 = AnioLectivo.objects.create(
+            nombre="2019",
+            fecha_desde="2019-01-01",
+            fecha_hasta="2019-12-31",
+            institucion=cls.institucion_1,
+        )
+
+        cls.anio_lectivo_2 = AnioLectivo.objects.create(
+            nombre="2020",
+            fecha_desde="2019-01-01",
+            fecha_hasta="2019-12-31",
+            institucion=cls.institucion_2,
+        )
+
         cls.alumno_1 = Alumno.objects.create(
             dni=1,
             nombre="Alumno",
             apellido="1",
             institucion=cls.institucion_1,
         )
-        cls.alumno_1.save()
+
+        cls.alumno_curso_1 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_1,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_1,
+        )
 
         cls.alumno_2 = Alumno.objects.create(
             dni=2,
@@ -76,7 +106,6 @@ class AlumnoTests(APITestCase):
             apellido="2",
             institucion=cls.institucion_1,
         )
-        cls.alumno_2.save()
 
         cls.alumno_3 = Alumno.objects.create(
             dni=3,
@@ -84,7 +113,6 @@ class AlumnoTests(APITestCase):
             apellido="3",
             institucion=cls.institucion_1,
         )
-        cls.alumno_3.save()
 
         cls.alumno_4 = Alumno.objects.create(
             dni=4,
@@ -92,7 +120,6 @@ class AlumnoTests(APITestCase):
             apellido="4",
             institucion=cls.institucion_1,
         )
-        cls.alumno_4.save()
 
         cls.alumno_5 = Alumno.objects.create(
             dni=5,
@@ -100,7 +127,6 @@ class AlumnoTests(APITestCase):
             apellido="5",
             institucion=cls.institucion_2,
         )
-        cls.alumno_5.save()
 
     def test_create_alumno_admin(self):
         """
@@ -332,6 +358,54 @@ class AlumnoTests(APITestCase):
         response = self.client.get("/api/alumnos/list/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("count"), 4)
+
+    def test_list_alumno_con_query_param(self):
+        """
+        Test de listado correcto de Alumno con query param
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        anio_lectivo = self.anio_lectivo_1.id
+
+        response = self.client.get(
+            f"/api/alumnos/list/?anio_lectivo={anio_lectivo}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 3)
+
+    def test_list_alumno_con_anio_lectivo_no_numerico(self):
+        """
+        Test de listado de Alumno con anio_lectivo no numerico
+        """
+        self.client.force_authenticate(user=self.user_admin)
+
+        response = self.client.get(f"/api/alumnos/list/?anio_lectivo=x")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"], "El valor de Año Lectivo no es numérico"
+        )
+
+    def test_list_alumno_con_anio_lectivo_no_existente(self):
+        """
+        Test de listado de Alumno con anio_lectivo no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+
+        response = self.client.get(f"/api/alumnos/list/?anio_lectivo=2000")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
+
+    def test_list_alumno_con_alumno_curso_otra_institucion(self):
+        """
+        Test de listado de Alumno con anio_lectivo de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        anio_lectivo = self.anio_lectivo_2.id
+
+        response = self.client.get(
+            f"/api/alumnos/list/?anio_lectivo={anio_lectivo}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "No encontrado.")
 
     def test_delete_alumno_admin(self):
         """
