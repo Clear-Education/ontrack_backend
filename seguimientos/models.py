@@ -4,11 +4,13 @@ from users.models import User
 from curricula.models import AnioLectivo, Materia
 from instituciones.models import Institucion
 
+# from softdelete.models import SoftDeleteObject
+
 
 class Seguimiento(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_inicio = models.DateField()
-    fecha_cierre = models.DateField()
+    fecha_inicio = models.DateField(auto_now_add=True)
+    fecha_cierre = models.DateField(null=True)
     descripcion = models.TextField(
         blank=True, verbose_name="Información General"
     )
@@ -46,9 +48,11 @@ class RolSeguimiento(models.Model):
 
 class IntegranteSeguimiento(models.Model):
     fecha_hasta = models.DateField(null=True)
-    fecha_desde = models.DateField()
+    fecha_desde = models.DateField(auto_now_add=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    seguimiento = models.ForeignKey(to=Seguimiento, on_delete=models.CASCADE)
+    seguimiento = models.ForeignKey(
+        to=Seguimiento, related_name="integrantes", on_delete=models.CASCADE
+    )
     usuario = models.ForeignKey(to=User, on_delete=models.CASCADE)
     rol = models.ForeignKey(to=RolSeguimiento, on_delete=models.CASCADE)
 

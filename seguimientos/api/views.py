@@ -1,5 +1,6 @@
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from seguimientos.api import serializers
+from seguimientos.models import Seguimiento, IntegranteSeguimiento
 from seguimientos.models import RolSeguimiento
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
@@ -30,7 +31,20 @@ class SeguimientoViewSet(ViewSet):
         """
         Crear un Seguimiento
         """
-        pass
+        serializer = serializers.CreateSeguimientoSerializer(
+            data=request.data, context={"request": request}
+        )
+        data = {}
+        if serializer.is_valid(raise_exception=True):
+            s = serializer.create(serializer.validated_data)
+            s = Seguimiento.objects.get(pk=s.pk)
+            view_serializer = serializers.ViewSeguimientoSerializer(instance=s)
+        else:
+            data = serializer.errors
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            data=view_serializer.data, status=status.HTTP_201_CREATED
+        )
 
     @swagger_auto_schema(
         request_body=serializers.EditSeguimientoSerializer,
