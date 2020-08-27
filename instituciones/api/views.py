@@ -39,6 +39,12 @@ class InstitucionViewSet(ModelViewSet):
         serializer = serializers.CreateInstitucionSerializer(data=request.data)
         data = {}
         if serializer.is_valid():
+            cuit = serializer.validated_data.get("cuit")
+            if cuit and len(Institucion.objects.filter(cuit__exact=cuit)) > 0:
+                return Response(
+                    data={"detail": "Institución con la misma CUIT existente"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             serializer.save()
         else:
             data = serializer.errors
@@ -60,6 +66,20 @@ class InstitucionViewSet(ModelViewSet):
         )
         data = {}
         if serializer.is_valid():
+            cuit = serializer.validated_data.get("cuit")
+            if (
+                cuit
+                and len(
+                    Institucion.objects.filter(cuit__exact=cuit).exclude(
+                        pk__exact=pk
+                    )
+                )
+                > 0
+            ):
+                return Response(
+                    data={"detail": "Institución con la misma CUIT existente"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             serializer.update(institucion, serializer.validated_data)
             data = serializer.data
         else:

@@ -8,6 +8,7 @@ class Institucion(models.Model):
         max_length=250, blank=True, verbose_name="Dirección"
     )
     pais = models.CharField(max_length=250, blank=True, verbose_name="País")
+    cuit = models.BigIntegerField(verbose_name="CUIT", blank=True, null=True)
     identificador = models.CharField(max_length=250, blank=True)
     descripcion = models.TextField(blank=True, verbose_name="Descripción")
     logo = models.ImageField(blank=True, null=True)

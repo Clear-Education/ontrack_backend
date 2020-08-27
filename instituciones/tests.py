@@ -34,7 +34,7 @@ class InstitucionTests(APITestCase):
         Test de creacion de instituciones
         """
         url = reverse("institucion-create")
-        data = {"nombre": "US Federal Reserve"}
+        data = {"nombre": "US Federal Reserve", "cuit": 1}
 
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
