@@ -479,6 +479,9 @@ class AlumnoCursoTests(APITestCase):
         cls.group_admin.permissions.add(
             Permission.objects.get(name="Can view alumno curso")
         )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede borrar multiples alumnocurso")
+        )
         cls.group_admin.save()
 
         cls.group_docente = Group.objects.create(name="Docente")
@@ -670,6 +673,35 @@ class AlumnoCursoTests(APITestCase):
             anio_lectivo=cls.anio_lectivo_3,
         )
         cls.alumno_curso_7.save()
+
+    def test_delete_multiple_alumno_curso_admin(self):
+        """
+        Test de borrado multiple de AlumnoCurso por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        alumno_1 = Alumno.objects.get(apellido="1").pk
+        curso_1 = Curso.objects.get(nombre="Curso1").pk
+        anio_lectivo_1 = AnioLectivo.objects.get(nombre="2019").pk
+        alumno_2 = Alumno.objects.get(apellido="5").pk
+        curso_2 = Curso.objects.get(nombre="Curso3").pk
+        anio_lectivo_2 = AnioLectivo.objects.get(nombre="2021").pk
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso_1,
+                "anio_lectivo": anio_lectivo_1,
+            },
+            {
+                "alumno": alumno_2,
+                "curso": curso_2,
+                "anio_lectivo": anio_lectivo_2,
+            },
+        ]
+        response = self.client.delete(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(AlumnoCurso.objects.all()), 6)
 
     def test_create_multiple_alumno_curso_admin(self):
         """

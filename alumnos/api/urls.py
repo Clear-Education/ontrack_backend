@@ -8,7 +8,7 @@ urlpatterns = [
     path("curso/", views.create_alumno_curso, name="alumnocurso-create"),
     path(
         "curso/multiple/",
-        views.create_multiple_alumno_curso,
+        views.multiple_alumno_curso,
         name="alumnocurso-create-multiple",
     ),
     path("curso/list/", views.list_alumno_curso, name="alumnocurso-list"),
