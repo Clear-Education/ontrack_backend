@@ -13,15 +13,38 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django_rest_passwordreset.signals import reset_password_token_created
 from instituciones.models import Institucion
+from django.core.exceptions import ValidationError
+import re
+
+NAME_REGEX = "[A-Za-z]{2,25}( [A-Za-z]{2,25})?"
+PHONE_REGEX = "\d+"
+
+
+def validate_name(name):
+    if not re.fullmatch(NAME_REGEX, name):
+        raise ValidationError("Nombre inválido")
+
+
+def validate_phone(name):
+    if not re.fullmatch(PHONE_REGEX, name):
+        raise ValidationError("Teléfono inválido")
 
 
 class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
     email = models.EmailField(unique=True, null=True, primary_key=False)
     name = models.CharField(
-        max_length=150, blank=True, null=True, verbose_name="Nombre"
+        max_length=150,
+        blank=True,
+        null=True,
+        verbose_name="Nombre",
+        validators=[validate_name],
     )
     phone = models.CharField(
-        max_length=50, blank=True, null=True, verbose_name="Teléfono"
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Teléfono",
+        validators=[validate_phone],
     )
     groups = models.ForeignKey(
         to=Group,
@@ -55,7 +78,11 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
         verbose_name="DNI",
     )
     last_name = models.CharField(
-        max_length=150, blank=True, null=True, verbose_name="Apellido"
+        max_length=150,
+        blank=True,
+        null=True,
+        verbose_name="Apellido",
+        validators=[validate_name],
     )
     cargo = models.CharField(max_length=150, blank=True, null=True)
     legajo = models.IntegerField(

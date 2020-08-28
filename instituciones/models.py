@@ -1,5 +1,15 @@
 from django.db import models
 
+PAIS_CHOICES = [
+    ("AR", "Argentina"),
+    ("UR", "Uruguay"),
+    ("CH", "Chile"),
+    ("BR", "Brasil"),
+    ("BV", "Bolivia"),
+    ("PE", "Peru"),
+    ("PG", "Paraguay"),
+]
+
 
 class Institucion(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -7,7 +17,9 @@ class Institucion(models.Model):
     direccion = models.CharField(
         max_length=250, blank=True, verbose_name="Dirección"
     )
-    pais = models.CharField(max_length=250, blank=True, verbose_name="País")
+    pais = models.CharField(
+        max_length=250, blank=True, verbose_name="País", choices=PAIS_CHOICES
+    )
     cuit = models.BigIntegerField(verbose_name="CUIT", blank=True, null=True)
     identificador = models.CharField(max_length=250, blank=True)
     descripcion = models.TextField(blank=True, verbose_name="Descripción")
