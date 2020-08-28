@@ -572,10 +572,38 @@ class AlumnoCursoViewSet(ModelViewSet):
                 data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
+    @swagger_auto_schema(
+        operation_id="delete_multiple_alumno_curso",
+        operation_description="Borrar multiples AlumnoCurso",
+        request_body=serializers.CreateAlumnoCursoSerializer(many=True),
+        responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
+    )
+    @action(detail=False, methods=["DELETE"], name="delete_multiple")
+    def delete_multiple(self, request):
+        serializer = serializers.CreateAlumnoCursoSerializer(
+            many=True, data=request.data
+        )
+        if serializer.is_valid():
+            for alumno_curso in serializer.validated_data:
+                alumno_c = AlumnoCurso.objects.filter(
+                    alumno__exact=alumno_curso.get("alumno"),
+                    curso__exact=alumno_curso.get("curso"),
+                    anio_lectivo__exact=alumno_curso.get("anio_lectivo"),
+                    alumno__institucion__exact=request.user.institucion,
+                )
+                if len(alumno_c) == 1:
+                    alumno_c[0].delete()
+            return Response(status=status.HTTP_200_OK)
+
+        else:
+            return Response(
+                data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 create_alumno_curso = AlumnoCursoViewSet.as_view({"post": "create"})
-create_multiple_alumno_curso = AlumnoCursoViewSet.as_view(
-    {"post": "create_multiple"}
+multiple_alumno_curso = AlumnoCursoViewSet.as_view(
+    {"post": "create_multiple", "delete": "delete_multiple"}
 )
 list_alumno_curso = AlumnoCursoViewSet.as_view({"get": "list"})
 mix_alumno_curso = AlumnoCursoViewSet.as_view(

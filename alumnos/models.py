@@ -42,4 +42,8 @@ class AlumnoCurso(models.Model):
                 "create_multiple_alumnocurso",
                 "Puede crear multiples alumnocurso",
             ),
+            (
+                "delete_multiple_alumnocurso",
+                "Puede borrar multiples alumnocurso",
+            ),
         ]

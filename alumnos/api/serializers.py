@@ -152,4 +152,3 @@ class ViewAlumnoCursoSerializer(serializers.ModelSerializer):
             "curso",
             "anio_lectivo",
         ]
-
