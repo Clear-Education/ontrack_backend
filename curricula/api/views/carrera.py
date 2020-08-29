@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
+from django.core.exceptions import ValidationError
 
 
 class CarreraViewSet(ModelViewSet):
@@ -33,7 +34,13 @@ class CarreraViewSet(ModelViewSet):
         if serializer.is_valid():
             id_institucion = request.user.institucion.id
             institucion = Institucion.objects.get(pk=id_institucion)
-            institucion = serializer.create(institucion)
+            try:
+                institucion = serializer.create(institucion)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             data = {"id": institucion.id}
         else:
             data = serializer.errors
@@ -58,7 +65,13 @@ class CarreraViewSet(ModelViewSet):
         )
         data = {}
         if serializer.is_valid(raise_exception=True):
-            carrera = serializer.update(carrera, serializer.validated_data)
+            try:
+                carrera = serializer.update(carrera, serializer.validated_data)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             response_serializer = serializers.ViewCarreraSerializer(carrera)
             data = response_serializer.data
         else:

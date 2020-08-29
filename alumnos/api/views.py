@@ -16,6 +16,7 @@ from users.models import User
 from alumnos.models import Alumno, AlumnoCurso
 from django.core.validators import validate_integer
 from itertools import chain
+from django.core.exceptions import ValidationError
 
 
 class AlumnoViewSet(ModelViewSet):
@@ -148,7 +149,13 @@ class AlumnoViewSet(ModelViewSet):
                         pass
                     except:
                         return Response(status=status.HTTP_400_BAD_REQUEST)
-            serializer.update(retrieved_alumno)
+            try:
+                serializer.update(retrieved_alumno)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             return Response(status=status.HTTP_200_OK)
         else:
             return Response(
@@ -222,8 +229,13 @@ class AlumnoViewSet(ModelViewSet):
                     data={"detail": "Alumnos con el mismo dni en conflicto"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
-            serializer.save()
+            try:
+                serializer.save()
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             ids = {
                 b.dni: b.id
                 for b in Alumno.objects.filter(

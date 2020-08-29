@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
+from django.core.exceptions import ValidationError
 
 
 class AnioLectivoViewSet(ModelViewSet):
@@ -110,7 +111,13 @@ class AnioLectivoViewSet(ModelViewSet):
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-            serializer.update(anio_lectivo)
+            try:
+                serializer.update(anio_lectivo)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             return Response(status=status.HTTP_200_OK)
         else:
             return Response(
@@ -182,7 +189,13 @@ class AnioLectivoViewSet(ModelViewSet):
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-            serializer.create(request.user.institucion)
+            try:
+                serializer.create(request.user.institucion)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             return Response(status=status.HTTP_201_CREATED)
         else:
             return Response(

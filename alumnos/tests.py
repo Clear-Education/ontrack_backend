@@ -44,8 +44,12 @@ class AlumnoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", cuit=1
+        )
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", cuit=2
+        )
 
         cls.user_admin = User.objects.create_user(
             "admin@admin.com",
@@ -71,7 +75,7 @@ class AlumnoTests(APITestCase):
             nombre="Anio1", carrera=cls.carrera_1, color="."
         )
 
-        cls.curso_1 = Curso.objects.create(nombre="Curso1", anio=cls.anio_1)
+        cls.curso_1 = Curso.objects.create(nombre="CURSO1", anio=cls.anio_1)
 
         cls.anio_lectivo_1 = AnioLectivo.objects.create(
             nombre="2019",
@@ -499,9 +503,13 @@ class AlumnoCursoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", cuit=1
+        )
         cls.institucion_1.save()
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", cuit=2
+        )
         cls.institucion_2.save()
 
         cls.user_admin = User.objects.create_user(
@@ -543,16 +551,16 @@ class AlumnoCursoTests(APITestCase):
         )
         cls.anio_2.save()
 
-        cls.curso_1 = Curso.objects.create(nombre="Curso1", anio=cls.anio_1)
+        cls.curso_1 = Curso.objects.create(nombre="CURSO1", anio=cls.anio_1)
         cls.curso_1.save()
 
-        cls.curso_2 = Curso.objects.create(nombre="Curso2", anio=cls.anio_1)
+        cls.curso_2 = Curso.objects.create(nombre="CURSO2", anio=cls.anio_1)
         cls.curso_2.save()
 
-        cls.curso_3 = Curso.objects.create(nombre="Curso3", anio=cls.anio_2)
+        cls.curso_3 = Curso.objects.create(nombre="CURSO3", anio=cls.anio_2)
         cls.curso_3.save()
 
-        cls.curso_4 = Curso.objects.create(nombre="Curso4", anio=cls.anio_1)
+        cls.curso_4 = Curso.objects.create(nombre="CURSO4", anio=cls.anio_1)
 
         cls.anio_lectivo_1 = AnioLectivo.objects.create(
             nombre="2019",
@@ -710,7 +718,7 @@ class AlumnoCursoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         alumno_1 = Alumno.objects.get(apellido="1").pk
         alumno_2 = Alumno.objects.get(apellido="2").pk
-        curso = Curso.objects.get(nombre="Curso2").pk
+        curso = Curso.objects.get(nombre="CURSO2").pk
         anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
         data = [
             {
@@ -736,7 +744,7 @@ class AlumnoCursoTests(APITestCase):
         self.client.force_authenticate(user=self.user_docente)
         alumno_1 = Alumno.objects.get(apellido="1").pk
         alumno_2 = Alumno.objects.get(apellido="2").pk
-        curso = Curso.objects.get(nombre="Curso2").pk
+        curso = Curso.objects.get(nombre="CURSO2").pk
         anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
         data = [
             {
@@ -776,7 +784,7 @@ class AlumnoCursoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         alumno_1 = Alumno.objects.get(apellido="1").pk
         alumno_2 = Alumno.objects.get(apellido="2").pk
-        curso = Curso.objects.get(nombre="Curso2").pk
+        curso = Curso.objects.get(nombre="CURSO2").pk
         anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
         data = [
             {"alumno": 400, "curso": curso, "anio_lectivo": anio_lectivo,},
@@ -827,8 +835,8 @@ class AlumnoCursoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         alumno_1 = Alumno.objects.get(apellido="1").pk
         alumno_2 = Alumno.objects.get(apellido="2").pk
-        curso_1 = Curso.objects.get(nombre="Curso2").pk
-        curso_2 = Curso.objects.get(nombre="Curso1").pk
+        curso_1 = Curso.objects.get(nombre="CURSO2").pk
+        curso_2 = Curso.objects.get(nombre="CURSO1").pk
         anio_lectivo_1 = AnioLectivo.objects.get(nombre="2022").pk
         anio_lectivo_2 = AnioLectivo.objects.get(nombre="2019").pk
         data = [
@@ -880,7 +888,7 @@ class AlumnoCursoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         alumno_1 = Alumno.objects.get(apellido="1").pk
         alumno_2 = Alumno.objects.get(apellido="2").pk
-        curso = Curso.objects.get(nombre="Curso2").pk
+        curso = Curso.objects.get(nombre="CURSO2").pk
         anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
         data = [
             {
@@ -910,7 +918,7 @@ class AlumnoCursoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         alumno_1 = Alumno.objects.get(apellido="1").pk
         alumno_2 = Alumno.objects.get(apellido="5").pk
-        curso = Curso.objects.get(nombre="Curso2").pk
+        curso = Curso.objects.get(nombre="CURSO2").pk
         anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
         data = [
             {
@@ -939,8 +947,8 @@ class AlumnoCursoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         alumno_1 = Alumno.objects.get(apellido="1").pk
         alumno_2 = Alumno.objects.get(apellido="5").pk
-        curso_1 = Curso.objects.get(nombre="Curso2").pk
-        curso_2 = Curso.objects.get(nombre="Curso3").pk
+        curso_1 = Curso.objects.get(nombre="CURSO2").pk
+        curso_2 = Curso.objects.get(nombre="CURSO3").pk
         anio_lectivo_1 = AnioLectivo.objects.get(nombre="2022").pk
         anio_lectivo_2 = AnioLectivo.objects.get(nombre="2021").pk
         data = [
@@ -989,7 +997,7 @@ class AlumnoCursoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         alumno_1 = Alumno.objects.get(apellido="3").pk
         alumno_2 = Alumno.objects.get(apellido="4").pk
-        curso = Curso.objects.get(nombre="Curso4").pk
+        curso = Curso.objects.get(nombre="CURSO4").pk
         anio_lectivo = AnioLectivo.objects.get(nombre="2020").pk
         data = [
             {
@@ -1018,7 +1026,7 @@ class AlumnoCursoTests(APITestCase):
         """
         self.client.force_authenticate(user=self.user_admin)
         alumno = Alumno.objects.get(apellido="3").pk
-        curso = Curso.objects.get(nombre="Curso2").pk
+        curso = Curso.objects.get(nombre="CURSO2").pk
         anio_lectivo = AnioLectivo.objects.get(nombre="2019").pk
         data = {
             "alumno": alumno,
@@ -1034,7 +1042,7 @@ class AlumnoCursoTests(APITestCase):
         """
         self.client.force_authenticate(user=self.user_docente)
         alumno = Alumno.objects.get(apellido="3").pk
-        curso = Curso.objects.get(nombre="Curso2").pk
+        curso = Curso.objects.get(nombre="CURSO2").pk
         anio_lectivo = AnioLectivo.objects.get(nombre="2019").pk
         data = {
             "alumno": alumno,

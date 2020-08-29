@@ -1,5 +1,6 @@
 from django.db import models
 from instituciones.models import Institucion
+from django.core.exceptions import ValidationError
 
 
 class Carrera(models.Model):
@@ -8,6 +9,31 @@ class Carrera(models.Model):
     institucion = models.ForeignKey(to=Institucion, on_delete=models.CASCADE)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     color = models.CharField(max_length=150)
+
+    def clean(self):
+        if not self.nombre:
+            raise ValidationError("Es necesario ingresar un nombre")
+        self.nombre = self.nombre.upper()
+        if self.id:
+            if len(
+                Carrera.objects.filter(
+                    nombre__exact=self.nombre,
+                    institucion__exact=self.institucion,
+                ).exclude(id__exact=self.id)
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+        else:
+            if len(
+                Carrera.objects.filter(
+                    nombre__exact=self.nombre,
+                    institucion__exact=self.institucion,
+                )
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super(Carrera, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
@@ -23,6 +49,31 @@ class Anio(models.Model):
     carrera = models.ForeignKey(to=Carrera, on_delete=models.CASCADE)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     color = models.CharField(max_length=150)
+
+    def clean(self):
+        if not self.nombre:
+            raise ValidationError("Es necesario ingresar un nombre")
+        self.nombre = self.nombre.upper()
+        if self.id:
+            if len(
+                Anio.objects.filter(
+                    nombre__exact=self.nombre,
+                    carrera__institucion__exact=self.carrera.institucion,
+                ).exclude(id__exact=self.id)
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+        else:
+            if len(
+                Anio.objects.filter(
+                    nombre__exact=self.nombre,
+                    carrera__institucion__exact=self.carrera.institucion,
+                )
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super(Anio, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
@@ -40,6 +91,31 @@ class Curso(models.Model):
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
+    def clean(self):
+        if not self.nombre:
+            raise ValidationError("Es necesario ingresar un nombre")
+        self.nombre = self.nombre.upper()
+        if self.id:
+            if len(
+                Curso.objects.filter(
+                    nombre__exact=self.nombre,
+                    anio__carrera__institucion__exact=self.anio.carrera.institucion,
+                ).exclude(id__exact=self.id)
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+        else:
+            if len(
+                Curso.objects.filter(
+                    nombre__exact=self.nombre,
+                    anio__carrera__institucion__exact=self.anio.carrera.institucion,
+                )
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super(Curso, self).save(*args, **kwargs)
+
     def __str__(self):
         return self.nombre
 
@@ -54,6 +130,31 @@ class Materia(models.Model):
     anio = models.ForeignKey(to=Anio, on_delete=models.CASCADE)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     color = models.CharField(max_length=150)
+
+    def clean(self):
+        if not self.nombre:
+            raise ValidationError("Es necesario ingresar un nombre")
+        self.nombre = self.nombre.upper()
+        if self.id:
+            if len(
+                Materia.objects.filter(
+                    nombre__exact=self.nombre,
+                    anio__carrera__exact=self.anio.carrera,
+                ).exclude(id__exact=self.id)
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+        else:
+            if len(
+                Materia.objects.filter(
+                    nombre__exact=self.nombre,
+                    anio__carrera__exact=self.anio.carrera,
+                )
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super(Materia, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
@@ -72,6 +173,31 @@ class AnioLectivo(models.Model):
     institucion = models.ForeignKey(
         to=Institucion, on_delete=models.CASCADE, blank=True
     )
+
+    def clean(self):
+        if not self.nombre:
+            raise ValidationError("Es necesario ingresar un nombre")
+        self.nombre = self.nombre.upper()
+        if self.id:
+            if len(
+                AnioLectivo.objects.filter(
+                    nombre__exact=self.nombre,
+                    institucion__exact=self.institucion,
+                ).exclude(id__exact=self.id)
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+        else:
+            if len(
+                AnioLectivo.objects.filter(
+                    nombre__exact=self.nombre,
+                    institucion__exact=self.institucion,
+                )
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super(AnioLectivo, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
@@ -98,6 +224,33 @@ class Evaluacion(models.Model):
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     ponderacion = models.FloatField(blank=False)
+
+    def clean(self):
+        if not self.nombre:
+            raise ValidationError("Es necesario ingresar un nombre")
+        self.nombre = self.nombre.upper()
+        if self.id:
+            if len(
+                Evaluacion.objects.filter(
+                    nombre__exact=self.nombre,
+                    materia__exact=self.materia,
+                    anio_lectivo__exact=self.anio_lectivo,
+                ).exclude(id__exact=self.id)
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+        else:
+            if len(
+                Evaluacion.objects.filter(
+                    nombre__exact=self.nombre,
+                    materia__exact=self.materia,
+                    anio_lectivo__exact=self.anio_lectivo,
+                )
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super(Evaluacion, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre

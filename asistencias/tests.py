@@ -61,9 +61,9 @@ class AsistenciaTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1", cuit=1)
         cls.institucion_1.save()
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2", cuit=2)
         cls.institucion_2.save()
 
         cls.user_admin = User.objects.create_user(

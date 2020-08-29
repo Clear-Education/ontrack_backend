@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, get_list_or_404
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
 from drf_yasg import openapi
+from django.core.exceptions import ValidationError
 
 
 class EvaluacionViewSet(ModelViewSet):
@@ -105,7 +106,13 @@ class EvaluacionViewSet(ModelViewSet):
                 ),
                 pk=serializer.validated_data[0]["anio_lectivo"].pk,
             )
-            serializer.create(serializer.validated_data)
+            try:
+                serializer.create(serializer.validated_data)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
@@ -129,7 +136,13 @@ class EvaluacionViewSet(ModelViewSet):
                 materia=serializer.validated_data[0]["materia"].pk,
                 anio_lectivo=serializer.validated_data[0]["anio_lectivo"].pk,
             )
-            serializer.update(instance, serializer.validated_data)
+            try:
+                serializer.update(instance, serializer.validated_data)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)

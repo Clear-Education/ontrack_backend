@@ -11,6 +11,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
 from rest_framework.authtoken.models import Token
+from django.core.exceptions import ValidationError
 
 
 CREATED_REPONSE = {201: ""}
@@ -45,7 +46,13 @@ class InstitucionViewSet(ModelViewSet):
                     data={"detail": "Institución con la misma CUIT existente"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            serializer.save()
+            try:
+                serializer.save()
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
@@ -80,7 +87,13 @@ class InstitucionViewSet(ModelViewSet):
                     data={"detail": "Institución con la misma CUIT existente"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            serializer.update(institucion, serializer.validated_data)
+            try:
+                serializer.update(institucion, serializer.validated_data)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             data = serializer.data
         else:
             data = serializer.errors
