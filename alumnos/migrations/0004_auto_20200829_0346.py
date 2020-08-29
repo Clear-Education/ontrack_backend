@@ -7,27 +7,47 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('alumnos', '0003_auto_20200828_0115'),
+        ("alumnos", "0003_auto_20200828_0115"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='alumnocurso',
-            options={'permissions': [('list_alumnocurso', 'Puede listar alumnocurso'), ('create_multiple_alumnocurso', 'Puede crear multiples alumnocurso')]},
+            name="alumnocurso",
+            options={
+                "permissions": [
+                    ("list_alumnocurso", "Puede listar alumnocurso"),
+                    (
+                        "create_multiple_alumnocurso",
+                        "Puede crear multiples alumnocurso",
+                    ),
+                    (
+                        "delete_multiple_alumnocurso",
+                        "Puede borrar multiples alumnocurso",
+                    ),
+                ]
+            },
         ),
         migrations.AlterField(
-            model_name='alumno',
-            name='apellido',
-            field=models.CharField(blank=True, max_length=150, validators=[alumnos.models.validate_name]),
+            model_name="alumno",
+            name="apellido",
+            field=models.CharField(
+                blank=True,
+                max_length=150,
+                validators=[alumnos.models.validate_name],
+            ),
         ),
         migrations.AlterField(
-            model_name='alumno',
-            name='dni',
+            model_name="alumno",
+            name="dni",
             field=models.IntegerField(blank=True),
         ),
         migrations.AlterField(
-            model_name='alumno',
-            name='nombre',
-            field=models.CharField(blank=True, max_length=150, validators=[alumnos.models.validate_name]),
+            model_name="alumno",
+            name="nombre",
+            field=models.CharField(
+                blank=True,
+                max_length=150,
+                validators=[alumnos.models.validate_name],
+            ),
         ),
     ]
