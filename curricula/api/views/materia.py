@@ -1,6 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
 from curricula.api.serializers import materia as serializers
-from curricula.models import Materia, Anio
+from curricula.models import Materia, Anio, Evaluacion
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -132,6 +132,11 @@ class MateriaViewSet(ModelViewSet):
         materia = get_object_or_404(Materia, pk=pk)
         if materia.anio.carrera.institucion != request.user.institucion:
             return Response(status=status.HTTP_404_NOT_FOUND)
+        if Evaluacion.objects.filter(materia=materia).count() != 0:
+            data = {
+                "detail": "No se puede eliminar una materia que ya contenga evaluaciones!"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         materia.delete()
         return Response(status=status.HTTP_200_OK)
 

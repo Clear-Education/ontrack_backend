@@ -1,6 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
 from curricula.api.serializers import carrera as serializers
-from curricula.models import Carrera
+from curricula.models import Carrera, Anio
 from instituciones.models import Institucion
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
@@ -88,6 +88,11 @@ class CarreraViewSet(ModelViewSet):
         carrera = get_object_or_404(
             queryset, pk=pk, institucion_id=request.user.institucion.id
         )
+        if Anio.objects.filter(carrera=carrera).count() != 0:
+            data = {
+                "detail": "No se puede eliminar una carrera que ya contenga años!"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         carrera.delete()
         return Response(status=status.HTTP_200_OK)
 

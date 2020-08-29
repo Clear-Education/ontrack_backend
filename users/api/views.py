@@ -18,6 +18,7 @@ from rest_framework.authtoken.models import Token
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
 from django.core.exceptions import ValidationError
+from django_rest_passwordreset.models import ResetPasswordToken
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -32,6 +33,28 @@ class CustomAuthToken(ObtainAuthToken):
         responses={200: serializers.LoginResponseSerializer},
     )
     def post(self, request, *args, **kwargs):
+        # checkear si es primer login
+        """
+        user = User.objects.get(email=request.data["username"])
+        if not user:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if user.first_login:
+            token = ResetPasswordToken.objects.create(
+                    user=user,
+                    user_agent=request.META.get(HTTP_USER_AGENT_HEADER, ''),
+                    ip_address=request.META.get(HTTP_IP_ADDRESS_HEADER, ''),
+                )
+            user.reset_token = token.keu
+            response_serializer = serializers.LoginResponseSerializer(user)
+            return Response(data=response_serializer.data)
+        """
+
+        serializer = self.serializer_class(
+            data=request.data, context={"request": request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
         serializer = self.serializer_class(
             data=request.data, context={"request": request}
         )

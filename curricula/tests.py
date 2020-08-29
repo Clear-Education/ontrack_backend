@@ -555,7 +555,7 @@ class AnioCursoTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["nombre"], "1AA")
 
-    def test_delete_anio_con_cursos(self):
+    def test_delete_anio_con_cursos_gives_400(self):
         """
         Test de borrado de anio y cascade a cursos
         """
@@ -574,12 +574,12 @@ class AnioCursoTest(APITestCase):
         response = self.client.delete(
             "/api/anio/{}/".format(anio_id), format="json"
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         for curso in Curso.objects.all():
             response = self.client.get(
                 "/api/curso/{}/".format(curso.pk), format="json"
             )
-            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete_curso_de_anio(self):
         """

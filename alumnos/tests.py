@@ -80,7 +80,7 @@ class AlumnoTests(APITestCase):
         cls.anio_lectivo_1 = AnioLectivo.objects.create(
             nombre="2019",
             fecha_desde="2019-01-01",
-            fecha_hasta="2019-12-31",
+            fecha_hasta="2020-12-31",
             institucion=cls.institucion_1,
         )
 
@@ -416,9 +416,19 @@ class AlumnoTests(APITestCase):
         Test de borrado de Alumno correcto por admin
         """
         self.client.force_authenticate(user=self.user_admin)
-        id_alumno = Alumno.objects.get(dni=1).id
+        id_alumno = self.alumno_2.pk
         response = self.client.delete(f"/api/alumnos/{id_alumno}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_alumno_admin_while_active(self):
+        """
+        Test de borrado de Alumno incorrecto por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+
+        id_alumno = self.alumno_curso_1.alumno.pk
+        response = self.client.delete(f"/api/alumnos/{id_alumno}/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_delete_alumno_admin_no_existente_o_distinta_institucion(self):
         """
