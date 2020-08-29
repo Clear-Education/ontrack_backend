@@ -688,10 +688,10 @@ class AlumnoCursoTests(APITestCase):
         """
         self.client.force_authenticate(user=self.user_admin)
         alumno_1 = Alumno.objects.get(apellido="1").pk
-        curso_1 = Curso.objects.get(nombre="Curso1").pk
+        curso_1 = Curso.objects.get(nombre="CURSO1").pk
         anio_lectivo_1 = AnioLectivo.objects.get(nombre="2019").pk
         alumno_2 = Alumno.objects.get(apellido="5").pk
-        curso_2 = Curso.objects.get(nombre="Curso3").pk
+        curso_2 = Curso.objects.get(nombre="CURSO3").pk
         anio_lectivo_2 = AnioLectivo.objects.get(nombre="2021").pk
         data = [
             {
