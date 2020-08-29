@@ -27,7 +27,7 @@ class MateriaEvaluacionTest(APITestCase):
         cls.group.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(nombre="MIT", cuit=1)
         cls.carrera = Carrera.objects.create(
             **{
                 "nombre": "Ingenieria en Creatividad",
@@ -72,7 +72,7 @@ class MateriaEvaluacionTest(APITestCase):
         id_materia = response.data["id"]
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Materia.objects.count(), 1)
-        self.assertEqual(Materia.objects.get().nombre, "Análisis Matemático")
+        self.assertEqual(Materia.objects.get().nombre, "ANÁLISIS MATEMÁTICO")
         response = self.client.get("/api/materia/{}/".format(id_materia))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -101,7 +101,7 @@ class MateriaEvaluacionTest(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Materia.objects.count(), 1)
-        self.assertEqual(Materia.objects.get().nombre, "Análisis Matemático 1")
+        self.assertEqual(Materia.objects.get().nombre, "ANÁLISIS MATEMÁTICO 1")
 
     def test_delete_materia(self):
         """
@@ -126,7 +126,7 @@ class MateriaEvaluacionTest(APITestCase):
         Test para checkear de que no es posible ver o eliminar \
         una materia de otra Institucion
         """
-        institucion = Institucion.objects.create(nombre="NYU")
+        institucion = Institucion.objects.create(nombre="NYU", cuit=2)
         institucion.save()
         carrera = Carrera.objects.create(
             **{
@@ -256,16 +256,19 @@ class MateriaEvaluacionTest(APITestCase):
                 "anio_lectivo": self.anio_lectivo.pk,
                 "materia": materia.pk,
                 "ponderacion": 0.5,
+                "nombre": "nombre1",
             },
             {
                 "anio_lectivo": self.anio_lectivo.pk,
                 "materia": materia.pk,
                 "ponderacion": 0.3,
+                "nombre": "nombre2",
             },
             {
                 "anio_lectivo": self.anio_lectivo.pk,
                 "materia": materia.pk,
                 "ponderacion": 0.2,
+                "nombre": "nombre3",
             },
         ]
         response = self.client.post(url, data, format="json")
@@ -285,6 +288,7 @@ class MateriaEvaluacionTest(APITestCase):
                 "anio_lectivo": self.anio_lectivo.pk,
                 "materia": materia.pk,
                 "ponderacion": 0.5,
+                "nombre": "nombre4",
             }
         )
         response = self.client.put(
@@ -398,7 +402,7 @@ class AnioCursoTest(APITestCase):
             *Permission.objects.values_list("id", flat=True)
         )
         cls.group.save()
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(nombre="MIT", cuit=1)
         cls.institucion.save()
         cls.carrera = Carrera.objects.create(
             **{
@@ -432,7 +436,7 @@ class AnioCursoTest(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Anio.objects.count(), 1)
-        self.assertEqual(Anio.objects.get().nombre, "Primer Año")
+        self.assertEqual(Anio.objects.get().nombre, "PRIMER AÑO")
 
     def test_create_anio_con_cursos(self):
         """
@@ -470,7 +474,7 @@ class AnioCursoTest(APITestCase):
             "/api/anio/{}/".format(id_anio), data, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Anio.objects.get().nombre, "Primer Añejo")
+        self.assertEqual(Anio.objects.get().nombre, "PRIMER AÑEJO")
 
     def test_edit_anio_invalid_name(self):
         """
@@ -498,7 +502,7 @@ class AnioCursoTest(APITestCase):
         """
         Test para checkear de que no es posible ver un anio de otra Institucion
         """
-        institucion = Institucion.objects.create(nombre="NYU")
+        institucion = Institucion.objects.create(nombre="NYU", cuit=2)
         institucion.save()
         carrera = Carrera.objects.create(
             **{
@@ -614,7 +618,7 @@ class CarreraTests(APITestCase):
             *Permission.objects.values_list("id", flat=True)
         )
         cls.group.save()
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(nombre="MIT", cuit=1)
         cls.institucion.save()
         cls.user = User.objects.create_user(
             "juan@juan.com",
@@ -640,7 +644,7 @@ class CarreraTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Carrera.objects.count(), 1)
         self.assertEqual(
-            Carrera.objects.get().nombre, "Ingenieria en Creatividad"
+            Carrera.objects.get().nombre, "INGENIERIA EN CREATIVIDAD"
         )
         self.assertEqual(
             Carrera.objects.get().institucion.pk, self.institucion.pk
@@ -669,7 +673,7 @@ class CarreraTests(APITestCase):
             "/api/carrera/{}/".format(id_carrera), format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["nombre"], "Ingenieria en Baile")
+        self.assertEqual(response.data["nombre"], "INGENIERIA EN BAILE")
 
     def test_edit_carrera(self):
         """
@@ -777,8 +781,12 @@ class AnioLectivoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", cuit=1
+        )
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", cuit=2
+        )
 
         cls.user_admin_1 = User.objects.create_user(
             "juan1@juan.com",

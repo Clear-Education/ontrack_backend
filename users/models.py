@@ -13,15 +13,57 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django_rest_passwordreset.signals import reset_password_token_created
 from instituciones.models import Institucion
+from django.core.exceptions import ValidationError
+import re
+
+NAME_REGEX = "[A-Za-z]{2,25}( [A-Za-z]{2,25})?"
+PHONE_REGEX = "\d+"
+
+
+def validate_name(name):
+    if not re.fullmatch(NAME_REGEX, name):
+        raise ValidationError("Nombre inválido")
+
+
+def validate_phone(phone):
+    if not re.fullmatch(PHONE_REGEX, phone):
+        raise ValidationError("Teléfono inválido")
+
+
+def validate_email(email):
+    if len(User.objects.filter(email__exact=email)):
+        raise ValidationError("El email indicado ya está en uso")
+
+
+def validate_legajo(legajo, institucion):
+    if len(
+        User.objects.filter(
+            legajo__exact=legajo, institucion__exact=institucion
+        )
+    ):
+        raise ValidationError("El legajo indicado ya está en uso")
+
+
+def validate_dni(dni):
+    if len(User.objects.filter(dni__exact=dni)):
+        raise ValidationError("El dni indicado ya está en uso")
 
 
 class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
-    email = models.EmailField(unique=True, null=True, primary_key=False)
+    email = models.EmailField(null=True)
     name = models.CharField(
-        max_length=150, blank=True, null=True, verbose_name="Nombre"
+        max_length=150,
+        blank=True,
+        null=True,
+        verbose_name="Nombre",
+        validators=[validate_name],
     )
     phone = models.CharField(
-        max_length=50, blank=True, null=True, verbose_name="Teléfono"
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Teléfono",
+        validators=[validate_phone],
     )
     groups = models.ForeignKey(
         to=Group,
@@ -48,19 +90,17 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True)
     dni = models.IntegerField(
-        unique=True,
-        primary_key=False,
-        blank=True,
-        null=True,
-        verbose_name="DNI",
+        primary_key=False, blank=True, null=True, verbose_name="DNI",
     )
     last_name = models.CharField(
-        max_length=150, blank=True, null=True, verbose_name="Apellido"
+        max_length=150,
+        blank=True,
+        null=True,
+        verbose_name="Apellido",
+        validators=[validate_name],
     )
     cargo = models.CharField(max_length=150, blank=True, null=True)
-    legajo = models.IntegerField(
-        unique=True, primary_key=False, blank=True, null=True
-    )
+    legajo = models.IntegerField(primary_key=False, blank=True, null=True)
     direccion = models.CharField(
         max_length=150, null=True, blank=True, verbose_name="Dirección"
     )
@@ -71,6 +111,56 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
+
+    def clean(self):
+        if self.id:
+            if len(
+                User.objects.filter(email__exact=self.email).exclude(
+                    id__exact=self.id
+                )
+            ):
+                raise ValidationError("El email indicado ya está en uso")
+
+            if (
+                self.legajo
+                and self.institucion
+                and len(
+                    User.objects.filter(
+                        legajo__exact=self.legajo,
+                        institucion__exact=self.institucion,
+                    ).exclude(id__exact=self.id)
+                )
+            ):
+                raise ValidationError("El legajo indicado ya está en uso")
+
+            if self.dni and len(
+                User.objects.filter(dni__exact=self.dni).exclude(
+                    id__exact=self.id
+                )
+            ):
+                raise ValidationError("El DNI indicado ya está en uso")
+        else:
+            if len(User.objects.filter(email__exact=self.email)):
+                raise ValidationError("El email indicado ya está en uso")
+
+            if (
+                self.legajo
+                and self.institucion
+                and len(
+                    User.objects.filter(
+                        legajo__exact=self.legajo,
+                        institucion__exact=self.institucion,
+                    )
+                )
+            ):
+                raise ValidationError("El legajo indicado ya está en uso")
+
+            if self.dni and len(User.objects.filter(dni__exact=self.dni)):
+                raise ValidationError("El DNI indicado ya está en uso")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super(User, self).save(*args, **kwargs)
 
     def get_full_name(self):
         return self.email
