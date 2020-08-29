@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from calificaciones import models
 from curricula.models import Evaluacion, Curso
+from calificaciones.models import Calificacion
 from alumnos.models import Alumno, AlumnoCurso
 from ontrack import settings
 from django.shortcuts import get_object_or_404
@@ -97,6 +98,15 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
             if not res:
                 raise serializers.ValidationError(
                     "El alumno no tiene un curso en ese año lectivo"
+                )
+            count = Calificacion.objects.filter(
+                alumno_id=alumno.pk, evaluacion_id=data["evaluacion"].pk
+            ).count()
+            if count != 0:
+                raise serializers.ValidationError(
+                    "Ya existen calificaciones para el alumno {}".format(
+                        alumno.pk
+                    )
                 )
             # Checkeo que el año de la evaluacion sea el año del curso
             if res.curso.anio.pk != data["evaluacion"].materia.anio.pk:
