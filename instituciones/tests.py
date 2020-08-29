@@ -34,27 +34,27 @@ class InstitucionTests(APITestCase):
         Test de creacion de instituciones
         """
         url = reverse("institucion-create")
-        data = {"nombre": "US Federal Reserve"}
+        data = {"nombre": "US Federal Reserve", "cuit": 1}
 
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Institucion.objects.count(), 1)
         self.assertEqual(
-            Institucion.objects.get().nombre, "US Federal Reserve"
+            Institucion.objects.get().nombre, "US FEDERAL RESERVE"
         )
 
     def test_view_institucion(self):
         """
         Test de creacion de instituciones
         """
-        inst = Institucion.objects.create(nombre="Hoover Institution")
+        inst = Institucion.objects.create(nombre="Hoover Institution", cuit=1)
         inst.save()
         id_inst = inst.pk
         response = self.client.get(
             "/api/institucion/{}/".format(id_inst), format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["nombre"], "Hoover Institution")
+        self.assertEqual(response.data["nombre"], "HOOVER INSTITUTION")
 
     def test_edit_institucion(self):
         """
@@ -64,6 +64,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "cuit": 1,
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -84,6 +85,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "cuit": 2,
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -103,6 +105,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "cuit": 3,
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -124,6 +127,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "cuit": 5,
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -144,6 +148,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "cuit": 6,
         }
         inst = Institucion.objects.create(**data)
         inst.save()

@@ -17,6 +17,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.authtoken.models import Token
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
+from django.core.exceptions import ValidationError
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -107,7 +108,13 @@ class UsersViewSet(viewsets.ModelViewSet):
         serializer = serializers.RegistrationSerializer(data=request.data)
         data = {}
         if serializer.is_valid():
-            serializer.save(institucion)
+            try:
+                serializer.save(institucion)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
@@ -165,7 +172,13 @@ class UsersViewSet(viewsets.ModelViewSet):
         if retrieved_user == request.user:
             serializer = serializers.EditUserSerializer(data=request.data)
             if serializer.is_valid():
-                response_user = serializer.update(request.user)
+                try:
+                    response_user = serializer.update(request.user)
+                except ValidationError as e:
+                    return Response(
+                        data={"detail": e.message},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 response_serializer = serializers.ListUserSerializer(
                     response_user, many=False
                 )
@@ -192,7 +205,13 @@ class UsersViewSet(viewsets.ModelViewSet):
                 )
             serializer = serializers.EditOtherUserSerializer(data=request.data)
             if serializer.is_valid():
-                response_user = serializer.update(retrieved_user)
+                try:
+                    response_user = serializer.update(retrieved_user)
+                except ValidationError as e:
+                    return Response(
+                        data={"detail": e.message},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 response_serializer = serializers.ListUserSerializer(
                     response_user, many=False
                 )

@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
 from drf_yasg import openapi
+from django.core.exceptions import ValidationError
 
 
 class MateriaViewSet(ModelViewSet):
@@ -81,7 +82,13 @@ class MateriaViewSet(ModelViewSet):
         data = {}
 
         if serializer.is_valid(raise_exception=True):
-            materia = serializer.create()
+            try:
+                materia = serializer.create()
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             data = {"id": materia.id}
         else:
             data = serializer.errors
@@ -105,7 +112,13 @@ class MateriaViewSet(ModelViewSet):
         data = {}
 
         if serializer.is_valid(raise_exception=True):
-            materia = serializer.update(materia, serializer.validated_data)
+            try:
+                materia = serializer.update(materia, serializer.validated_data)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)

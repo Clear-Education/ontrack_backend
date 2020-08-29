@@ -17,7 +17,7 @@ class AuthenticationTests(APITestCase):
         self.group = Group.objects.create(name="Docente")
         self.group.save()
         self.group.permissions.add(Permission.objects.get(name="Can add user"))
-        self.institucion = Institucion.objects.create(nombre="SNU")
+        self.institucion = Institucion.objects.create(nombre="SNU", cuit=1)
         self.user = User.objects.create_user(
             "juan@juan.com",
             password="juan123",
@@ -171,8 +171,12 @@ class UsersTests(APITestCase):
             Permission.objects.get(name="Can view user")
         )
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", cuit=1
+        )
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", cuit=2
+        )
 
         cls.user_admin_1 = User.objects.create_user(
             "juan1@juan.com",

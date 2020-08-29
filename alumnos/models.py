@@ -1,12 +1,26 @@
 from django.db import models
 from curricula.models import Curso, AnioLectivo
 from instituciones.models import Institucion
+from django.core.exceptions import ValidationError
+import re
+
+NAME_REGEX = "[A-Za-z]{2,25}( [A-Za-z]{2,25})?"
 
 
+def validate_name(name):
+    if not re.fullmatch(NAME_REGEX, name):
+        raise ValidationError("Nombre inválido")
+
+
+# nombre apellido email
 class Alumno(models.Model):
-    dni = models.IntegerField(unique=True, primary_key=False, blank=True)
-    nombre = models.CharField(max_length=150, blank=True)
-    apellido = models.CharField(max_length=150, blank=True)
+    dni = models.IntegerField(blank=True)
+    nombre = models.CharField(
+        max_length=150, blank=True, validators=[validate_name]
+    )
+    apellido = models.CharField(
+        max_length=150, blank=True, validators=[validate_name]
+    )
     email = models.EmailField(null=True, blank=True)
     legajo = models.CharField(max_length=150, blank=True, null=True)
     fecha_nacimiento = models.DateField(null=True, blank=True)
@@ -18,6 +32,50 @@ class Alumno(models.Model):
     institucion = models.ForeignKey(
         to=Institucion, on_delete=models.CASCADE, blank=True
     )
+
+    def clean(self):
+        if self.id:
+            if len(
+                Alumno.objects.filter(dni__exact=self.dni).exclude(
+                    id__exact=self.id
+                )
+            ):
+                raise ValidationError("El DNI indicado ya está en uso")
+
+            if self.legajo and len(
+                Alumno.objects.filter(
+                    legajo__exact=self.legajo,
+                    institucion__exact=self.institucion,
+                ).exclude(id__exact=self.id)
+            ):
+                raise ValidationError("El legajo indicado ya está en uso")
+
+            if self.email and len(
+                Alumno.objects.filter(email__exact=self.email).exclude(
+                    id__exact=self.id
+                )
+            ):
+                raise ValidationError("El email indicado ya está en uso")
+        else:
+            if len(Alumno.objects.filter(dni__exact=self.dni)):
+                raise ValidationError("El DNI indicado ya está en uso")
+
+            if self.legajo and len(
+                Alumno.objects.filter(
+                    legajo__exact=self.legajo,
+                    institucion__exact=self.institucion,
+                )
+            ):
+                raise ValidationError("El legajo indicado ya está en uso")
+
+            if self.email and len(
+                Alumno.objects.filter(email__exact=self.email)
+            ):
+                raise ValidationError("El email indicado ya está en uso")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super(Alumno, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre + " " + self.apellido

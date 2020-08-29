@@ -8,6 +8,7 @@ class CreateInstitucionSerializer(serializers.Serializer):
     direccion = serializers.CharField(max_length=250, required=False)
     pais = serializers.CharField(max_length=250, required=False)
     identificador = serializers.CharField(max_length=250, required=False)
+    cuit = serializers.IntegerField(required=True)
     descripcion = serializers.CharField(required=False)
     logo = serializers.ImageField(required=False)
 
