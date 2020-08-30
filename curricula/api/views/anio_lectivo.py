@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from curricula.api.serializers import anio_lectivo as serializers
 from curricula.models import AnioLectivo
+from alumnos.models import AlumnoCurso
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -133,6 +134,12 @@ class AnioLectivoViewSet(ModelViewSet):
         anio_lectivo = get_object_or_404(AnioLectivo, pk=pk)
         if anio_lectivo.institucion != request.user.institucion:
             return Response(status=status.HTTP_404_NOT_FOUND)
+        # TODO : Agregar checkeo con seguimiento
+        if AlumnoCurso.objects.filter(anio_lectivo=anio_lectivo).count() != 0:
+            data = {
+                "detail": "No se puede eliminar un Año Lectivo que haya tenido alumnos cursando!"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         anio_lectivo.delete()
         return Response(status=status.HTTP_200_OK)
 

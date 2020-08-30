@@ -258,6 +258,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         responses={200: "", **responses.STANDARD_ERRORS},
     )
     def destroy(self, request, pk=None):
+        # TODO : Si estan en seguimiento, no se pueden borrar
         retrieved_user = get_object_or_404(User, pk=pk)
         if retrieved_user == request.user:
             retrieved_user.delete()
