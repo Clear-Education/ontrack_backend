@@ -115,18 +115,41 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
             "anio_lectivo",
         ]
 
-    def create(self, validated_data):
+    def validate(self, data):
+        if "materias" in data:
+            materias = data["materias"]
+            for alumno in data["alumnos"]:
+                m = Materia.objects.filter(anio_id=alumno.curso.anio_id)
+                if m is None:
+                    raise serializers.ValidationError(
+                        detail="Materias inválidas"
+                    )
+                for mat in materias:
+                    if mat not in m:
+                        raise serializers.ValidationError(
+                            detail="Materias inválidas"
+                        )
+        return data
 
+    def create(self, validated_data):
+        # agregar creacion de materias
         institucion_id = self.context["request"].user.institucion_id
         integrantes = []
         if "integrantes" in validated_data:
             integrantes = validated_data.pop("integrantes")
+        materias = []
+        if "materias" in validated_data:
+            materias = validated_data.pop("materias")
+
         alumnos = validated_data.pop("alumnos")
         seguimiento = models.Seguimiento(
             en_progreso=True, institucion_id=institucion_id, **validated_data
         )
         seguimiento.save()
+
         seguimiento.alumnos.add(*alumnos)
+        seguimiento.materias.add(*materias)
+
         for integrante in integrantes:
             i = models.IntegranteSeguimiento.objects.create(
                 seguimiento=seguimiento, **integrante

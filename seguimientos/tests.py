@@ -1,5 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework.test import APIClient
+from rest_framework.utils.serializer_helpers import ReturnList
+
 from users.models import User, Group
 from django.contrib.auth.models import Permission
 from seguimientos.models import Seguimiento, RolSeguimiento
@@ -177,6 +179,41 @@ class SeguimientosTest(APITestCase):
             ],
         }
 
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Seguimiento.objects.count(), 0)
+
+    def test_create_seguimiento_con_materias(self):
+        """
+        Test de creacion de seguimientos + materias
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "materias": [self.materia.pk,],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Seguimiento.objects.count(), 1)
+        self.assertEqual(
+            Seguimiento.objects.get().nombre, "Primer Seguimiento"
+        )
+
+    def test_create_seguimiento_con_materias_invalid(self):
+        """
+        Test de creacion de seguimientos + materias
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "materias": 9,
+        }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Seguimiento.objects.count(), 0)
