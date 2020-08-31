@@ -90,6 +90,7 @@ class CalificacionViewSet(ModelViewSet):
                 data = {
                     "detail": "Ya existe una calificacion para ese alumno y evaluacion!"
                 }
+                return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
