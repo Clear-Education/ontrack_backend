@@ -192,4 +192,13 @@ AUTH_USER_MODEL = "users.User"
 if os.getenv("DJANGO_DEVELOPMENT") is not None:
     from settings_dev import *  # or specific overrides
 
+# MAIL
+
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_HOST_USER = "apikey"
+EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_PASSWORD")
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+
 django_heroku.settings(locals())
