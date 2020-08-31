@@ -83,7 +83,9 @@ class CalificacionViewSet(ModelViewSet):
             ).count()
             if count == 0:
                 calificacion = serializer.create()
-                data = {"id": calificacion.pk}
+                serializer = serializers.ViewCalficacionSerializer(
+                    instance=calificacion
+                )
             else:
                 data = {
                     "detail": "Ya existe una calificacion para ese alumno y evaluacion!"
@@ -91,7 +93,7 @@ class CalificacionViewSet(ModelViewSet):
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-        return Response(data=data, status=status.HTTP_201_CREATED)
+        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
         request_body=serializers.CreateCalificacionListSerializer,

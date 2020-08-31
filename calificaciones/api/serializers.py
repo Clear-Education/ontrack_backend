@@ -5,9 +5,12 @@ from calificaciones.models import Calificacion
 from alumnos.models import Alumno, AlumnoCurso
 from ontrack import settings
 from django.shortcuts import get_object_or_404
+from alumnos.api.serializers import ViewAlumnoSerializer
 
 
 class ViewCalficacionSerializer(serializers.ModelSerializer):
+    alumno = ViewAlumnoSerializer()
+
     class Meta:
         model = models.Calificacion
         fields = "__all__"
