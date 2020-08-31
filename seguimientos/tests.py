@@ -1,7 +1,6 @@
 from rest_framework.test import APITestCase
 from rest_framework.test import APIClient
 from rest_framework.utils.serializer_helpers import ReturnList
-
 from users.models import User, Group
 from django.contrib.auth.models import Permission
 from seguimientos.models import Seguimiento, RolSeguimiento
@@ -213,6 +212,38 @@ class SeguimientosTest(APITestCase):
             "descripcion": "La gran descripción de este seguimiento",
             "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
             "materias": 9,
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Seguimiento.objects.count(), 0)
+
+    def test_create_seguimiento_con_fecha_cierre(self):
+        """
+        Test de creacion de seguimientos + fecha_cierre
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2021",
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Seguimiento.objects.count(), 1)
+
+    def test_create_seguimiento_con_fecha_cierre_invalida(self):
+        """
+        Test de creacion de seguimientos + fecha_cierre invalida
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/1999",
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

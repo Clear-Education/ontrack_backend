@@ -4,6 +4,7 @@ from curricula.models import Materia, AnioLectivo
 from users.models import User
 from ontrack import settings
 from alumnos.models import AlumnoCurso
+import datetime
 
 
 class ListSeguimientoSerializer(serializers.ModelSerializer):
@@ -92,6 +93,9 @@ class ViewSeguimientoSerializer(serializers.ModelSerializer):
 class CreateSeguimientoSerializer(serializers.ModelSerializer):
     descripcion = serializers.CharField(required=True)
     nombre = serializers.CharField(required=True)
+    fecha_cierre = serializers.DateField(
+        required=False, input_formats=settings.DATE_INPUT_FORMAT
+    )
     alumnos = serializers.PrimaryKeyRelatedField(
         queryset=AlumnoCurso.objects.all(), many=True, required=True
     )
@@ -107,7 +111,7 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
         model = models.Seguimiento
         fields = [
             "nombre",
-            "fecha_inicio",
+            "fecha_cierre",
             "descripcion",
             "alumnos",
             "materias",
@@ -129,6 +133,14 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
                         raise serializers.ValidationError(
                             detail="Materias inválidas"
                         )
+        if "fecha_cierre" in data:
+            if (
+                data["fecha_cierre"] < datetime.date.today()
+                or data["fecha_cierre"] < data["anio_lectivo"].fecha_desde
+            ):
+                raise serializers.ValidationError(
+                    detail="Fecha de cierre inválida"
+                )
         return data
 
     def create(self, validated_data):
@@ -159,9 +171,32 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
 
 
 class EditSeguimientoSerializer(serializers.ModelSerializer):
+    descripcion = serializers.CharField(required=False)
+    nombre = serializers.CharField(required=False)
+    fecha_cierre = serializers.DateField(
+        required=False, input_formats=settings.DATE_INPUT_FORMAT
+    )
+    integrantes = CreateIntegranteSerializer(required=False, many=True)
+
     class Meta:
         model = models.Seguimiento
-        fields = "__all__"
+        fields = [
+            "nombre",
+            "fecha_cierre",
+            "descripcion",
+            "integrantes",
+        ]
+
+    def validate(self, data):
+        if "fecha_cierre" in data:
+            if (
+                data["fecha_cierre"] < datetime.date.today()
+                or data["fecha_cierre"] < data["anio_lectivo"].fecha_desde
+            ):
+                raise serializers.ValidationError(
+                    detail="Fecha de cierre inválida"
+                )
+        return data
 
 
 class CreateRolSerializer(serializers.ModelSerializer):
