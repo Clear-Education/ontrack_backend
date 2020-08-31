@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from curricula.api.serializers import anio as serializers_anio
 from curricula.api.serializers import carrera as serializers_carrera
-from curricula.models import Anio, Curso, Carrera
+from curricula.models import Anio, Curso, Carrera, Materia
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -80,6 +80,16 @@ class AnioViewSet(ModelViewSet):
         """
         queryset = Anio.objects.all()
         anio = get_object_or_404(queryset, pk=pk)
+        if Curso.objects.filter(anio=anio).count() != 0:
+            data = {
+                "detail": "No se puede eliminar un año que ya contenga cursos!"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+        if Materia.objects.filter(anio=anio).count() != 0:
+            data = {
+                "detail": "No se puede eliminar un año que ya contenga materias!"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         anio.delete()
         return Response(status=status.HTTP_200_OK)
 

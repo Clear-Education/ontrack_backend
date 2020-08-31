@@ -269,7 +269,9 @@ class UserStatusSerializer(serializers.ModelSerializer):
 
 
 class LoginResponseSerializer(serializers.ModelSerializer):
-    token = serializers.CharField()
+    token = serializers.CharField(required=False)
+    reset_token = serializers.CharField(required=False)
+
     groups = serializers.StringRelatedField()
 
     class Meta:
@@ -289,5 +291,6 @@ class LoginResponseSerializer(serializers.ModelSerializer):
             "localidad",
             "provincia",
             "token",
+            "reset_token",
             "institucion",
         ]

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from calificaciones import models
 from curricula.models import Evaluacion, Curso
+from calificaciones.models import Calificacion
 from alumnos.models import Alumno, AlumnoCurso
 from ontrack import settings
 from django.shortcuts import get_object_or_404
@@ -38,7 +39,7 @@ class CreateCalificacionSerializer(serializers.ModelSerializer):
 
 class CalificacionSerializer(serializers.Serializer):
 
-    puntaje = serializers.FloatField(required=True)
+    puntaje = serializers.FloatField(required=True, min_value=0, max_value=10)
     alumno = serializers.PrimaryKeyRelatedField(
         queryset=Alumno.objects.all(), required=True
     )
@@ -98,6 +99,15 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "El alumno no tiene un curso en ese año lectivo"
                 )
+            count = Calificacion.objects.filter(
+                alumno_id=alumno.pk, evaluacion_id=data["evaluacion"].pk
+            ).count()
+            if count != 0:
+                raise serializers.ValidationError(
+                    "Ya existen calificaciones para el alumno {}".format(
+                        alumno.pk
+                    )
+                )
             # Checkeo que el año de la evaluacion sea el año del curso
             if res.curso.anio.pk != data["evaluacion"].materia.anio.pk:
                 raise serializers.ValidationError(
@@ -115,7 +125,7 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
 
 
 class EditCalificacionSerializer(serializers.ModelSerializer):
-    puntaje = serializers.FloatField(required=False)
+    puntaje = serializers.FloatField(required=False, min_value=0, max_value=10)
     fecha = serializers.DateField(required=False)
 
     class Meta:

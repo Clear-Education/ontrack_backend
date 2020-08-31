@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from curricula.api.serializers import evaluacion as serializers
 from curricula.models import Evaluacion, Materia, AnioLectivo
+from calificaciones.models import Calificacion
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -166,6 +167,14 @@ class EvaluacionViewSet(ModelViewSet):
             )
             if not instances:
                 Response(status=status.HTTP_200_OK)
+            for e in instances:
+                if Calificacion.objects.filter(evaluacion=e).count() != 0:
+                    data = {
+                        "detail": "No se puede eliminar una evaluación que ya contenga calificaciones!"
+                    }
+                    return Response(
+                        data=data, status=status.HTTP_400_BAD_REQUEST
+                    )
             instances.delete()
         else:
             data = serializer.errors
