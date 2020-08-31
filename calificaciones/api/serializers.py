@@ -39,7 +39,7 @@ class CreateCalificacionSerializer(serializers.ModelSerializer):
 
 class CalificacionSerializer(serializers.Serializer):
 
-    puntaje = serializers.FloatField(required=True)
+    puntaje = serializers.FloatField(required=True, min_value=0, max_value=10)
     alumno = serializers.PrimaryKeyRelatedField(
         queryset=Alumno.objects.all(), required=True
     )
@@ -125,7 +125,7 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
 
 
 class EditCalificacionSerializer(serializers.ModelSerializer):
-    puntaje = serializers.FloatField(required=False)
+    puntaje = serializers.FloatField(required=False, min_value=0, max_value=10)
     fecha = serializers.DateField(required=False)
 
     class Meta:
