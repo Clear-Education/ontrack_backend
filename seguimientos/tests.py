@@ -248,3 +248,67 @@ class SeguimientosTest(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Seguimiento.objects.count(), 0)
+
+    def test_edit_seguimiento_descripcion_nombre(self):
+        """
+        Test de edicion de seguimiento
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+        }
+        response = self.client.post(url, data, format="json")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento ###",
+            "descripcion": "La descripcion",
+        }
+
+        response = self.client.patch(
+            f"/api/seguimientos/{response.data['id']}/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["nombre"], data["nombre"])
+        self.assertEqual(response.data["descripcion"], data["descripcion"])
+
+    def test_edit_seguimiento_integrantes(self):
+        """
+        Test de edicion de seguimiento
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+        }
+
+        response = self.client.post(url, data, format="json")
+
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento ###",
+            "descripcion": "La descripcion",
+            "integrantes": response.data["integrantes"],
+        }
+        data["integrantes"].append(
+            {"usuario": self.user_docente.pk, "rol": self.rol_profesor.pk}
+        )
+        print(data)
+
+        response = self.client.patch(
+            f"/api/seguimientos/{response.data['id']}/", data, format="json"
+        )
+        print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["nombre"], data["nombre"])
+        self.assertEqual(response.data["descripcion"], data["descripcion"])

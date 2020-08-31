@@ -20,11 +20,12 @@ class ListSeguimientoSerializer(serializers.ModelSerializer):
 
 
 class ViewIntegranteSerializer(serializers.ModelSerializer):
-    rol = serializers.StringRelatedField(read_only=True)
+    rol = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = models.IntegranteSeguimiento
         fields = [
+            "id",
             "usuario",
             "rol",
             "fecha_desde",
@@ -35,6 +36,33 @@ class ViewIntegranteSerializer(serializers.ModelSerializer):
 
 
 class CreateIntegranteSerializer(serializers.ModelSerializer):
+    rol = serializers.PrimaryKeyRelatedField(
+        queryset=models.RolSeguimiento.objects.all(), required=True
+    )
+    usuario = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=True
+    )
+
+    class Meta:
+        model = models.IntegranteSeguimiento
+        fields = [
+            "usuario",
+            "rol",
+        ]
+
+    def validate(self, data):
+        if data["usuario"].groups.name != "Pedagogía":
+            if data["rol"].nombre == "Encargado de Seguimiento":
+                raise serializers.ValidationError(
+                    "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
+                        data["usuario"].groups.name
+                    )
+                )
+        return data
+
+
+class EditIntegranteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
     rol = serializers.PrimaryKeyRelatedField(
         queryset=models.RolSeguimiento.objects.all(), required=True
     )
@@ -177,6 +205,7 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
         required=False, input_formats=settings.DATE_INPUT_FORMAT
     )
     integrantes = CreateIntegranteSerializer(required=False, many=True)
+    en_progreso = serializers.BooleanField(required=False)
 
     class Meta:
         model = models.Seguimiento
@@ -185,6 +214,7 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
             "fecha_cierre",
             "descripcion",
             "integrantes",
+            "en_progreso",
         ]
 
     def validate(self, data):
@@ -197,6 +227,53 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
                     detail="Fecha de cierre inválida"
                 )
         return data
+
+    def update(self, seguimiento):
+        seguimiento.descripcion = self.validated_data.get(
+            "descripcion", seguimiento.descripcion
+        )
+        seguimiento.nombre = self.validated_data.get(
+            "nombre", seguimiento.nombre
+        )
+        seguimiento.fecha_cierre = self.validated_data.get(
+            "fecha_cierre", seguimiento.fecha_cierre
+        )
+        seguimiento.en_progreso = self.validated_data.get(
+            "en_progreso", seguimiento.en_progreso
+        )
+        # integrantes
+        if "integrantes" in self.validated_data:
+            i_anteriores = models.IntegranteSeguimiento.objects.filter(
+                seguimiento=seguimiento
+            )
+            integrantes = {i.pk: i for i in i_anteriores}
+            print(integrantes)
+            data_mapping = {0: []}
+            for item in integrantes:
+                if integrantes[item].id:
+                    data_mapping[item] = item
+                else:
+                    data_mapping[0].append(item)
+            # Crear y actualizar los integrantes existentes.
+            ret = []
+            for int_id, data in data_mapping.items():
+                i = integrantes.get(int_id, None)
+                if i:
+                    # FIXEAR ESTO
+                    ret.append(i.update(data))
+            for data in data_mapping[0]:
+                ret.append(models.IntegranteSeguimiento.objects.create(data))
+
+            # Eliminar evaluaciones
+            for int_id, integrante in integrantes.items():
+                if int_id not in data_mapping:
+                    if (
+                        self.context["request"].user.pk
+                        != integrante.usuario_id
+                    ):
+                        integrante.delete()
+
+        return seguimiento
 
 
 class CreateRolSerializer(serializers.ModelSerializer):

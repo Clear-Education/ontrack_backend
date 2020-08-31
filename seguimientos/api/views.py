@@ -37,7 +37,7 @@ class SeguimientoViewSet(ViewSet):
         data = {}
         if serializer.is_valid(raise_exception=True):
             s = serializer.create(serializer.validated_data)
-            s = Seguimiento.objects.get(pk=s.pk)
+            s = get_object_or_404(Seguimiento.objects.all(), pk=s.pk,)
             view_serializer = serializers.ViewSeguimientoSerializer(instance=s)
         else:
             data = serializer.errors
@@ -61,7 +61,23 @@ class SeguimientoViewSet(ViewSet):
             - integrantes
             - estado
         """
-        pass
+        serializer = serializers.EditSeguimientoSerializer(
+            data=request.data, context={"request": request}
+        )
+        data = {}
+        if serializer.is_valid(raise_exception=True):
+            s = get_object_or_404(
+                Seguimiento.objects.filter(
+                    institucion_id=request.user.institucion_id
+                ),
+                pk=pk,
+            )
+            s = serializer.update(seguimiento=s)
+            view_serializer = serializers.ViewSeguimientoSerializer(instance=s)
+        else:
+            data = serializer.errors
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data=view_serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
     def destroy(self, request, pk=None):
