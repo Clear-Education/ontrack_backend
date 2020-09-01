@@ -620,8 +620,6 @@ class AlumnoCursoViewSet(ModelViewSet):
                 )
                 if len(alumno_c) >= 1:
                     alumno_c[0].delete()
-                else:
-                    return Response(status=status.HTTP_404_NOT_FOUND)
 
             return Response(status=status.HTTP_200_OK)
 
