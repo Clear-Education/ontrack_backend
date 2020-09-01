@@ -61,6 +61,46 @@ class CreateIntegranteSerializer(serializers.ModelSerializer):
         return data
 
 
+class EditIntegranteListSerializer(serializers.ListSerializer):
+    def update(self, instance, seguimiento):
+        # Mapping id->existentes and id->nuevos.
+        int_mapping = {i.id: i for i in instance}
+        # data_mapping = {item["id"]: item for item in validated_data}
+        data_mapping = {0: []}
+        for item in self.validated_data:
+            if "id" in item:
+                data_mapping[item["id"]] = item
+            else:
+                data_mapping[0].append(item)
+        # Crear y actualizar las evaluaciones existentes.
+        ret = []
+        for int_id, data in data_mapping.items():
+            e = int_mapping.get(int_id, None)
+            if e is not None:
+                ret.append(self.child.update(e, data))
+        for data in data_mapping[0]:
+            data.seguimiento_id = seguimiento.pk
+            ret.append(self.child.create(data))
+
+        # Eliminar integrantes
+        for int_id, integrante in int_mapping.items():
+            if int_id not in data_mapping:
+                if self.context["request"].user.pk != integrante.usuario_id:
+                    integrante.delete()
+        return ret
+
+    def validate(self, data):
+        for integrante in data:
+            if integrante["usuario"].groups.name != "Pedagogía":
+                if integrante["rol"].nombre == "Encargado de Seguimiento":
+                    raise serializers.ValidationError(
+                        "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
+                            integrante["usuario"].groups.name
+                        )
+                    )
+        return data
+
+
 class EditIntegranteSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
     rol = serializers.PrimaryKeyRelatedField(
@@ -73,9 +113,11 @@ class EditIntegranteSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.IntegranteSeguimiento
         fields = [
+            "id",
             "usuario",
             "rol",
         ]
+        list_serializer_class = EditIntegranteListSerializer
 
     def validate(self, data):
         if data["usuario"].groups.name != "Pedagogía":
@@ -204,7 +246,7 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
     fecha_cierre = serializers.DateField(
         required=False, input_formats=settings.DATE_INPUT_FORMAT
     )
-    integrantes = CreateIntegranteSerializer(required=False, many=True)
+    integrantes = EditIntegranteSerializer(required=False, many=True)
     en_progreso = serializers.BooleanField(required=False)
 
     class Meta:
@@ -241,37 +283,12 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
         seguimiento.en_progreso = self.validated_data.get(
             "en_progreso", seguimiento.en_progreso
         )
-        # integrantes
-        if "integrantes" in self.validated_data:
-            i_anteriores = models.IntegranteSeguimiento.objects.filter(
-                seguimiento=seguimiento
-            )
-            integrantes = {i.pk: i for i in i_anteriores}
-            print(integrantes)
-            data_mapping = {0: []}
-            for item in integrantes:
-                if integrantes[item].id:
-                    data_mapping[item] = item
-                else:
-                    data_mapping[0].append(item)
-            # Crear y actualizar los integrantes existentes.
-            ret = []
-            for int_id, data in data_mapping.items():
-                i = integrantes.get(int_id, None)
-                if i:
-                    # FIXEAR ESTO
-                    ret.append(i.update(data))
-            for data in data_mapping[0]:
-                ret.append(models.IntegranteSeguimiento.objects.create(data))
 
-            # Eliminar evaluaciones
-            for int_id, integrante in integrantes.items():
-                if int_id not in data_mapping:
-                    if (
-                        self.context["request"].user.pk
-                        != integrante.usuario_id
-                    ):
-                        integrante.delete()
+        seguimiento.en_progreso = self.validated_data.get(
+            "en_progreso", seguimiento.en_progreso
+        )
+
+        seguimiento.save()
 
         return seguimiento
 
