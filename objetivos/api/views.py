@@ -14,14 +14,15 @@ from drf_yasg import openapi
 from ontrack import responses
 
 # from users.models import User
-# from alumnos.models import Alumno, AlumnoCurso
+from alumnos.models import Alumno, AlumnoCurso
+
 # from django.core.validators import validate_integer
 from objetivos.api import serializers
 from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
 from seguimientos.models import Seguimiento, IntegranteSeguimiento
 
 # from itertools import chain
-# import re
+import re
 import datetime
 
 # from django.db.models import Avg
@@ -366,17 +367,6 @@ class TipoObjetivoViewSet(ModelViewSet):
     )
     def get(self, request, pk=None):
         pass
-        # asistencia_retrieved = get_object_or_404(Asistencia, pk=pk)
-        # if (
-        #     asistencia_retrieved.alumno_curso.alumno.institucion
-        #     != request.user.institucion
-        # ):
-        #     return Response(
-        #         data={"detail": "No encontrado."},
-        #         status=status.HTTP_404_NOT_FOUND,
-        #     )
-        # serializer = serializers.ViewAsistenciaSerializer(asistencia_retrieved)
-        # return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_id="list_tipo_objetivos",
@@ -386,114 +376,6 @@ class TipoObjetivoViewSet(ModelViewSet):
     )
     def list(self, request):
         pass
-        # queryset = Asistencia.objects.filter(
-        #     alumno_curso__alumno__institucion__exact=request.user.institucion
-        # )
-
-        # curso = request.query_params.get("curso", None)
-        # alumno_curso = request.query_params.get("alumno_curso", None)
-        # fecha_desde = request.query_params.get("fecha_desde", None)
-        # fecha_hasta = request.query_params.get("fecha_hasta", None)
-
-        # if fecha_desde:
-        #     if not re.compile(DATE_REGEX).match(fecha_desde):
-        #         return Response(
-        #             data={
-        #                 "detail": "La fecha ingresada no está correctamente expresada"
-        #             },
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     temp = fecha_desde.split("-")
-        #     fecha_desde = datetime.date(
-        #         int(temp[2]), int(temp[1]), int(temp[0])
-        #     )
-        #     if fecha_hasta:
-        #         queryset = queryset.filter(fecha__gte=fecha_desde)
-        #     else:
-        #         queryset = queryset.filter(fecha__exact=fecha_desde)
-        # else:
-        #     return Response(
-        #         data={
-        #             "detail": "Es necesario ingresar al menos la fecha_desde"
-        #         },
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
-
-        # if fecha_hasta:
-        #     if not re.compile(DATE_REGEX).match(fecha_hasta):
-        #         return Response(
-        #             data={
-        #                 "detail": "La fecha ingresada no está correctamente expresada"
-        #             },
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     temp = fecha_hasta.split("-")
-        #     fecha_hasta = datetime.date(
-        #         int(temp[2]), int(temp[1]), int(temp[0])
-        #     )
-        #     queryset = queryset.filter(fecha__lte=fecha_hasta)
-
-        # if fecha_hasta and fecha_desde:
-        #     if fecha_hasta <= fecha_desde:
-        #         return Response(
-        #             data={"detail": "Las fechas ingresadas son inválidas"},
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-
-        # if curso and alumno_curso:
-        #     return Response(
-        #         data={
-        #             "detail": "No se puede listar por curso y por alumno_curso al mismo tiempo"
-        #         },
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
-
-        # if curso:
-        #     if curso.isnumeric():
-        #         curso = int(curso)
-        #     else:
-        #         return Response(
-        #             data={"detail": "El valor de curso no es numérico"},
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     curso = get_object_or_404(Curso, pk=curso)
-        #     if curso.anio.carrera.institucion != request.user.institucion:
-        #         return Response(
-        #             data={"detail": "No encontrado."},
-        #             status=status.HTTP_404_NOT_FOUND,
-        #         )
-        #     queryset = queryset.filter(alumno_curso__curso__exact=curso)
-
-        # if alumno_curso:
-        #     if alumno_curso.isnumeric():
-        #         alumno_curso = int(alumno_curso)
-        #     else:
-        #         return Response(
-        #             data={"detail": "El valor de alumno_curso no es numérico"},
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     alumno_curso = get_object_or_404(AlumnoCurso, pk=alumno_curso)
-        #     if alumno_curso.alumno.institucion != request.user.institucion:
-        #         return Response(
-        #             data={"detail": "No encontrado."},
-        #             status=status.HTTP_404_NOT_FOUND,
-        #         )
-        #     queryset = queryset.filter(alumno_curso__exact=alumno_curso)
-        # elif not curso:
-        #     return Response(
-        #         data={
-        #             "detail": "Es necesario ingresar un curso o alumno_curso"
-        #         },
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
-
-        # page = self.paginate_queryset(queryset)
-        # if page is not None:
-        #     serializer = serializers.ViewAsistenciaSerializer(page, many=True)
-        #     return self.get_paginated_response(serializer.data)
-
-        # serializer = serializers.ViewAsistenciaSerializer(queryset, many=True)
-        # return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_id="update_tipo_objetivo",
@@ -504,34 +386,6 @@ class TipoObjetivoViewSet(ModelViewSet):
     )
     def update(self, request, pk=None):
         pass
-        # asistencia_retrieved = get_object_or_404(Asistencia, pk=pk)
-        # if (
-        #     asistencia_retrieved.alumno_curso.alumno.institucion
-        #     != request.user.institucion
-        # ):
-        #     return Response(
-        #         data={"detail": "No encontrado."},
-        #         status=status.HTTP_404_NOT_FOUND,
-        #     )
-        # serializer = serializers.UpdateAsistenciaSerializer(data=request.data)
-        # if serializer.is_valid():
-        #     if not serializer.validated_data:
-        #         return Response(
-        #             data={"detail": "Body vacío."},
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     asistencia_retrieved.asistio = serializer.validated_data.get(
-        #         "asistio", asistencia_retrieved.asistio
-        #     )
-        #     asistencia_retrieved.descripcion = serializer.validated_data.get(
-        #         "descripcion", asistencia_retrieved.descripcion
-        #     )
-        #     asistencia_retrieved.save()
-        #     return Response(status=status.HTTP_200_OK)
-        # else:
-        #     return Response(
-        #         data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
-        #     )
 
     @swagger_auto_schema(
         operation_id="delete_tipo_objetivo",
@@ -540,14 +394,6 @@ class TipoObjetivoViewSet(ModelViewSet):
     )
     def destroy(self, request, pk=None):
         pass
-        # retrieved_asistencia = get_object_or_404(Asistencia, pk=pk)
-        # if (
-        #     retrieved_asistencia.alumno_curso.alumno.institucion
-        #     != request.user.institucion
-        # ):
-        #     return Response(status=status.HTTP_404_NOT_FOUND,)
-        # retrieved_asistencia.delete()
-        # return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_id="create_tipo_objetivo",
@@ -558,69 +404,6 @@ class TipoObjetivoViewSet(ModelViewSet):
     )
     def create(self, request):
         pass
-        # serializer = serializers.CreateAsistenciaSerializer(data=request.data)
-        # if serializer.is_valid():
-        #     if (
-        #         request.user.institucion
-        #         != serializer.validated_data["alumno_curso"].alumno.institucion
-        #     ):
-        #         return Response(
-        #             data={"detail": "No encontrado."},
-        #             status=status.HTTP_404_NOT_FOUND,
-        #         )
-        #     if serializer.validated_data["fecha"].weekday() >= 5:
-        #         return Response(
-        #             data={
-        #                 "detail": "No se pueden cargar asistencias para fines de semana"
-        #             },
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     if not (
-        #         serializer.validated_data[
-        #             "alumno_curso"
-        #         ].anio_lectivo.fecha_desde
-        #         < serializer.validated_data["fecha"]
-        #         < serializer.validated_data[
-        #             "alumno_curso"
-        #         ].anio_lectivo.fecha_hasta
-        #     ):
-        #         return Response(
-        #             data={
-        #                 "detail": "La fecha especificada no se encuentra dentro del Año Lectivo"
-        #             },
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     asistencias_existentes = Asistencia.objects.filter(
-        #         fecha__exact=serializer.validated_data["fecha"],
-        #         alumno_curso__id__exact=serializer.validated_data[
-        #             "alumno_curso"
-        #         ].id,
-        #     )
-        #     if len(asistencias_existentes) != 0:
-        #         return Response(
-        #             data={
-        #                 "detail": "Ya existen una asistencia cargada para el alumno en el día especificado. Se debe modificar o borrar dicha asistencia"
-        #             },
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     serializer.save()
-        #     return Response(status=status.HTTP_201_CREATED)
-        # else:
-        #     for value in serializer.errors.values():
-        #         if value and any(
-        #             [
-        #                 True if a.code == "does_not_exist" else False
-        #                 for a in value
-        #             ]
-        #         ):
-        #             return Response(
-        #                 data={"detail": "No encontrado."},
-        #                 status=status.HTTP_404_NOT_FOUND,
-        #             )
-
-        #     return Response(
-        #         data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
-        #     )
 
 
 create_tipo_objetivo = TipoObjetivoViewSet.as_view({"post": "create"})
@@ -636,188 +419,477 @@ class AlumnoObjetivoViewSet(ModelViewSet):
         permission_required("alumnoobjetivo"),
     ]
     OK_EMPTY = {200: ""}
-    OK_VIEW = {200: serializers.GetAlumnoObjetivoSerializer()}
     OK_LIST = {200: serializers.GetAlumnoObjetivoSerializer(many=True)}
     OK_CREATED = {201: ""}
 
     @swagger_auto_schema(
         operation_id="get_alumno_objetivo",
         operation_description="""
+        Obtener el último ObjetivoAlumno para un alumno.
+
+        Sirve para obtener el último valor del ObjetivoAlumno para dicho alumno.
+
+        Es necesario pasar como query param el seguimiento (id) o el objetivo (id).
+        
+        Si se pasa el seguimiento, se devuelve una lista con los últimos ObjetivoAlumno
+        de dicho alumno para todos los objetivos existentes en el seguimiento.
+
+        Si se pasa el objetivo, se devuelve solo el último ObjetivoAlumno para dicho 
+        alumno en el objetivo especificado.
         """,
-        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+        responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
     def get(self, request, pk=None):
-        pass
-        # asistencia_retrieved = get_object_or_404(Asistencia, pk=pk)
-        # if (
-        #     asistencia_retrieved.alumno_curso.alumno.institucion
-        #     != request.user.institucion
-        # ):
-        #     return Response(
-        #         data={"detail": "No encontrado."},
-        #         status=status.HTTP_404_NOT_FOUND,
-        #     )
-        # serializer = serializers.ViewAsistenciaSerializer(asistencia_retrieved)
-        # return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+        seguimiento = request.query_params.get("seguimiento")
+        objetivo = request.query_params.get("objetivo")
+
+        if seguimiento and objetivo:
+            return Response(
+                data={
+                    "detail": "No se puede obtener por seguimiento y objetivo al mismo tiempo"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not seguimiento or not objetivo:
+            return Response(
+                data={"detail": "Es necesario pasar o seguimiento u objetivo"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        alumno_retrieved = get_object_or_404(Alumno, pk=pk)
+        if alumno_retrieved.institucion != request.user.institucion:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        alumno_cursos = AlumnoCurso.objects.filter(
+            alumno__exact=alumno_retrieved,
+        )
+
+        if seguimiento:
+            if seguimiento.isnumeric():
+                seguimiento = int(seguimiento)
+            else:
+                return Response(
+                    data={"detail": "El valor de seguimiento no es numérico"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            seguimiento = get_object_or_404(Seguimiento, pk=seguimiento)
+            if seguimiento.institucion != request.user.institucion:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            integrante = IntegranteSeguimiento.objects.filter(
+                fecha_hasta__isnull=True,
+                seguimiento__exact=seguimiento,
+                usuario__exact=request.user,
+            )
+            if not integrante:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if not any(
+                [
+                    a.id in map(lambda x: x.id, seguimiento.alumnos)
+                    for a in alumno_cursos
+                ]
+            ):
+                return Response(
+                    data={"detail": "Alumno no pertenece a dicho seguimiento"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            objetivos = Objetivo.objects.filter(
+                seguimiento__exact=seguimiento,
+            )
+            queryset = (
+                AlumnoObjetivo.objects.filter(
+                    objetivo__in=objetivos, alumno_curso__in=alumno_cursos,
+                )
+                .order_by("-fecha_creacion")
+                .distinct("objetivo")
+            )
+
+            objetivos_filtered = filter(
+                lambda x: not x.tipo_objetivo.cuantitativo, objetivos
+            )
+            queryset_filtered = [x.objetivo.id for x in queryset]
+            alumno_curso = None
+            for ac in alumno_cursos:
+                if ac.anio_lectivo.id == seguimiento.anio_lectivo.id:
+                    alumno_curso = ac
+                    break
+
+            for o in objetivos_filtered:
+                if o.id not in queryset_filtered:
+                    AlumnoObjetivo(
+                        objetivo=o, alumno_curso=ac, alcanzada=False,
+                    ).save()
+
+            if not len(queryset.all()):
+                return Response(
+                    data={
+                        "detail": "El alumno no tiene hitos en dicho seguimiento"
+                    },
+                    status=status.HTTP_204_NO_CONTENT,
+                )
+
+            serializer = serializers.GetAlumnoObjetivoSerializer(
+                queryset, many=True
+            )
+
+        if objetivo:
+            if objetivo.isnumeric():
+                objetivo = int(objetivo)
+            else:
+                return Response(
+                    data={"detail": "El valor de objetivo no es numérico"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            objetivo = get_object_or_404(objetivo, pk=objetivo)
+            if objetivo.seguimiento.institucion != request.user.institucion:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            integrante = IntegranteSeguimiento.objects.filter(
+                fecha_hasta__isnull=True,
+                seguimiento__exact=objetivo.seguimiento,
+                usuario__exact=request.user,
+            )
+            if not integrante:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            if not any(
+                [
+                    a.id in map(lambda x: x.id, objetivo.seguimiento.alumnos)
+                    for a in alumno_cursos
+                ]
+            ):
+                return Response(
+                    data={"detail": "Alumno no pertenece a dicho seguimiento"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            queryset = AlumnoObjetivo.objects.filter(
+                objetivo__exact=objetivo, alumno_curso__in=alumno_cursos,
+            ).order_by("-fecha_creacion")
+
+            queryset_filtered = [x.objetivo.id for x in queryset]
+
+            if (
+                not objetivo.tipo_objetivo.cuantitativo
+                and objetivo.id not in queryset_filtered
+            ):
+
+                alumno_curso = None
+                for ac in alumno_cursos:
+                    if (
+                        ac.anio_lectivo.id
+                        == objetivo.seguimiento.anio_lectivo.id
+                    ):
+                        alumno_curso = ac
+                        break
+
+                AlumnoObjetivo(
+                    objetivo=o, alumno_curso=ac, alcanzada=False,
+                ).save()
+
+            if not len(queryset.all()):
+                return Response(
+                    data={
+                        "detail": "El alumno no tiene hitos en dicho objetivo"
+                    },
+                    status=status.HTTP_204_NO_CONTENT,
+                )
+
+            serializer = serializers.GetAlumnoObjetivoSerializer(queryset[0])
+
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_id="list_alumno_objetivos",
         operation_description="""
+        Obtener la lista de AlumnoObjetivos para un alumno especificado por su id (en la url) y
+        un objetivo especificado por su id (en la url).
+
+        Es útil para obtener la secuencia o progresion del alumno en dicho objetivo
+        Como opcional se pueden pasar las fechas desde y fecha hasta (ninguna o ambas) para filtrar
+        la búsqueda en dicho rango.
         """,
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
-    def list(self, request):
-        pass
-        # queryset = Asistencia.objects.filter(
-        #     alumno_curso__alumno__institucion__exact=request.user.institucion
-        # )
+    def list(self, request, objetivo_pk=None, pk=None):
 
-        # curso = request.query_params.get("curso", None)
-        # alumno_curso = request.query_params.get("alumno_curso", None)
-        # fecha_desde = request.query_params.get("fecha_desde", None)
-        # fecha_hasta = request.query_params.get("fecha_hasta", None)
+        fecha_desde = request.query_params.get("fecha_desde")
+        fecha_hasta = request.query_params.get("fecha_hasta")
 
-        # if fecha_desde:
-        #     if not re.compile(DATE_REGEX).match(fecha_desde):
-        #         return Response(
-        #             data={
-        #                 "detail": "La fecha ingresada no está correctamente expresada"
-        #             },
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     temp = fecha_desde.split("-")
-        #     fecha_desde = datetime.date(
-        #         int(temp[2]), int(temp[1]), int(temp[0])
-        #     )
-        #     if fecha_hasta:
-        #         queryset = queryset.filter(fecha__gte=fecha_desde)
-        #     else:
-        #         queryset = queryset.filter(fecha__exact=fecha_desde)
-        # else:
-        #     return Response(
-        #         data={
-        #             "detail": "Es necesario ingresar al menos la fecha_desde"
-        #         },
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
+        alumno_retrieved = get_object_or_404(Alumno, pk=pk)
+        if alumno_retrieved.institucion != request.user.institucion:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        alumno_cursos = AlumnoCurso.objects.filter(
+            alumno__exact=alumno_retrieved,
+        )
+        objetivo_retrieved = get_object_or_404(Objetivo, pk=objetivo_pk)
+        if (
+            objetivo_retrieved.seguimiento.institucion
+            != request.user.institucion
+        ):
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
-        # if fecha_hasta:
-        #     if not re.compile(DATE_REGEX).match(fecha_hasta):
-        #         return Response(
-        #             data={
-        #                 "detail": "La fecha ingresada no está correctamente expresada"
-        #             },
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     temp = fecha_hasta.split("-")
-        #     fecha_hasta = datetime.date(
-        #         int(temp[2]), int(temp[1]), int(temp[0])
-        #     )
-        #     queryset = queryset.filter(fecha__lte=fecha_hasta)
+        integrante = IntegranteSeguimiento.objects.filter(
+            fecha_hasta__isnull=True,
+            seguimiento__exact=objetivo_retrieved.seguimiento,
+            usuario__exact=request.user,
+        )
+        if not integrante:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if not any(
+            [
+                a.id
+                in map(lambda x: x.id, objetivo_retrieved.seguimiento.alumnos)
+                for a in alumno_cursos
+            ]
+        ):
+            return Response(
+                data={"detail": "Alumno no pertenece a dicho seguimiento"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
-        # if fecha_hasta and fecha_desde:
-        #     if fecha_hasta <= fecha_desde:
-        #         return Response(
-        #             data={"detail": "Las fechas ingresadas son inválidas"},
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
+        queryset = AlumnoObjetivo.objects.filter(
+            objetivo__exact=objetivo_retrieved, alumno_curso__in=alumno_cursos,
+        ).order_by("fecha_creacion")
 
-        # if curso and alumno_curso:
-        #     return Response(
-        #         data={
-        #             "detail": "No se puede listar por curso y por alumno_curso al mismo tiempo"
-        #         },
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
+        if fecha_desde:
+            if not fecha_hasta:
+                return Response(
+                    data={
+                        "detail": "Es necesario ingresar ambas fechas o ninguna"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not re.compile(DATE_REGEX).match(fecha_desde):
+                return Response(
+                    data={
+                        "detail": "La fecha ingresada no está correctamente expresada"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            temp = fecha_desde.split("-")
+            fecha_desde = datetime.date(
+                int(temp[2]), int(temp[1]), int(temp[0])
+            )
+            queryset = queryset.filter(fecha_creacion__gte=fecha_desde)
+        else:
+            return Response(
+                data={
+                    "detail": "Es necesario ingresar al menos la fecha_desde"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # if curso:
-        #     if curso.isnumeric():
-        #         curso = int(curso)
-        #     else:
-        #         return Response(
-        #             data={"detail": "El valor de curso no es numérico"},
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     curso = get_object_or_404(Curso, pk=curso)
-        #     if curso.anio.carrera.institucion != request.user.institucion:
-        #         return Response(
-        #             data={"detail": "No encontrado."},
-        #             status=status.HTTP_404_NOT_FOUND,
-        #         )
-        #     queryset = queryset.filter(alumno_curso__curso__exact=curso)
+        if fecha_hasta:
+            if not fecha_desde:
+                return Response(
+                    data={
+                        "detail": "Es necesario ingresar ambas fechas o ninguna"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if not re.compile(DATE_REGEX).match(fecha_hasta):
+                return Response(
+                    data={
+                        "detail": "La fecha ingresada no está correctamente expresada"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            temp = fecha_hasta.split("-")
+            fecha_hasta = datetime.date(
+                int(temp[2]), int(temp[1]), int(temp[0])
+            )
+            queryset = queryset.filter(fecha__lte=fecha_hasta)
 
-        # if alumno_curso:
-        #     if alumno_curso.isnumeric():
-        #         alumno_curso = int(alumno_curso)
-        #     else:
-        #         return Response(
-        #             data={"detail": "El valor de alumno_curso no es numérico"},
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     alumno_curso = get_object_or_404(AlumnoCurso, pk=alumno_curso)
-        #     if alumno_curso.alumno.institucion != request.user.institucion:
-        #         return Response(
-        #             data={"detail": "No encontrado."},
-        #             status=status.HTTP_404_NOT_FOUND,
-        #         )
-        #     queryset = queryset.filter(alumno_curso__exact=alumno_curso)
-        # elif not curso:
-        #     return Response(
-        #         data={
-        #             "detail": "Es necesario ingresar un curso o alumno_curso"
-        #         },
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #     )
+        if fecha_hasta and fecha_desde:
+            if fecha_hasta <= fecha_desde:
+                return Response(
+                    data={"detail": "Las fechas ingresadas son inválidas"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        # page = self.paginate_queryset(queryset)
-        # if page is not None:
-        #     serializer = serializers.ViewAsistenciaSerializer(page, many=True)
-        #     return self.get_paginated_response(serializer.data)
+        if not len(queryset):
+            return Response(
+                data={"detail": "El alumno no tiene hitos en dicho objetivo"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
 
-        # serializer = serializers.ViewAsistenciaSerializer(queryset, many=True)
-        # return Response(data=serializer.data, status=status.HTTP_200_OK)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = serializers.GetAlumnoObjetivoSerializer(
+                page, many=True
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = serializers.GetAlumnoObjetivoSerializer(
+            queryset, many=True
+        )
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_id="update_alumno_objetivo",
         operation_description="""
+        Modificar el AlumnoObjetivo pasando el id del Objetivo.
+
+        Solo se puede modificar el "alcanzada" de un AlumnoObjetivo que corresponda con un Objetivo
+        de tipo cualitativo.
+        Se puede pasar el id del alumno o del alumno_curso, pero no ambos al mismo tiempo.
         """,
         request_body=serializers.UpdateAlumnoObjetivoSerializer,
         responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
     def update(self, request, pk=None):
-        pass
-        # asistencia_retrieved = get_object_or_404(Asistencia, pk=pk)
-        # if (
-        #     asistencia_retrieved.alumno_curso.alumno.institucion
-        #     != request.user.institucion
-        # ):
-        #     return Response(
-        #         data={"detail": "No encontrado."},
-        #         status=status.HTTP_404_NOT_FOUND,
-        #     )
-        # serializer = serializers.UpdateAsistenciaSerializer(data=request.data)
-        # if serializer.is_valid():
-        #     if not serializer.validated_data:
-        #         return Response(
-        #             data={"detail": "Body vacío."},
-        #             status=status.HTTP_400_BAD_REQUEST,
-        #         )
-        #     asistencia_retrieved.asistio = serializer.validated_data.get(
-        #         "asistio", asistencia_retrieved.asistio
-        #     )
-        #     asistencia_retrieved.descripcion = serializer.validated_data.get(
-        #         "descripcion", asistencia_retrieved.descripcion
-        #     )
-        #     asistencia_retrieved.save()
-        #     return Response(status=status.HTTP_200_OK)
-        # else:
-        #     return Response(
-        #         data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
-        #     )
+
+        objetivo_retrieved = get_object_or_404(Objetivo, pk=pk)
+        if (
+            objetivo_retrieved.seguimiento.institucion
+            != request.user.institucion
+        ):
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if objetivo_retrieved.tipo_objetivo.cuantitativo:
+            return Response(
+                data={
+                    "detail": "No se puede modificar el valor de un objetivo cuantitativo para un alumno."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        integrante = IntegranteSeguimiento.objects.filter(
+            fecha_hasta__isnull=True,
+            seguimiento__exact=objetivo_retrieved.seguimiento,
+            usuario__exact=request.user,
+        )
+        if not integrante:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = serializers.UpdateAlumnoObjetivoSerializer(
+            data=request.data
+        )
+        if serializer.is_valid():
+            alumno = serializer.validated_data.get("alumno")
+            alumno_curso = serializer.validated_data.get("alumno_curso")
+
+            if not alumno and not alumno_curso:
+                return Response(
+                    data={"detail": "Es necesario ingresar el Alumno"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if alumno and alumno_curso:
+                return Response(
+                    data={
+                        "detail": "No se puede ingresar Alumno y AlumnoCurso al mismo tiempo"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if alumno:
+                if alumno.institucion != request.user.institucion:
+                    return Response(
+                        data={"detail": "No encontrado."},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+                alumno_cursos = AlumnoCurso.objects.filter(
+                    alumno__exact=alumno,
+                )
+                if not any(
+                    [
+                        a.id
+                        in map(
+                            lambda x: x.id,
+                            objetivo_retrieved.seguimiento.alumnos,
+                        )
+                        for a in alumno_cursos
+                    ]
+                ):
+                    return Response(
+                        data={
+                            "detail": "Alumno no pertenece a dicho seguimiento"
+                        },
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+                alumno_objetivo = AlumnoObjetivo.objects.get(
+                    alumno_curso__in=alumno_cursos,
+                    objetivo__exact=objetivo_retrieved,
+                )
+
+            if alumno_curso:
+                if alumno_curso.alumno.institucion != request.user.institucion:
+                    return Response(
+                        data={"detail": "No encontrado."},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+                if alumno_curso.id not in map(
+                    lambda x: x.id, objetivo_retrieved.seguimiento.alumnos
+                ):
+                    return Response(
+                        data={
+                            "detail": "Alumno no pertenece a dicho seguimiento"
+                        },
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+
+                alumno_objetivo = AlumnoObjetivo.objects.get(
+                    alumno_curso__exact=alumno_curso,
+                    objetivo__exact=objetivo_retrieved,
+                )
+
+            if (
+                alumno_objetivo.alcanzada
+                == serializer.validated_data["alcanzada"]
+            ):
+                return Response(
+                    data={
+                        "detail": "El objetivo ya se encuentra en ese estado"
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            alumno_objetivo.alcanzada = serializer.validated_data["alcanzada"]
+            alumno_objetivo.save()
+
+            return Response(
+                data=serializers.GetAlumnoObjetivoSerializer(
+                    alumno_objetivo
+                ).data,
+                status=status.HTTP_200_OK,
+            )
+
+        else:
+            return Response(
+                data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
-mix_alumno_objetivo = AlumnoObjetivoViewSet.as_view(
-    {"get": "get", "patch": "update"}
-)
+get_alumno_objetivo = AlumnoObjetivoViewSet.as_view({"get": "get"})
+update_alumno_objetivo = AlumnoObjetivoViewSet.as_view({"patch": "update"})
 list_alumno_objetivo = AlumnoObjetivoViewSet.as_view({"get": "list"})
 

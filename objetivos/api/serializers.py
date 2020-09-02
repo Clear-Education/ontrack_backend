@@ -118,6 +118,7 @@ class GetAlumnoObjetivoSerializer(serializers.ModelSerializer):
     objetivo = GetObjetivoSerializer(many=False)
     alumno_curso = ViewAlumnoCursoSerializer(many=False)
     valor = serializers.FloatField(required=False)
+    fecha_creacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
 
     class Meta:
         model = AlumnoObjetivo
