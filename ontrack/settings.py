@@ -26,7 +26,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 DEVELOPER_ADMIN = False
 
@@ -199,6 +199,7 @@ EMAIL_HOST_USER = "apikey"
 EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_PASSWORD")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = "admin@ontrack.com"
 
 
 django_heroku.settings(locals())
