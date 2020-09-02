@@ -58,7 +58,6 @@ class SeguimientoViewSet(ViewSet):
             - nombre
             - descripcion
             - fecha_cierre
-            - integrantes
             - estado
         """
         serializer = serializers.EditSeguimientoSerializer(
@@ -72,7 +71,6 @@ class SeguimientoViewSet(ViewSet):
                 ),
                 pk=pk,
             )
-            i = IntegranteSeguimiento.objects.filter(seguimiento=s)
             s = serializer.update(seguimiento=s)
             view_serializer = serializers.ViewSeguimientoSerializer(instance=s)
         else:

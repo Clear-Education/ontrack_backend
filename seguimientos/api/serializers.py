@@ -101,33 +101,33 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
         return data
 
 
-class EditIntegranteSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=False)
-    rol = serializers.PrimaryKeyRelatedField(
-        queryset=models.RolSeguimiento.objects.all(), required=True
-    )
-    usuario = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), required=True
-    )
+# class EditIntegranteSerializer(serializers.ModelSerializer):
+#     id = serializers.IntegerField(required=False)
+#     rol = serializers.PrimaryKeyRelatedField(
+#         queryset=models.RolSeguimiento.objects.all(), required=True
+#     )
+#     usuario = serializers.PrimaryKeyRelatedField(
+#         queryset=User.objects.all(), required=True
+#     )
 
-    class Meta:
-        model = models.IntegranteSeguimiento
-        fields = [
-            "id",
-            "usuario",
-            "rol",
-        ]
-        list_serializer_class = EditIntegranteListSerializer
+#     class Meta:
+#         model = models.IntegranteSeguimiento
+#         fields = [
+#             "id",
+#             "usuario",
+#             "rol",
+#         ]
+#         list_serializer_class = EditIntegranteListSerializer
 
-    def validate(self, data):
-        if data["usuario"].groups.name != "Pedagogía":
-            if data["rol"].nombre == "Encargado de Seguimiento":
-                raise serializers.ValidationError(
-                    "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
-                        data["usuario"].groups.name
-                    )
-                )
-        return data
+#     def validate(self, data):
+#         if data["usuario"].groups.name != "Pedagogía":
+#             if data["rol"].nombre == "Encargado de Seguimiento":
+#                 raise serializers.ValidationError(
+#                     "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
+#                         data["usuario"].groups.name
+#                     )
+#                 )
+#         return data
 
 
 class ViewSeguimientoSerializer(serializers.ModelSerializer):
@@ -246,7 +246,6 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
     fecha_cierre = serializers.DateField(
         required=False, input_formats=settings.DATE_INPUT_FORMAT
     )
-    integrantes = EditIntegranteSerializer(required=False, many=True)
     en_progreso = serializers.BooleanField(required=False)
 
     class Meta:
@@ -255,7 +254,6 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
             "nombre",
             "fecha_cierre",
             "descripcion",
-            "integrantes",
             "en_progreso",
         ]
 
@@ -283,12 +281,6 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
         seguimiento.en_progreso = self.validated_data.get(
             "en_progreso", seguimiento.en_progreso
         )
-
-        seguimiento.en_progreso = self.validated_data.get(
-            "en_progreso", seguimiento.en_progreso
-        )
-
-        seguimiento.save()
 
         return seguimiento
 
