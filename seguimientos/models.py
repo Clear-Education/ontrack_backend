@@ -3,6 +3,7 @@ from alumnos.models import AlumnoCurso
 from users.models import User
 from curricula.models import AnioLectivo, Materia
 from instituciones.models import Institucion
+from django.core.exceptions import ValidationError
 
 # from softdelete.models import SoftDeleteObject
 
@@ -24,6 +25,31 @@ class Seguimiento(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    def clean(self):
+        if not self.nombre:
+            raise ValidationError("Es necesario ingresar un nombre")
+        self.nombre = self.nombre.upper()
+        if self.id:
+            if len(
+                Seguimiento.objects.filter(
+                    nombre__exact=self.nombre,
+                    institucion__exact=self.institucion,
+                ).exclude(id__exact=self.id)
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+        else:
+            if len(
+                Seguimiento.objects.filter(
+                    nombre__exact=self.nombre,
+                    institucion__exact=self.institucion,
+                )
+            ):
+                raise ValidationError("El nombre indicado ya está en uso")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super(Seguimiento, self).save(*args, **kwargs)
 
     class Meta:
         ordering = ["fecha_creacion"]

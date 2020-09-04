@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from seguimientos import models
-from curricula.models import Materia, AnioLectivo
+from curricula.models import Materia, AnioLectivo, Anio
 from users.models import User
 from ontrack import settings
 from alumnos.models import AlumnoCurso
@@ -62,6 +62,13 @@ class CreateIntegranteSerializer(serializers.ModelSerializer):
 
 
 class EditIntegranteListSerializer(serializers.ListSerializer):
+    def create(self, validated_data):
+
+        integrantes = [
+            models.IntegranteSeguimiento(**item) for item in validated_data
+        ]
+        return models.IntegranteSeguimiento.objects.bulk_create(integrantes)
+
     def update(self, instance, seguimiento):
         # Mapping id->existentes and id->nuevos.
         int_mapping = {i.id: i for i in instance}
@@ -72,7 +79,7 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
                 data_mapping[item["id"]] = item
             else:
                 data_mapping[0].append(item)
-        # Crear y actualizar las evaluaciones existentes.
+        # Crear y actualizar los integrantes existentes.
         ret = []
         for int_id, data in data_mapping.items():
             e = int_mapping.get(int_id, None)
@@ -85,8 +92,12 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
         # Eliminar integrantes
         for int_id, integrante in int_mapping.items():
             if int_id not in data_mapping:
-                if self.context["request"].user.pk != integrante.usuario_id:
+                if integrante.rol.nombre != "Encargado de Seguimiento":
                     integrante.delete()
+                else:
+                    raise serializers.ValidationError(
+                        detail="No se pueden eliminar encargados!"
+                    )
         return ret
 
     def validate(self, data):
@@ -101,33 +112,22 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
         return data
 
 
-# class EditIntegranteSerializer(serializers.ModelSerializer):
-#     id = serializers.IntegerField(required=False)
-#     rol = serializers.PrimaryKeyRelatedField(
-#         queryset=models.RolSeguimiento.objects.all(), required=True
-#     )
-#     usuario = serializers.PrimaryKeyRelatedField(
-#         queryset=User.objects.all(), required=True
-#     )
+class EditIntegranteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    seguimiento = serializers.PrimaryKeyRelatedField(
+        queryset=models.Seguimiento.objects.all(), required=True
+    )
+    rol = serializers.PrimaryKeyRelatedField(
+        queryset=models.RolSeguimiento.objects.all(), required=True
+    )
+    usuario = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=True
+    )
 
-#     class Meta:
-#         model = models.IntegranteSeguimiento
-#         fields = [
-#             "id",
-#             "usuario",
-#             "rol",
-#         ]
-#         list_serializer_class = EditIntegranteListSerializer
-
-#     def validate(self, data):
-#         if data["usuario"].groups.name != "Pedagogía":
-#             if data["rol"].nombre == "Encargado de Seguimiento":
-#                 raise serializers.ValidationError(
-#                     "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
-#                         data["usuario"].groups.name
-#                     )
-#                 )
-#         return data
+    class Meta:
+        model = models.IntegranteSeguimiento
+        fields = ["id", "seguimiento", "rol", "usuario"]
+        list_serializer_class = EditIntegranteListSerializer
 
 
 class ViewSeguimientoSerializer(serializers.ModelSerializer):
@@ -153,6 +153,7 @@ class ViewSeguimientoSerializer(serializers.ModelSerializer):
             "en_progreso",
             "fecha_inicio",
             "fecha_cierre",
+            "fecha_creacion",
             "anio_lectivo",
             "alumnos",
             "integrantes",
@@ -164,17 +165,17 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
     descripcion = serializers.CharField(required=True)
     nombre = serializers.CharField(required=True)
     fecha_cierre = serializers.DateField(
-        required=False, input_formats=settings.DATE_INPUT_FORMAT
+        required=True, input_formats=settings.DATE_INPUT_FORMAT
     )
     alumnos = serializers.PrimaryKeyRelatedField(
         queryset=AlumnoCurso.objects.all(), many=True, required=True
     )
     materias = serializers.PrimaryKeyRelatedField(
-        queryset=Materia.objects.all(), many=True, required=False
+        queryset=Materia.objects.all(), many=True, required=True
     )
-    integrantes = CreateIntegranteSerializer(required=False, many=True)
+    integrantes = CreateIntegranteSerializer(required=True, many=True)
     anio_lectivo = serializers.PrimaryKeyRelatedField(
-        queryset=AnioLectivo.objects.all(), required=False
+        queryset=AnioLectivo.objects.all(), required=True
     )
 
     class Meta:
@@ -203,6 +204,20 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
                         raise serializers.ValidationError(
                             detail="Materias inválidas"
                         )
+            cant_materias = len(materias)
+            if cant_materias > 1:
+                anio_ids = set([mat.anio.pk for mat in materias])
+                if len(anio_ids) != 1:
+                    raise serializers.ValidationError(
+                        detail="No se pueden elegir materias de distintos años!"
+                    )
+                for anio in anio_ids:
+                    materias = Materia.objects.filter(anio_id=anio)
+                if len(materias) != cant_materias:
+                    raise serializers.ValidationError(
+                        detail="Se deben elegir o una materia o todas las del año"
+                    )
+
         if "fecha_cierre" in data:
             if (
                 data["fecha_cierre"] < datetime.date.today()
@@ -211,6 +226,7 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     detail="Fecha de cierre inválida"
                 )
+
         return data
 
     def create(self, validated_data):
@@ -246,7 +262,6 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
     fecha_cierre = serializers.DateField(
         required=False, input_formats=settings.DATE_INPUT_FORMAT
     )
-    en_progreso = serializers.BooleanField(required=False)
 
     class Meta:
         model = models.Seguimiento
@@ -254,7 +269,6 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
             "nombre",
             "fecha_cierre",
             "descripcion",
-            "en_progreso",
         ]
 
     def validate(self, data):
@@ -278,6 +292,18 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
         seguimiento.fecha_cierre = self.validated_data.get(
             "fecha_cierre", seguimiento.fecha_cierre
         )
+        seguimiento.save()
+        return seguimiento
+
+
+class StatusSeguimientoSerializer(serializers.ModelSerializer):
+    en_progreso = serializers.BooleanField(required=True)
+
+    class Meta:
+        model = models.Seguimiento
+        fields = ["en_progreso"]
+
+    def update(self, seguimiento):
         seguimiento.en_progreso = self.validated_data.get(
             "en_progreso", seguimiento.en_progreso
         )
