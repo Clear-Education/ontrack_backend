@@ -419,6 +419,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
         permission_required("alumnoobjetivo"),
     ]
     OK_EMPTY = {200: ""}
+    OK_VIEW = {200: serializers.GetAlumnoObjetivoSerializer(many=False)}
     OK_LIST = {200: serializers.GetAlumnoObjetivoSerializer(many=True)}
     OK_CREATED = {201: ""}
 
@@ -452,7 +453,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not seguimiento or not objetivo:
+        if not seguimiento and not objetivo:
             return Response(
                 data={"detail": "Es necesario pasar o seguimiento u objetivo"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -495,7 +496,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
 
             if not any(
                 [
-                    a.id in map(lambda x: x.id, seguimiento.alumnos)
+                    a.id in map(lambda x: x.id, seguimiento.alumnos.all())
                     for a in alumno_cursos
                 ]
             ):
@@ -510,7 +511,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                 AlumnoObjetivo.objects.filter(
                     objetivo__in=objetivos, alumno_curso__in=alumno_cursos,
                 )
-                .order_by("-fecha_creacion")
+                .order_by("objetivo","-fecha_creacion")
                 .distinct("objetivo")
             )
 
@@ -550,7 +551,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                     data={"detail": "El valor de objetivo no es numérico"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            objetivo = get_object_or_404(objetivo, pk=objetivo)
+            objetivo = get_object_or_404(Objetivo, pk=objetivo)
             if objetivo.seguimiento.institucion != request.user.institucion:
                 return Response(
                     data={"detail": "No encontrado."},
@@ -568,7 +569,8 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                 )
             if not any(
                 [
-                    a.id in map(lambda x: x.id, objetivo.seguimiento.alumnos)
+                    a.id
+                    in map(lambda x: x.id, objetivo.seguimiento.alumnos.all())
                     for a in alumno_cursos
                 ]
             ):
@@ -661,7 +663,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
         if not any(
             [
                 a.id
-                in map(lambda x: x.id, objetivo_retrieved.seguimiento.alumnos)
+                in map(lambda x: x.id, objetivo_retrieved.seguimiento.alumnos.all())
                 for a in alumno_cursos
             ]
         ):
@@ -789,6 +791,11 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                 data={"detail": "No encontrado."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        if "encargado" not in integrante[0].rol.nombre.lower():
+            return Response(
+                data={"detail": "No tiene permiso para modificar el objetivo"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         serializer = serializers.UpdateAlumnoObjetivoSerializer(
             data=request.data
@@ -825,7 +832,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                         a.id
                         in map(
                             lambda x: x.id,
-                            objetivo_retrieved.seguimiento.alumnos,
+                            objetivo_retrieved.seguimiento.alumnos.all(),
                         )
                         for a in alumno_cursos
                     ]
@@ -835,6 +842,13 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                             "detail": "Alumno no pertenece a dicho seguimiento"
                         },
                         status=status.HTTP_404_NOT_FOUND,
+                    )
+                if not objetivo_retrieved.seguimiento.en_progreso:
+                    return Response(
+                        data={
+                            "detail": "No se puede modificar un Seguimiento que no se encuentra en progreso"
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
                 alumno_objetivo = AlumnoObjetivo.objects.get(
                     alumno_curso__in=alumno_cursos,
@@ -848,7 +862,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                         status=status.HTTP_404_NOT_FOUND,
                     )
                 if alumno_curso.id not in map(
-                    lambda x: x.id, objetivo_retrieved.seguimiento.alumnos
+                    lambda x: x.id, objetivo_retrieved.seguimiento.alumnos.all()
                 ):
                     return Response(
                         data={

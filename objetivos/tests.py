@@ -14,11 +14,12 @@ from seguimientos.models import (
 )
 from rest_framework import status
 import datetime
+from collections import OrderedDict
 
 # from rest_framework.utils.serializer_helpers import ReturnList
 
 # Create your tests here.
-class AsistenciaTests(APITestCase):
+class ObjetivoTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
         """
@@ -831,4 +832,339 @@ class AsistenciaTests(APITestCase):
         response = self.client.get(f"/api/objetivos/{objetivo_id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
+
+
+class AlumnoObjetivoTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Setup de User y permisos para poder ejecutar todas las acciones
+        """
+        cls.client = APIClient()
+        cls.group_admin = Group.objects.create(name="Admin")
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede listar alumno_objetivo")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can change alumno objetivo")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can view alumno objetivo")
+        )
+        cls.group_admin.save()
+
+        cls.group_docente = Group.objects.create(name="Docente")
+        cls.group_docente.permissions.add(
+            Permission.objects.get(name="Puede listar alumno_objetivo")
+        )
+        cls.group_docente.permissions.add(
+            Permission.objects.get(name="Can view alumno objetivo")
+        )
+        cls.group_docente.save()
+
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+
+        cls.user_admin = User.objects.create_user(
+            "admin@admin.com",
+            password="password",
+            groups=cls.group_admin,
+            institucion=cls.institucion_1,
+        )
+        cls.user_docente = User.objects.create_user(
+            "docente@docente.com",
+            password="password",
+            groups=cls.group_docente,
+            institucion=cls.institucion_1,
+        )
+
+        cls.carrera_1 = Carrera.objects.create(
+            nombre="Carrera1",
+            descripcion=".",
+            institucion=cls.institucion_1,
+            color=".",
+        )
+
+        cls.anio_1 = Anio.objects.create(
+            nombre="Anio1", carrera=cls.carrera_1, color="."
+        )
+
+        cls.curso_1 = Curso.objects.create(nombre="Curso1", anio=cls.anio_1)
+
+        cls.anio_lectivo_1 = AnioLectivo.objects.create(
+            nombre="2020",
+            fecha_desde="2020-01-01",
+            fecha_hasta="2020-12-31",
+            institucion=cls.institucion_1,
+        )
+
+        cls.alumno_1 = Alumno.objects.create(
+            dni=1,
+            nombre="Alumno",
+            apellido="1",
+            institucion=cls.institucion_1,
+        )
+
+        cls.alumno_2 = Alumno.objects.create(
+            dni=2,
+            nombre="Alumno2",
+            apellido="2",
+            institucion=cls.institucion_1,
+        )
+
+        cls.alumno_3 = Alumno.objects.create(
+            dni=3,
+            nombre="Alumno3",
+            apellido="3",
+            institucion=cls.institucion_2,
+        )
+
+        cls.alumno_curso_1 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_1,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_1,
+        )
+
+        cls.alumno_curso_2 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_2,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_1,
+        )
+
+        cls.materia_1 = Materia.objects.create(
+            nombre="Matematicas", anio=cls.anio_1
+        )
+
+        cls.materia_2 = Materia.objects.create(
+            nombre="Lengua", anio=cls.anio_1
+        )
+
+        cls.seguimiento_1 = Seguimiento.objects.create(
+            nombre="seguimiento_1",
+            en_progreso=True,
+            institucion=cls.institucion_1,
+            fecha_inicio=datetime.date(2020, 1, 1),
+            fecha_cierre=datetime.date(2020, 12, 31),
+            descripcion=".",
+            anio_lectivo=cls.anio_lectivo_1,
+            encargado=cls.user_admin,
+        )
+        cls.seguimiento_1.alumnos.add(cls.alumno_curso_1, cls.alumno_curso_2)
+        cls.seguimiento_1.materias.add(cls.materia_1, cls.materia_2)
+        cls.seguimiento_1.save()
+
+        cls.seguimiento_2 = Seguimiento.objects.create(
+            nombre="seguimiento_2",
+            en_progreso=False,
+            institucion=cls.institucion_1,
+            fecha_inicio=datetime.date(2020, 1, 1),
+            fecha_cierre=datetime.date(2020, 12, 31),
+            descripcion=".",
+            anio_lectivo=cls.anio_lectivo_1,
+            encargado=cls.user_admin,
+        )
+        cls.seguimiento_2.alumnos.add(cls.alumno_curso_1, cls.alumno_curso_2)
+        cls.seguimiento_2.materias.add(cls.materia_1, cls.materia_2)
+        cls.seguimiento_2.save()
+
+        cls.seguimiento_3 = Seguimiento.objects.create(
+            nombre="seguimiento_3",
+            en_progreso=True,
+            institucion=cls.institucion_2,
+            fecha_inicio=datetime.date(2020, 1, 1),
+            fecha_cierre=datetime.date(2020, 12, 31),
+            descripcion=".",
+            anio_lectivo=cls.anio_lectivo_1,
+            encargado=cls.user_admin,
+        )
+
+        cls.rol_1 = RolSeguimiento.objects.create(
+            nombre="Encargado de Seguimiento"
+        )
+
+        cls.rol_2 = RolSeguimiento.objects.create(nombre="Otro")
+
+        cls.integrante_1 = IntegranteSeguimiento.objects.create(
+            seguimiento=cls.seguimiento_1,
+            usuario=cls.user_admin,
+            rol=cls.rol_1,
+            fecha_desde=datetime.date(2020, 1, 1),
+        )
+
+        cls.integrante_2 = IntegranteSeguimiento.objects.create(
+            seguimiento=cls.seguimiento_1,
+            usuario=cls.user_docente,
+            rol=cls.rol_2,
+            fecha_desde=datetime.date(2020, 1, 1),
+        )
+
+        cls.tipo_objetivo_1 = TipoObjetivo.objects.create(
+            nombre="Cualitativo", cuantitativo=False, multiple=True,
+        )
+
+        cls.tipo_objetivo_2 = TipoObjetivo.objects.create(
+            nombre="Promedio notas",
+            cuantitativo=True,
+            multiple=False,
+            valor_minimo=0,
+            valor_maximo=100,
+        )
+
+        cls.objetivo_1 = Objetivo.objects.create(
+            descripcion="conducta",
+            seguimiento=cls.seguimiento_1,
+            tipo_objetivo=cls.tipo_objetivo_1,
+        )
+        cls.objetivo_2 = Objetivo.objects.create(
+            valor_objetivo_cuantitativo=70,
+            seguimiento=cls.seguimiento_1,
+            tipo_objetivo=cls.tipo_objetivo_2,
+        )
+        cls.objetivo_3 = Objetivo.objects.create(
+            valor_objetivo_cuantitativo=70,
+            seguimiento=cls.seguimiento_3,
+            tipo_objetivo=cls.tipo_objetivo_2,
+        )
+
+        cls.alumno_objetivo_1 = AlumnoObjetivo.objects.create(
+            objetivo=cls.objetivo_2,
+            alumno_curso=cls.alumno_curso_1,
+            valor=65,
+            alcanzada=False,
+        )
+        cls.alumno_objetivo_2 = AlumnoObjetivo.objects.create(
+            objetivo=cls.objetivo_2,
+            alumno_curso=cls.alumno_curso_2,
+            valor=50,
+            alcanzada=False,
+        )
+        cls.alumno_objetivo_3 = AlumnoObjetivo.objects.create(
+            objetivo=cls.objetivo_1,
+            alumno_curso=cls.alumno_curso_1,
+            alcanzada=True,
+        )
+
+    #############
+    #    GET    #
+    #############
+
+    def test_get_correcto(self):
+        """
+        Test de obtencion de AlumnoObjetivo correcto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_1.id
+        objetivo = self.objetivo_1.id
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?objetivo={objetivo}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response.data, dict))
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?seguimiento={seguimiento}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response.data, list))
+        self.assertEqual(len(response.data), 2)
+
+    def test_get_seguimiento_y_objetivo(self):
+        """
+        Test de obtencion de AlumnoObjetivo con seguimiento y objetivo
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_1.id
+        objetivo = self.objetivo_1.id
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?objetivo={objetivo}&seguimiento={seguimiento}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "No se puede obtener por seguimiento y objetivo al mismo tiempo",
+        )
+
+    def test_get_sin_seguimiento_ni_objetivo(self):
+        """
+        Test de obtencion de AlumnoObjetivo sin seguimiento ni objetivo
+        """
+        self.client.force_authenticate(user=self.user_admin)
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "Es necesario pasar o seguimiento u objetivo",
+        )
+
+    def test_get_alumno_no_existente_u_otra_institucion(self):
+        """
+        Test de obtencion de AlumnoObjetivo con alumno no existente o de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo = self.objetivo_1.id
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/5000/?objetivo={objetivo}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_3.id}/?objetivo={objetivo}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+    def test_get_seguimiento_no_existente_u_otra_institucion(self):
+        """
+        Test de obtencion de AlumnoObjetivo con seguimiento no existente o de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?seguimiento={self.seguimiento_3.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?seguimiento=5000"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+    def test_get_objetivo_no_existente_u_otra_institucion(self):
+        """
+        Test de obtencion de AlumnoObjetivo con objetivo no existente o de otra institucion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?objetivo={self.objetivo_3.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?objetivo=5000"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
 
