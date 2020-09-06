@@ -31,7 +31,9 @@ class SeguimientosTest(APITestCase):
         cls.group.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(
+            nombre="MIT", cuit=1101010
+        )
         cls.user = User.objects.create_user(
             "juan@juan.com",
             password="juan123",
