@@ -63,6 +63,8 @@ INSTALLED_APPS = [
     "alumnos",
     "calificaciones",
     "asistencias",
+    "seguimientos",
+    "objetivos",
 ]
 
 REST_FRAMEWORK = {
