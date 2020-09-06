@@ -89,6 +89,7 @@ class SeguimientosTest(APITestCase):
                 "anio_lectivo": cls.anio_lectivo,
                 "materia": cls.materia,
                 "ponderacion": 0.5,
+                "nombre": "Primera",
             }
         )
         cls.evaluacion2 = Evaluacion.objects.create(
@@ -96,6 +97,7 @@ class SeguimientosTest(APITestCase):
                 "anio_lectivo": cls.anio_lectivo,
                 "materia": cls.materia,
                 "ponderacion": 0.3,
+                "nombre": "Segunda",
             }
         )
         cls.evaluacion3 = Evaluacion.objects.create(
@@ -103,6 +105,7 @@ class SeguimientosTest(APITestCase):
                 "anio_lectivo": cls.anio_lectivo,
                 "materia": cls.materia,
                 "ponderacion": 0.2,
+                "nombre": "Tercera",
             }
         )
         cls.alumno1 = Alumno.objects.create(
