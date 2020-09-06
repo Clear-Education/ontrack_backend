@@ -21,7 +21,6 @@ class Institucion(models.Model):
     pais = models.CharField(
         max_length=250, blank=True, verbose_name="País", choices=PAIS_CHOICES
     )
-    cuit = models.BigIntegerField(verbose_name="CUIT", blank=True, null=True)
     identificador = models.CharField(max_length=250, blank=True)
     descripcion = models.TextField(blank=True, verbose_name="Descripción")
     logo = models.ImageField(blank=True, null=True)
@@ -29,8 +28,6 @@ class Institucion(models.Model):
 
     def clean(self):
         self.nombre = self.nombre.upper()
-        if not self.cuit:
-            raise ValidationError("Es necesario ingresar la CUIT")
         if self.id:
             if self.identificador and len(
                 Institucion.objects.filter(
@@ -47,13 +44,6 @@ class Institucion(models.Model):
                 )
             ):
                 raise ValidationError("El nombre indicado ya está en uso")
-
-            if len(
-                Institucion.objects.filter(cuit__exact=self.cuit,).exclude(
-                    id__exact=self.id
-                )
-            ):
-                raise ValidationError("La CUIT indicado ya está en uso")
         else:
             if self.identificador and len(
                 Institucion.objects.filter(
@@ -68,9 +58,6 @@ class Institucion(models.Model):
                 Institucion.objects.filter(nombre__exact=self.nombre)
             ):
                 raise ValidationError("El nombre indicado ya está en uso")
-
-            if len(Institucion.objects.filter(cuit__exact=self.cuit)):
-                raise ValidationError("La CUIT indicado ya está en uso")
 
     def save(self, *args, **kwargs):
         self.clean()

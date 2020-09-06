@@ -27,7 +27,7 @@ class MateriaEvaluacionTest(APITestCase):
         cls.group.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT", cuit=1)
+        cls.institucion = Institucion.objects.create(nombre="MIT")
         cls.carrera = Carrera.objects.create(
             **{
                 "nombre": "Ingenieria en Creatividad",
@@ -126,7 +126,7 @@ class MateriaEvaluacionTest(APITestCase):
         Test para checkear de que no es posible ver o eliminar \
         una materia de otra Institucion
         """
-        institucion = Institucion.objects.create(nombre="NYU", cuit=2)
+        institucion = Institucion.objects.create(nombre="NYU")
         institucion.save()
         carrera = Carrera.objects.create(
             **{
@@ -402,7 +402,7 @@ class AnioCursoTest(APITestCase):
             *Permission.objects.values_list("id", flat=True)
         )
         cls.group.save()
-        cls.institucion = Institucion.objects.create(nombre="MIT", cuit=1)
+        cls.institucion = Institucion.objects.create(nombre="MIT")
         cls.institucion.save()
         cls.carrera = Carrera.objects.create(
             **{
@@ -502,7 +502,7 @@ class AnioCursoTest(APITestCase):
         """
         Test para checkear de que no es posible ver un anio de otra Institucion
         """
-        institucion = Institucion.objects.create(nombre="NYU", cuit=2)
+        institucion = Institucion.objects.create(nombre="NYU")
         institucion.save()
         carrera = Carrera.objects.create(
             **{
@@ -618,7 +618,7 @@ class CarreraTests(APITestCase):
             *Permission.objects.values_list("id", flat=True)
         )
         cls.group.save()
-        cls.institucion = Institucion.objects.create(nombre="MIT", cuit=1)
+        cls.institucion = Institucion.objects.create(nombre="MIT")
         cls.institucion.save()
         cls.user = User.objects.create_user(
             "juan@juan.com",
@@ -781,12 +781,8 @@ class AnioLectivoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(
-            nombre="Institucion_1", cuit=1
-        )
-        cls.institucion_2 = Institucion.objects.create(
-            nombre="Institucion_2", cuit=2
-        )
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
 
         cls.user_admin_1 = User.objects.create_user(
             "juan1@juan.com",
