@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "curricula",
     "alumnos",
     "calificaciones",
+    "seguimientos",
 ]
 
 REST_FRAMEWORK = {

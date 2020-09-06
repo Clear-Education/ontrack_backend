@@ -27,7 +27,7 @@ class MateriaEvaluacionTest(APITestCase):
         cls.group.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT", cuit=1)
+        cls.institucion = Institucion.objects.create(nombre="MIT")
 
         cls.carrera = Carrera.objects.create(
             **{
@@ -89,7 +89,7 @@ class MateriaEvaluacionTest(APITestCase):
             }
         )
         # Institucion 2
-        cls.institucion2 = Institucion.objects.create(nombre="SNU", cuit=2)
+        cls.institucion2 = Institucion.objects.create(nombre="SNU")
         cls.anio_lectivo2 = AnioLectivo.objects.create(
             **{
                 "nombre": "2020/2021",

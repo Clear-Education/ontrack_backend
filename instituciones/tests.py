@@ -34,7 +34,7 @@ class InstitucionTests(APITestCase):
         Test de creacion de instituciones
         """
         url = reverse("institucion-create")
-        data = {"nombre": "US Federal Reserve", "cuit": 1}
+        data = {"nombre": "US Federal Reserve"}
 
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -47,7 +47,7 @@ class InstitucionTests(APITestCase):
         """
         Test de creacion de instituciones
         """
-        inst = Institucion.objects.create(nombre="Hoover Institution", cuit=1)
+        inst = Institucion.objects.create(nombre="Hoover Institution")
         inst.save()
         id_inst = inst.pk
         response = self.client.get(
@@ -64,7 +64,6 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
-            "cuit": 1,
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -85,7 +84,6 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
-            "cuit": 2,
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -105,7 +103,6 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
-            "cuit": 3,
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -127,7 +124,6 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
-            "cuit": 5,
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -148,7 +144,6 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
-            "cuit": 6,
         }
         inst = Institucion.objects.create(**data)
         inst.save()

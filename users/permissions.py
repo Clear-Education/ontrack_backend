@@ -21,6 +21,8 @@ def permission_required(resource_name, raise_exception=False):
             return action
 
         def has_permission(self, request, view):
+            if view.action is None:
+                return False
             if request.user.is_superuser:
                 return True
             permissions = [
