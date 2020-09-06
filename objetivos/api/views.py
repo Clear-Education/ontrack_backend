@@ -511,7 +511,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                 AlumnoObjetivo.objects.filter(
                     objetivo__in=objetivos, alumno_curso__in=alumno_cursos,
                 )
-                .order_by("objetivo","-fecha_creacion")
+                .order_by("objetivo", "-fecha_creacion")
                 .distinct("objetivo")
             )
 
@@ -530,8 +530,8 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                     AlumnoObjetivo(
                         objetivo=o, alumno_curso=ac, alcanzada=False,
                     ).save()
-
-            if not len(queryset.all()):
+            queryset = queryset.all()
+            if not len(queryset):
                 return Response(
                     data={
                         "detail": "El alumno no tiene hitos en dicho seguimiento"
@@ -599,10 +599,10 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                         break
 
                 AlumnoObjetivo(
-                    objetivo=o, alumno_curso=ac, alcanzada=False,
+                    objetivo=objetivo, alumno_curso=ac, alcanzada=False,
                 ).save()
-
-            if not len(queryset.all()):
+            queryset = queryset.all()
+            if not len(queryset):
                 return Response(
                     data={
                         "detail": "El alumno no tiene hitos en dicho objetivo"
@@ -663,7 +663,10 @@ class AlumnoObjetivoViewSet(ModelViewSet):
         if not any(
             [
                 a.id
-                in map(lambda x: x.id, objetivo_retrieved.seguimiento.alumnos.all())
+                in map(
+                    lambda x: x.id,
+                    objetivo_retrieved.seguimiento.alumnos.all(),
+                )
                 for a in alumno_cursos
             ]
         ):
@@ -862,7 +865,8 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                         status=status.HTTP_404_NOT_FOUND,
                     )
                 if alumno_curso.id not in map(
-                    lambda x: x.id, objetivo_retrieved.seguimiento.alumnos.all()
+                    lambda x: x.id,
+                    objetivo_retrieved.seguimiento.alumnos.all(),
                 ):
                     return Response(
                         data={

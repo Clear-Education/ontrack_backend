@@ -16,9 +16,7 @@ from rest_framework import status
 import datetime
 from collections import OrderedDict
 
-# from rest_framework.utils.serializer_helpers import ReturnList
 
-# Create your tests here.
 class ObjetivoTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
@@ -1068,6 +1066,214 @@ class AlumnoObjetivoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(isinstance(response.data, list))
         self.assertEqual(len(response.data), 2)
+
+    def test_get_actor_no_integrante(self):
+        """
+        Test de obtencion de AlumnoObjetivo sin ser integrante
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        self.integrante_1.delete()
+        seguimiento = self.seguimiento_1.id
+        objetivo = self.objetivo_1.id
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?objetivo={objetivo}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?seguimiento={seguimiento}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "No encontrado.",
+        )
+
+    def test_get_alumno_no_integrante(self):
+        """
+        Test de obtencion de AlumnoObjetivo sin pertenecer el alumno al seguimiento
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        self.seguimiento_1.alumnos.remove(self.alumno_curso_1)
+        seguimiento = self.seguimiento_1.id
+        objetivo = self.objetivo_1.id
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?objetivo={objetivo}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "Alumno no pertenece a dicho seguimiento",
+        )
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?seguimiento={seguimiento}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "Alumno no pertenece a dicho seguimiento",
+        )
+
+    def test_get_cualitativa_no_existente(self):
+        """
+        Test de obtencion de AlumnoObjetivo cualitativa no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        self.alumno_objetivo_3.delete()
+        self.assertEquals(
+            len(
+                AlumnoObjetivo.objects.filter(
+                    objetivo__exact=self.objetivo_1,
+                    alumno_curso__exact=self.alumno_curso_1,
+                )
+            ),
+            0,
+        )
+        seguimiento = self.seguimiento_1.id
+        objetivo = self.objetivo_1.id
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?objetivo={objetivo}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response.data, dict))
+        self.assertEquals(
+            len(
+                AlumnoObjetivo.objects.filter(
+                    objetivo__exact=self.objetivo_1,
+                    alumno_curso__exact=self.alumno_curso_1,
+                )
+            ),
+            1,
+        )
+
+        AlumnoObjetivo.objects.filter(
+            objetivo__exact=self.objetivo_1,
+            alumno_curso__exact=self.alumno_curso_1,
+        ).delete()
+        self.assertEquals(
+            len(
+                AlumnoObjetivo.objects.filter(
+                    objetivo__exact=self.objetivo_1,
+                    alumno_curso__exact=self.alumno_curso_1,
+                )
+            ),
+            0,
+        )
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?seguimiento={seguimiento}"
+        )
+        self.assertTrue(isinstance(response.data, list))
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEquals(
+            len(
+                AlumnoObjetivo.objects.filter(
+                    objetivo__exact=self.objetivo_1,
+                    alumno_curso__exact=self.alumno_curso_1,
+                )
+            ),
+            1,
+        )
+
+    def test_get_cuantitativa_no_existente(self):
+        """
+        Test de obtencion de AlumnoObjetivo cuantitativa no existente
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        self.alumno_objetivo_1.delete()
+        self.assertEquals(
+            len(
+                AlumnoObjetivo.objects.filter(
+                    objetivo__exact=self.objetivo_2,
+                    alumno_curso__exact=self.alumno_curso_1,
+                )
+            ),
+            0,
+        )
+        seguimiento = self.seguimiento_1.id
+        objetivo = self.objetivo_2.id
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?objetivo={objetivo}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEquals(
+            response.data["detail"],
+            "El alumno no tiene hitos en dicho objetivo",
+        )
+        self.assertEquals(
+            len(
+                AlumnoObjetivo.objects.filter(
+                    objetivo__exact=self.objetivo_2,
+                    alumno_curso__exact=self.alumno_curso_1,
+                )
+            ),
+            0,
+        )
+
+        AlumnoObjetivo.objects.filter(
+            objetivo__exact=self.objetivo_2,
+            alumno_curso__exact=self.alumno_curso_1,
+        ).delete()
+        self.assertEquals(
+            len(
+                AlumnoObjetivo.objects.filter(
+                    objetivo__exact=self.objetivo_2,
+                    alumno_curso__exact=self.alumno_curso_1,
+                )
+            ),
+            0,
+        )
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?seguimiento={seguimiento}"
+        )
+        self.assertTrue(isinstance(response.data, list))
+        self.assertTrue(len(response.data) == 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEquals(
+            len(
+                AlumnoObjetivo.objects.filter(
+                    objetivo__exact=self.objetivo_2,
+                    alumno_curso__exact=self.alumno_curso_1,
+                )
+            ),
+            0,
+        )
+
+    def test_get_sin_objetivos(self):
+        """
+        Test de obtencion de AlumnoObjetivo sin objetivos
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        AlumnoObjetivo.objects.filter(
+            objetivo__exact=self.objetivo_2,
+            alumno_curso__exact=self.alumno_curso_1,
+        ).delete()
+        self.objetivo_1.delete()
+        seguimiento = self.seguimiento_1.id
+
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?seguimiento={seguimiento}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(
+            response.data["detail"],
+            "El alumno no tiene hitos en dicho seguimiento",
+        )
+
+        self.objetivo_2.delete()
+        response = self.client.get(
+            f"/api/objetivos/alumno/{self.alumno_1.id}/?seguimiento={seguimiento}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(
+            response.data["detail"],
+            "El alumno no tiene hitos en dicho seguimiento",
+        )
 
     def test_get_seguimiento_y_objetivo(self):
         """
