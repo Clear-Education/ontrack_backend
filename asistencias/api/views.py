@@ -389,6 +389,7 @@ class AsistenciaViewSet(ModelViewSet):
         request_body=serializers.CreateAsistenciaSerializer(many=True),
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
+    @action(detail=False, methods=["POST"], name="create_multiple")
     def create_multiple(self, request):
         serializer = serializers.CreateAsistenciaSerializer(
             data=request.data, many=True
@@ -517,6 +518,7 @@ class AsistenciaViewSet(ModelViewSet):
         ],
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
+    @action(detail=False, methods=["DELETE"], name="destroy_curso_dia")
     def destroy_curso_dia(self, request):
         queryset = Asistencia.objects.filter(
             alumno_curso__alumno__institucion__exact=request.user.institucion
@@ -640,6 +642,7 @@ class AsistenciaViewSet(ModelViewSet):
         ],
         responses={**OK_VIEW_PORCENTAJE, **responses.STANDARD_ERRORS},
     )
+    @action(detail=False, methods=["GET"], name="porcentaje")
     def porcentaje(self, request, pk=None):
         queryset = Asistencia.objects.filter(
             alumno_curso__alumno__institucion__exact=request.user.institucion

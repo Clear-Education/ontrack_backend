@@ -76,12 +76,25 @@ class CalificacionViewSet(ModelViewSet):
             ].institucion_id
             if institucion_alumno != request.user.institucion_id:
                 return Response(status=status.HTTP_404_NOT_FOUND)
-            calificacion = serializer.create()
-            data = {"id": calificacion.pk}
+            alumno_id = serializer.validated_data["alumno"].pk
+            evaluacion_id = serializer.validated_data["evaluacion"].pk
+            count = Calificacion.objects.filter(
+                alumno_id=alumno_id, evaluacion_id=evaluacion_id
+            ).count()
+            if count == 0:
+                calificacion = serializer.create()
+                serializer = serializers.ViewCalficacionSerializer(
+                    instance=calificacion
+                )
+            else:
+                data = {
+                    "detail": "Ya existe una calificacion para ese alumno y evaluacion!"
+                }
+                return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-        return Response(data=data, status=status.HTTP_201_CREATED)
+        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
         request_body=serializers.CreateCalificacionListSerializer,
@@ -89,7 +102,7 @@ class CalificacionViewSet(ModelViewSet):
     )
     def create_multiple(self, request):
         """
-        Crea una multiples calificaciones
+        Crea multiples calificaciones
         """
         serializer = serializers.CreateCalificacionListSerializer(
             data=request.data, context={"request": request}

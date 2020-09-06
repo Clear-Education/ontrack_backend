@@ -1,11 +1,14 @@
 from rest_framework import serializers
 from curricula import models
+from calificaciones.models import Calificacion
 from functools import reduce
 from rest_framework.exceptions import ValidationError
 
 
 class ViewEvaluacionSerializer(serializers.ModelSerializer):
-    anio_lectivo = serializers.StringRelatedField()
+    anio_lectivo = serializers.PrimaryKeyRelatedField(
+        queryset=models.AnioLectivo.objects.all()
+    )
 
     class Meta:
         model = models.Evaluacion
@@ -57,6 +60,13 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
         # Eliminar evaluaciones
         for eval_id, evaluacion in eval_mapping.items():
             if eval_id not in data_mapping:
+                if (
+                    Calificacion.objects.filter(evaluacion_id=eval_id).count()
+                    != 0
+                ):
+                    raise ValidationError(
+                        detail="No se puede eliminar una evaluación que ya contenga calificaciones!"
+                    )
                 evaluacion.delete()
         return ret
 

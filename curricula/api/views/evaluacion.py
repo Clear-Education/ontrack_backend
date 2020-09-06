@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from curricula.api.serializers import evaluacion as serializers
 from curricula.models import Evaluacion, Materia, AnioLectivo
+from calificaciones.models import Calificacion
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -9,6 +10,7 @@ from django.shortcuts import get_object_or_404, get_list_or_404
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
 from drf_yasg import openapi
+from django.core.exceptions import ValidationError
 
 
 class EvaluacionViewSet(ModelViewSet):
@@ -105,7 +107,13 @@ class EvaluacionViewSet(ModelViewSet):
                 ),
                 pk=serializer.validated_data[0]["anio_lectivo"].pk,
             )
-            serializer.create(serializer.validated_data)
+            try:
+                serializer.create(serializer.validated_data)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
@@ -129,7 +137,13 @@ class EvaluacionViewSet(ModelViewSet):
                 materia=serializer.validated_data[0]["materia"].pk,
                 anio_lectivo=serializer.validated_data[0]["anio_lectivo"].pk,
             )
-            serializer.update(instance, serializer.validated_data)
+            try:
+                serializer.update(instance, serializer.validated_data)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
@@ -153,6 +167,14 @@ class EvaluacionViewSet(ModelViewSet):
             )
             if not instances:
                 Response(status=status.HTTP_200_OK)
+            for e in instances:
+                if Calificacion.objects.filter(evaluacion=e).count() != 0:
+                    data = {
+                        "detail": "No se puede eliminar una evaluación que ya contenga calificaciones!"
+                    }
+                    return Response(
+                        data=data, status=status.HTTP_400_BAD_REQUEST
+                    )
             instances.delete()
         else:
             data = serializer.errors

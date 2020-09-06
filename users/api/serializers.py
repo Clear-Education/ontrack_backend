@@ -13,30 +13,6 @@ class LoginSerializer(serializers.ModelSerializer):
         fields = ["username", "password"]
 
 
-class LoginResponseSerializer(serializers.ModelSerializer):
-    token = serializers.CharField()
-
-    class Meta:
-        model = User
-        fields = [
-            "email",
-            "groups",
-            "name",
-            "phone",
-            "date_of_birth",
-            "dni",
-            "last_name",
-            "cargo",
-            "picture",
-            "legajo",
-            "direccion",
-            "localidad",
-            "provincia",
-            "token",
-            "institucion",
-        ]
-
-
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     password2 = serializers.CharField(
@@ -290,3 +266,31 @@ class UserStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["is_active"]
+
+
+class LoginResponseSerializer(serializers.ModelSerializer):
+    token = serializers.CharField(required=False)
+    reset_token = serializers.CharField(required=False)
+
+    groups = serializers.StringRelatedField()
+
+    class Meta:
+        model = User
+        fields = [
+            "email",
+            "groups",
+            "name",
+            "phone",
+            "date_of_birth",
+            "dni",
+            "last_name",
+            "cargo",
+            "picture",
+            "legajo",
+            "direccion",
+            "localidad",
+            "provincia",
+            "token",
+            "reset_token",
+            "institucion",
+        ]

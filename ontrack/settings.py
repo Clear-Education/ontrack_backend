@@ -28,7 +28,9 @@ SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-DEVELOPER_ADMIN = True
+DEVELOPER_ADMIN = False
+
+SILENCED_SYSTEM_CHECKS = ["auth.E003", "auth.W004"]
 
 CORS_ORIGIN_ALLOW_ALL = True
 
@@ -62,6 +64,7 @@ INSTALLED_APPS = [
     "calificaciones",
     "asistencias",
     "seguimientos",
+    "objetivos",
 ]
 
 REST_FRAMEWORK = {
@@ -190,5 +193,14 @@ AUTH_USER_MODEL = "users.User"
 
 if os.getenv("DJANGO_DEVELOPMENT") is not None:
     from settings_dev import *  # or specific overrides
+
+# MAIL
+
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_HOST_USER = "apikey"
+EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_PASSWORD")
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
 
 django_heroku.settings(locals())

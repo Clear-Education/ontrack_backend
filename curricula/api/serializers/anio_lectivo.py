@@ -82,7 +82,7 @@ class EditAnioLectivoSerializer(serializers.ModelSerializer):
         instance.fecha_desde = self.validated_data.get(
             "fecha_desde", instance.fecha_desde
         )
-        instance.nombre = self.validated_data.get(
+        instance.fecha_hasta = self.validated_data.get(
             "fecha_hasta", instance.fecha_hasta
         )
         instance.save()

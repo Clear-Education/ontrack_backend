@@ -58,6 +58,7 @@ class MateriaEvaluacionTest(APITestCase):
         cls.evaluacion1 = Evaluacion.objects.create(
             **{
                 "anio_lectivo": cls.anio_lectivo,
+                "nombre": "evaluacion 1",
                 "materia": cls.materia,
                 "ponderacion": 0.5,
             }
@@ -68,6 +69,7 @@ class MateriaEvaluacionTest(APITestCase):
                 "anio_lectivo": cls.anio_lectivo,
                 "materia": cls.materia1,
                 "ponderacion": 1,
+                "nombre": "evaluacion 11",
             }
         )
         cls.evaluacion2 = Evaluacion.objects.create(
@@ -75,6 +77,7 @@ class MateriaEvaluacionTest(APITestCase):
                 "anio_lectivo": cls.anio_lectivo,
                 "materia": cls.materia,
                 "ponderacion": 0.3,
+                "nombre": "evaluacion 2",
             }
         )
         cls.evaluacion3 = Evaluacion.objects.create(
@@ -82,6 +85,7 @@ class MateriaEvaluacionTest(APITestCase):
                 "anio_lectivo": cls.anio_lectivo,
                 "materia": cls.materia,
                 "ponderacion": 0.2,
+                "nombre": "evaluacion 3",
             }
         )
         # Institucion 2
@@ -115,6 +119,7 @@ class MateriaEvaluacionTest(APITestCase):
                 "anio_lectivo": cls.anio_lectivo2,
                 "materia": cls.materia2,
                 "ponderacion": 1,
+                "nombre": "Evaluacion 1",
             }
         )
         # Alumnos
@@ -529,7 +534,6 @@ class MateriaEvaluacionTest(APITestCase):
             self.evaluacion1.pk, self.curso.pk
         )
         response = self.client.get(url, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 3)
 
@@ -906,12 +910,12 @@ class MateriaEvaluacionTest(APITestCase):
             self.assertIn("nombre_materia", p)
             self.assertIn("promedio", p)
             if (
-                p["nombre_materia"] == "Análisis Matemático"
-                or p["nombre_materia"] == "Econometrics"
+                p["nombre_materia"] == "ANÁLISIS MATEMÁTICO"
+                or p["nombre_materia"] == "ECONOMETRICS"
             ):
-                if p["nombre_materia"] == "Análisis Matemático":
+                if p["nombre_materia"] == "ANÁLISIS MATEMÁTICO":
                     self.assertEqual(p["promedio"], 8)
-                elif p["nombre_materia"] == "Econometrics":
+                elif p["nombre_materia"] == "ECONOMETRICS":
                     self.assertEqual(p["promedio"], 10)
             else:
                 self.assertEqual(True, False)
@@ -990,7 +994,7 @@ class MateriaEvaluacionTest(APITestCase):
         for p in response.data["promedios"]:
             self.assertIn("nombre_materia", p)
             self.assertIn("promedio", p)
-            self.assertEqual(p["nombre_materia"], "Análisis Matemático")
+            self.assertEqual(p["nombre_materia"], "ANÁLISIS MATEMÁTICO")
             self.assertEqual(p["promedio"], 8.0)
 
         self.assertNotIn("promedio_general", response.data)
@@ -1107,14 +1111,14 @@ class MateriaEvaluacionTest(APITestCase):
             self.assertIn("nombre_materia", p)
             self.assertIn("nota_final", p)
             if (
-                p["nombre_materia"] == "Análisis Matemático"
-                or p["nombre_materia"] == "Econometrics"
+                p["nombre_materia"] == "ANÁLISIS MATEMÁTICO"
+                or p["nombre_materia"] == "ECONOMETRICS"
             ):
-                if p["nombre_materia"] == "Análisis Matemático":
+                if p["nombre_materia"] == "ANÁLISIS MATEMÁTICO":
                     self.assertEqual(
                         p["nota_final"], 9 * 0.5 + 7 * 0.3 + 8 * 0.2
                     )
-                elif p["nombre_materia"] == "Econometrics":
+                elif p["nombre_materia"] == "ECONOMETRICS":
                     self.assertEqual(p["nota_final"], 10)
             else:
                 self.assertEqual(True, False)
@@ -1193,7 +1197,7 @@ class MateriaEvaluacionTest(APITestCase):
         for p in response.data["notas_finales"]:
             self.assertIn("nombre_materia", p)
             self.assertIn("nota_final", p)
-            self.assertEqual(p["nombre_materia"], "Análisis Matemático")
+            self.assertEqual(p["nombre_materia"], "ANÁLISIS MATEMÁTICO")
             self.assertEqual(p["nota_final"], 8.2)
 
         self.assertNotIn("promedio_general", response.data)

@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from curricula.api.serializers import anio as serializers_anio
 from curricula.api.serializers import carrera as serializers_carrera
-from curricula.models import Anio, Curso, Carrera
+from curricula.models import Anio, Curso, Carrera, Materia
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
+from django.core.exceptions import ValidationError
 
 
 class AnioViewSet(ModelViewSet):
@@ -31,7 +32,13 @@ class AnioViewSet(ModelViewSet):
         data = {}
 
         if serializer.is_valid(raise_exception=True):
-            instance = serializer.create()
+            try:
+                instance = serializer.create()
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             data = {"id": instance.id}
         else:
             data = serializer.errors
@@ -52,7 +59,13 @@ class AnioViewSet(ModelViewSet):
         )
         data = {}
         if serializer.is_valid(raise_exception=True):
-            serializer.update(anio, serializer.validated_data)
+            try:
+                serializer.update(anio, serializer.validated_data)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             response_serializer = serializers_anio.AnioSerializer(anio)
             data = response_serializer.data
         else:
@@ -67,6 +80,16 @@ class AnioViewSet(ModelViewSet):
         """
         queryset = Anio.objects.all()
         anio = get_object_or_404(queryset, pk=pk)
+        if Curso.objects.filter(anio=anio).count() != 0:
+            data = {
+                "detail": "No se puede eliminar un año que ya contenga cursos!"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+        if Materia.objects.filter(anio=anio).count() != 0:
+            data = {
+                "detail": "No se puede eliminar un año que ya contenga materias!"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         anio.delete()
         return Response(status=status.HTTP_200_OK)
 
@@ -135,7 +158,13 @@ class CursoViewSet(ModelViewSet):
                 ),
                 pk=serializer.validated_data["anio"].pk,
             )
-            instance = serializer.create()
+            try:
+                instance = serializer.create()
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
@@ -163,7 +192,13 @@ class CursoViewSet(ModelViewSet):
         serializer = serializers_anio.EditCursoSerializer(data=request.data)
         data = {}
         if serializer.is_valid(raise_exception=True):
-            serializer.update(curso, serializer.validated_data)
+            try:
+                serializer.update(curso, serializer.validated_data)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             response_serializer = serializers_anio.CursoSerializer(curso)
             data = response_serializer.data
         else:

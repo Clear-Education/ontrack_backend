@@ -40,7 +40,7 @@ class InstitucionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Institucion.objects.count(), 1)
         self.assertEqual(
-            Institucion.objects.get().nombre, "US Federal Reserve"
+            Institucion.objects.get().nombre, "US FEDERAL RESERVE"
         )
 
     def test_view_institucion(self):
@@ -54,7 +54,7 @@ class InstitucionTests(APITestCase):
             "/api/institucion/{}/".format(id_inst), format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["nombre"], "Hoover Institution")
+        self.assertEqual(response.data["nombre"], "HOOVER INSTITUTION")
 
     def test_edit_institucion(self):
         """

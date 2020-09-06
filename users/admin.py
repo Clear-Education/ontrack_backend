@@ -8,7 +8,6 @@ from django.contrib.auth.models import Group
 
 
 class UserAdmin(BaseUserAdmin):
-
     list_display = (
         "email",
         "name",
@@ -19,54 +18,15 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ("is_superuser",)
 
     fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    "email",
-                    "is_staff",
-                    "is_superuser",
-                    "is_active",
-                    "password",
-                )
-            },
-        ),
-        (
-            "Personal info",
-            {
-                "fields": (
-                    "name",
-                    "last_name",
-                    "phone",
-                    "date_of_birth",
-                    "picture",
-                    "provincia",
-                    "localidad",
-                    "direccion",
-                )
-            },
-        ),
-        ("Groups", {"fields": ("groups", "institucion", "legajo", "cargo")}),
+        (None, {"fields": ("email", "is_active",)},),
+        ("Personal info", {"fields": ("name", "last_name", "phone",)},),
+        ("Groups", {"fields": ("groups", "institucion", "cargo")}),
     )
 
     add_fieldsets = (
         (None, {"fields": ("email", "password1", "password2",)},),
-        (
-            "Personal info",
-            {
-                "fields": (
-                    "name",
-                    "last_name",
-                    "phone",
-                    "date_of_birth",
-                    "picture",
-                    "provincia",
-                    "localidad",
-                    "direccion",
-                )
-            },
-        ),
-        ("Groups", {"fields": ("groups", "institucion", "legajo", "cargo")}),
+        ("Personal info", {"fields": ("name", "last_name", "phone",)},),
+        ("Groups", {"fields": ("groups", "institucion", "cargo")}),
     )
 
     search_fields = ("email", "name", "last_name", "institucion")

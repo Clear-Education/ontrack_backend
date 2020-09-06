@@ -2,6 +2,29 @@ from rest_framework import serializers
 from curricula import models
 
 
+class ListAnioSerializer(serializers.Serializer):
+    carrera = serializers.PrimaryKeyRelatedField(
+        required=True, queryset=models.Carrera.objects.all()
+    )
+
+
+class BasicAnioSerializer(serializers.ModelSerializer):
+    nombre = serializers.CharField(required=True)
+
+    class Meta:
+        model = models.Anio
+        fields = ["id", "nombre", "carrera"]
+
+
+class CursoSerializerWithCarrera(serializers.ModelSerializer):
+    anio = BasicAnioSerializer(many=False)
+
+    class Meta:
+        model = models.Curso
+        fields = "__all__"
+        read_only_fields = ["id", "fecha_creacion"]
+
+
 class CursoSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Curso
@@ -107,8 +130,3 @@ class EditAnioSerializer(serializers.ModelSerializer):
         fields = ["nombre", "color"]
         read_only_fields = ["id", "fecha_creacion"]
 
-
-class ListAnioSerializer(serializers.Serializer):
-    carrera = serializers.PrimaryKeyRelatedField(
-        required=True, queryset=models.Carrera.objects.all()
-    )

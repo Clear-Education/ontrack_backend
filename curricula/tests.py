@@ -72,7 +72,7 @@ class MateriaEvaluacionTest(APITestCase):
         id_materia = response.data["id"]
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Materia.objects.count(), 1)
-        self.assertEqual(Materia.objects.get().nombre, "Análisis Matemático")
+        self.assertEqual(Materia.objects.get().nombre, "ANÁLISIS MATEMÁTICO")
         response = self.client.get("/api/materia/{}/".format(id_materia))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -101,7 +101,7 @@ class MateriaEvaluacionTest(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Materia.objects.count(), 1)
-        self.assertEqual(Materia.objects.get().nombre, "Análisis Matemático 1")
+        self.assertEqual(Materia.objects.get().nombre, "ANÁLISIS MATEMÁTICO 1")
 
     def test_delete_materia(self):
         """
@@ -256,16 +256,19 @@ class MateriaEvaluacionTest(APITestCase):
                 "anio_lectivo": self.anio_lectivo.pk,
                 "materia": materia.pk,
                 "ponderacion": 0.5,
+                "nombre": "nombre1",
             },
             {
                 "anio_lectivo": self.anio_lectivo.pk,
                 "materia": materia.pk,
                 "ponderacion": 0.3,
+                "nombre": "nombre2",
             },
             {
                 "anio_lectivo": self.anio_lectivo.pk,
                 "materia": materia.pk,
                 "ponderacion": 0.2,
+                "nombre": "nombre3",
             },
         ]
         response = self.client.post(url, data, format="json")
@@ -285,6 +288,7 @@ class MateriaEvaluacionTest(APITestCase):
                 "anio_lectivo": self.anio_lectivo.pk,
                 "materia": materia.pk,
                 "ponderacion": 0.5,
+                "nombre": "nombre4",
             }
         )
         response = self.client.put(
@@ -432,7 +436,7 @@ class AnioCursoTest(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Anio.objects.count(), 1)
-        self.assertEqual(Anio.objects.get().nombre, "Primer Año")
+        self.assertEqual(Anio.objects.get().nombre, "PRIMER AÑO")
 
     def test_create_anio_con_cursos(self):
         """
@@ -470,7 +474,7 @@ class AnioCursoTest(APITestCase):
             "/api/anio/{}/".format(id_anio), data, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Anio.objects.get().nombre, "Primer Añejo")
+        self.assertEqual(Anio.objects.get().nombre, "PRIMER AÑEJO")
 
     def test_edit_anio_invalid_name(self):
         """
@@ -551,7 +555,7 @@ class AnioCursoTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["nombre"], "1AA")
 
-    def test_delete_anio_con_cursos(self):
+    def test_delete_anio_con_cursos_gives_400(self):
         """
         Test de borrado de anio y cascade a cursos
         """
@@ -570,12 +574,12 @@ class AnioCursoTest(APITestCase):
         response = self.client.delete(
             "/api/anio/{}/".format(anio_id), format="json"
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         for curso in Curso.objects.all():
             response = self.client.get(
                 "/api/curso/{}/".format(curso.pk), format="json"
             )
-            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete_curso_de_anio(self):
         """
@@ -640,7 +644,7 @@ class CarreraTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Carrera.objects.count(), 1)
         self.assertEqual(
-            Carrera.objects.get().nombre, "Ingenieria en Creatividad"
+            Carrera.objects.get().nombre, "INGENIERIA EN CREATIVIDAD"
         )
         self.assertEqual(
             Carrera.objects.get().institucion.pk, self.institucion.pk
@@ -669,7 +673,7 @@ class CarreraTests(APITestCase):
             "/api/carrera/{}/".format(id_carrera), format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["nombre"], "Ingenieria en Baile")
+        self.assertEqual(response.data["nombre"], "INGENIERIA EN BAILE")
 
     def test_edit_carrera(self):
         """

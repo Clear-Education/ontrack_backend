@@ -17,6 +17,8 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.authtoken.models import Token
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
+from django.core.exceptions import ValidationError
+from django_rest_passwordreset.models import ResetPasswordToken
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -31,6 +33,28 @@ class CustomAuthToken(ObtainAuthToken):
         responses={200: serializers.LoginResponseSerializer},
     )
     def post(self, request, *args, **kwargs):
+        # checkear si es primer login
+        """
+        user = User.objects.get(email=request.data["username"])
+        if not user:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if user.first_login:
+            token = ResetPasswordToken.objects.create(
+                    user=user,
+                    user_agent=request.META.get(HTTP_USER_AGENT_HEADER, ''),
+                    ip_address=request.META.get(HTTP_IP_ADDRESS_HEADER, ''),
+                )
+            user.reset_token = token.keu
+            response_serializer = serializers.LoginResponseSerializer(user)
+            return Response(data=response_serializer.data)
+        """
+
+        serializer = self.serializer_class(
+            data=request.data, context={"request": request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
         serializer = self.serializer_class(
             data=request.data, context={"request": request}
         )
@@ -107,7 +131,13 @@ class UsersViewSet(viewsets.ModelViewSet):
         serializer = serializers.RegistrationSerializer(data=request.data)
         data = {}
         if serializer.is_valid():
-            serializer.save(institucion)
+            try:
+                serializer.save(institucion)
+            except ValidationError as e:
+                return Response(
+                    data={"detail": e.message},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
@@ -165,7 +195,13 @@ class UsersViewSet(viewsets.ModelViewSet):
         if retrieved_user == request.user:
             serializer = serializers.EditUserSerializer(data=request.data)
             if serializer.is_valid():
-                response_user = serializer.update(request.user)
+                try:
+                    response_user = serializer.update(request.user)
+                except ValidationError as e:
+                    return Response(
+                        data={"detail": e.message},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 response_serializer = serializers.ListUserSerializer(
                     response_user, many=False
                 )
@@ -192,7 +228,13 @@ class UsersViewSet(viewsets.ModelViewSet):
                 )
             serializer = serializers.EditOtherUserSerializer(data=request.data)
             if serializer.is_valid():
-                response_user = serializer.update(retrieved_user)
+                try:
+                    response_user = serializer.update(retrieved_user)
+                except ValidationError as e:
+                    return Response(
+                        data={"detail": e.message},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 response_serializer = serializers.ListUserSerializer(
                     response_user, many=False
                 )
@@ -216,6 +258,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         responses={200: "", **responses.STANDARD_ERRORS},
     )
     def destroy(self, request, pk=None):
+        # TODO : Si estan en seguimiento, no se pueden borrar
         retrieved_user = get_object_or_404(User, pk=pk)
         if retrieved_user == request.user:
             retrieved_user.delete()
