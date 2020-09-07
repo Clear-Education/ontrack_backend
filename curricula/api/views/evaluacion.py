@@ -40,9 +40,7 @@ class EvaluacionViewSet(ModelViewSet):
         queryset = Evaluacion.objects.filter(
             materia__anio__carrera__institucion=institucion
         )
-        anio_lectivo = self.request.query_params.get(
-            "anio_lectivo_param", None
-        )
+        anio_lectivo = self.request.query_params.get("anio_lectivo", None)
         if anio_lectivo is not None:
             queryset = queryset.filter(anio_lectivo=anio_lectivo,)
         return queryset

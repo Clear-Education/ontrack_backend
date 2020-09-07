@@ -205,6 +205,7 @@ class AnioLectivo(models.Model):
     class Meta:
         permissions = [
             ("list_aniolectivo", "Puede listar años lectivos"),
+            ("actual_aniolectivo", "Puede ver el año lectivo actual"),
         ]
 
 

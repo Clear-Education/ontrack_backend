@@ -67,6 +67,11 @@ urlpatterns = [
         name="anio-lectivo-list",
     ),
     path(
+        "anio_lectivo/actual/",
+        anio_lectivo.actual_anio_lectivo,
+        name="anio-lectivo-actual",
+    ),
+    path(
         "anio_lectivo/<int:pk>/",
         anio_lectivo.update_anio_lectivo,
         name="anio-lectivo-update",
