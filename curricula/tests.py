@@ -770,6 +770,9 @@ class AnioLectivoTests(APITestCase):
         cls.group_admin.permissions.add(
             Permission.objects.get(name="Can view anio lectivo")
         )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede ver el año lectivo actual")
+        )
         cls.group_admin.save()
 
         cls.group_docente = Group.objects.create(name="Docente1")
@@ -995,6 +998,19 @@ class AnioLectivoTests(APITestCase):
         )
         self.assertEqual(response2.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response3.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_actual(self):
+        """
+        Test de obtener un anio lectivo corriente
+        """
+        self.client.force_authenticate(user=self.user_admin_1)
+
+        response1 = self.client.get("/api/anio_lectivo/actual/")
+
+        self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        self.assertDictContainsSubset(
+            {"id": self.anio_lectivo_institucion_1.pk}, response1.data
+        )
 
     def test_destroy_admin(self):
         """
