@@ -100,7 +100,7 @@ class EditUserSerializer(serializers.ModelSerializer):
         """
         Editar y retornar una instancia de User
         """
-        if self.validated_data["email"] is not None:
+        if self.validated_data.get("email", None) is not None:
             existing_user_email = User.objects.filter(
                 email__exact=self.validated_data["email"]
             ).exclude(id__exact=user.id)
