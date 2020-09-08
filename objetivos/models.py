@@ -16,6 +16,8 @@ class TipoObjetivo(models.Model):
         return self.nombre
 
     class Meta:
+        verbose_name_plural = "Tipos de Objetivos"
+        verbose_name = "Tipo de Objetivo"
         permissions = [
             ("list_tipo_objetivo", "Puede listar tipo_objetivo"),
         ]
@@ -33,11 +35,12 @@ class Objetivo(models.Model):
     )
 
     def __str__(self):
-        return f"{self.seguimiento.nombre}: tipo({self.tipo_objetivo}). {self.descripcion}"
+        return f"{self.seguimiento.nombre}--{self.id}: tipo({self.tipo_objetivo}). {self.descripcion if self.descripcion else ''}"
 
     class Meta:
         permissions = [
             ("list_objetivo", "Puede listar objetivos"),
+            ("create_multiple_objetivo", "Puede crear multiples objetivos"),
         ]
 
 

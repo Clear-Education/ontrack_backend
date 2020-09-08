@@ -37,6 +37,7 @@ class ObjetivoViewSet(ModelViewSet):
     OK_VIEW = {200: serializers.GetObjetivoSerializer()}
     OK_LIST = {200: serializers.GetObjetivoSerializer(many=True)}
     OK_CREATED = {201: serializers.ReturnId()}
+    OK_CREATED_MULTIPLE = {201: serializers.ReturnId(many=True)}
 
     @swagger_auto_schema(
         operation_id="get_objetivo",
@@ -344,8 +345,126 @@ class ObjetivoViewSet(ModelViewSet):
                 data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
+    @swagger_auto_schema(
+        operation_id="create_multiple_objetivo",
+        operation_description="""
+        Creación de multiples objetivos para un seguimiento (usando el id del seguimiento).
+
+        No está permitido crear un objetivo si no es encargado del seguimiento.
+        Si el tipo de objetivo no es multiple, no se puede crear más de un objetivo de ese tipo en el seguimiento.
+        Si el tipo es cuantitativo, el valor_objetivo_cuantitativo es obligatorio y debe estar dentro del rango
+        especificado en el tipo_objetivo (valor_minimo y valor_maximo)
+        Si es cualitativo, la descripción es obligatoria
+        """,
+        request_body=serializers.CreateMultipleObjetivoSerializer(),
+        responses={**OK_CREATED_MULTIPLE, **responses.STANDARD_ERRORS},
+    )
+    def create_multiple(self, request):
+        serializer = serializers.CreateMultipleObjetivoSerializer(
+            data=request.data
+        )
+        if serializer.is_valid():
+            seguimiento = serializer.validated_data["seguimiento"]
+            if seguimiento.institucion != request.user.institucion:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            integrante = IntegranteSeguimiento.objects.filter(
+                seguimiento__exact=seguimiento,
+                usuario__exact=request.user,
+                fecha_hasta__isnull=True,
+            )
+
+            if len(integrante) == 0:
+                return Response(
+                    data={"detail": "No encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if "encargado" not in integrante[0].rol.nombre.lower():
+                return Response(
+                    data={"detail": "No tiene permiso para crear un objetivo"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            if not seguimiento.en_progreso:
+                return Response(
+                    data={
+                        "detail": "No se puede modificar un Seguimiento que no se encuentra en progreso"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            objetivo_list = list()
+
+            for objetivo in serializer.validated_data["objetivos"]:
+
+                objetivo["seguimiento"] = seguimiento
+
+                tipo_objetivo = objetivo["tipo_objetivo"]
+                valor = objetivo.get("valor_objetivo_cuantitativo")
+                descripcion = objetivo.get("descripcion")
+
+                if not tipo_objetivo.cuantitativo:
+                    if not descripcion:
+                        return Response(
+                            data={
+                                "detail": "Para este tipo de objetivos es necesario fijar una descripción"
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    objetivo.pop("valor_objetivo_cuantitativo", None)
+                else:
+                    if not valor or not (
+                        tipo_objetivo.valor_minimo
+                        <= valor
+                        <= tipo_objetivo.valor_maximo
+                    ):
+                        return Response(
+                            data={
+                                "detail": f"No se ingreso un valor, o no se encuentra en el rango permitido de {tipo_objetivo.valor_minimo} a {tipo_objetivo.valor_maximo}"
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+
+                if not tipo_objetivo.multiple:
+                    existing_objetivo = Objetivo.objects.filter(
+                        seguimiento__id__exact=seguimiento.id,
+                        tipo_objetivo__id=tipo_objetivo.id,
+                    )
+                    if len(existing_objetivo) != 0:
+                        return Response(
+                            data={
+                                "detail": "Ya existe un objetivo de este mismo tipo en el seguimiento. No está permitido tener dos objetivos del mismo tipo"
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                objetivo = Objetivo(**objetivo)
+                objetivo.save()
+                objetivo_list.append(objetivo)
+
+            if objetivo_list:
+                return_serializer = serializers.ReturnId(
+                    [{"id": obj.id} for obj in objetivo_list], many=True,
+                )
+                return Response(
+                    data=return_serializer.data, status=status.HTTP_201_CREATED
+                )
+            else:
+                return Response(
+                    data={"detail": "No hay objetivos para agregar"},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
+        else:
+            return Response(
+                data=serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 create_objetivo = ObjetivoViewSet.as_view({"post": "create"})
+create_multiple_objetivo = ObjetivoViewSet.as_view({"post": "create_multiple"})
 mix_objetivos = ObjetivoViewSet.as_view(
     {"get": "get", "patch": "update", "delete": "destroy"}
 )
@@ -362,54 +481,31 @@ class TipoObjetivoViewSet(ModelViewSet):
     @swagger_auto_schema(
         operation_id="get_tipo_objetivo",
         operation_description="""
+        Obtener Tipo de Objetivo
         """,
         responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
     def get(self, request, pk=None):
-        pass
+        tipo_objetivo = get_object_or_404(TipoObjetivo, pk=pk)
+        serializer = serializers.GetTipoObjetivoSerializer(
+            tipo_objetivo, many=False
+        )
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_id="list_tipo_objetivos",
         operation_description="""
+        Listar Tipos de Objetivos
         """,
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
     def list(self, request):
-        pass
-
-    @swagger_auto_schema(
-        operation_id="update_tipo_objetivo",
-        operation_description="""
-        """,
-        request_body=serializers.UpdateTipoObjetivoSerializer,
-        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
-    )
-    def update(self, request, pk=None):
-        pass
-
-    @swagger_auto_schema(
-        operation_id="delete_tipo_objetivo",
-        operation_description="Borrado de un TipoObjetivo con su id",
-        responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
-    )
-    def destroy(self, request, pk=None):
-        pass
-
-    @swagger_auto_schema(
-        operation_id="create_tipo_objetivo",
-        operation_description="""
-        """,
-        request_body=serializers.CreateTipoObjetivoSerializer(),
-        responses={**OK_CREATED, **responses.STANDARD_ERRORS},
-    )
-    def create(self, request):
-        pass
+        queryset = TipoObjetivo.objects.all()
+        serializer = serializers.GetTipoObjetivoSerializer(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-create_tipo_objetivo = TipoObjetivoViewSet.as_view({"post": "create"})
-mix_tipo_objetivo = TipoObjetivoViewSet.as_view(
-    {"get": "get", "patch": "update", "delete": "destroy"}
-)
+get_tipo_objetivo = TipoObjetivoViewSet.as_view({"get": "get"})
 list_tipo_objetivo = TipoObjetivoViewSet.as_view({"get": "list"})
 
 
@@ -423,8 +519,43 @@ class AlumnoObjetivoViewSet(ModelViewSet):
     OK_LIST = {200: serializers.GetAlumnoObjetivoSerializer(many=True)}
     OK_CREATED = {201: ""}
 
+    seguimiento_parameter = openapi.Parameter(
+        "seguimiento",
+        openapi.IN_QUERY,
+        description="Seguimiento por el que queremos filtrar la búsqueda",
+        type=openapi.TYPE_INTEGER,
+        required=False,
+    )
+
+    objetivo_parameter = openapi.Parameter(
+        "objetivo",
+        openapi.IN_QUERY,
+        description="Objetivo por el que queremos filtrar la búsqueda",
+        type=openapi.TYPE_INTEGER,
+        required=False,
+    )
+
+    fecha_desde_parameter = openapi.Parameter(
+        "fecha_desde",
+        openapi.IN_QUERY,
+        description="Fecha desde la cual queremos filtrar la búsqueda. En caso de no pasar una fecha_desde, fecha_hasta funciona como una fecha individual",
+        type=openapi.TYPE_STRING,
+        required=False,
+        pattern="DD-MM-YYYY",
+    )
+
+    fecha_hasta_parameter = openapi.Parameter(
+        "fecha_hasta",
+        openapi.IN_QUERY,
+        description="Fecha hasta la cual queremos filtrar la búsqueda.",
+        type=openapi.TYPE_STRING,
+        required=False,
+        pattern="DD-MM-YYYY",
+    )
+
     @swagger_auto_schema(
         operation_id="get_alumno_objetivo",
+        manual_parameters=[objetivo_parameter, seguimiento_parameter],
         operation_description="""
         Obtener el último ObjetivoAlumno para un alumno.
 
@@ -437,6 +568,8 @@ class AlumnoObjetivoViewSet(ModelViewSet):
 
         Si se pasa el objetivo, se devuelve solo el último ObjetivoAlumno para dicho 
         alumno en el objetivo especificado.
+
+        Se debe ignorar los queryparams limit y offset
         """,
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
@@ -616,6 +749,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
 
     @swagger_auto_schema(
         operation_id="list_alumno_objetivos",
+        manual_parameters=[fecha_desde_parameter, fecha_hasta_parameter],
         operation_description="""
         Obtener la lista de AlumnoObjetivos para un alumno especificado por su id (en la url) y
         un objetivo especificado por su id (en la url).
@@ -627,10 +761,8 @@ class AlumnoObjetivoViewSet(ModelViewSet):
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
     def list(self, request, objetivo_pk=None, pk=None):
-
         fecha_desde = request.query_params.get("fecha_desde")
         fecha_hasta = request.query_params.get("fecha_hasta")
-
         alumno_retrieved = get_object_or_404(Alumno, pk=pk)
         if alumno_retrieved.institucion != request.user.institucion:
             return Response(
@@ -649,7 +781,6 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                 data={"detail": "No encontrado."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
         integrante = IntegranteSeguimiento.objects.filter(
             fecha_hasta__isnull=True,
             seguimiento__exact=objetivo_retrieved.seguimiento,
@@ -699,13 +830,6 @@ class AlumnoObjetivoViewSet(ModelViewSet):
                 int(temp[2]), int(temp[1]), int(temp[0])
             )
             queryset = queryset.filter(fecha_creacion__gte=fecha_desde)
-        else:
-            return Response(
-                data={
-                    "detail": "Es necesario ingresar al menos la fecha_desde"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         if fecha_hasta:
             if not fecha_desde:
