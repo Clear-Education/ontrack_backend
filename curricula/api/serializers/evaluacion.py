@@ -48,6 +48,16 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
                 data_mapping[item["id"]] = item
             else:
                 data_mapping[0].append(item)
+        # Checkeo de nested instances
+        for eval_id, evaluacion in eval_mapping.items():
+            if eval_id not in data_mapping:
+                if (
+                    Calificacion.objects.filter(evaluacion_id=eval_id).count()
+                    != 0
+                ):
+                    raise ValidationError(
+                        detail="No se puede eliminar una evaluación que ya contenga calificaciones!"
+                    )
         # Crear y actualizar las evaluaciones existentes.
         ret = []
         for eval_id, data in data_mapping.items():
@@ -60,13 +70,6 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
         # Eliminar evaluaciones
         for eval_id, evaluacion in eval_mapping.items():
             if eval_id not in data_mapping:
-                if (
-                    Calificacion.objects.filter(evaluacion_id=eval_id).count()
-                    != 0
-                ):
-                    raise ValidationError(
-                        detail="No se puede eliminar una evaluación que ya contenga calificaciones!"
-                    )
                 evaluacion.delete()
         return ret
 
