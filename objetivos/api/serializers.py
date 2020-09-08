@@ -84,6 +84,33 @@ class CreateObjetivoSerializer(serializers.ModelSerializer):
         return Objetivo.objects.create(**validated_data)
 
 
+class CreateObjetivoSerializerVariante(serializers.ModelSerializer):
+    valor_objetivo_cuantitativo = serializers.FloatField(required=False)
+    descripcion = serializers.CharField(max_length=150, required=False)
+    tipo_objetivo = serializers.PrimaryKeyRelatedField(
+        queryset=TipoObjetivo.objects.all(), many=False, required=True
+    )
+    seguimiento = serializers.PrimaryKeyRelatedField(
+        queryset=Seguimiento.objects.all(), many=False, required=False
+    )
+
+    class Meta:
+        model = Objetivo
+        fields = [
+            "valor_objetivo_cuantitativo",
+            "descripcion",
+            "seguimiento",
+            "tipo_objetivo",
+        ]
+
+
+class CreateMultipleObjetivoSerializer(serializers.Serializer):
+    objetivos = CreateObjetivoSerializerVariante(many=True)
+    seguimiento = serializers.PrimaryKeyRelatedField(
+        queryset=Seguimiento.objects.all(), many=False, required=True
+    )
+
+
 class UpdateObjetivoSerializer(serializers.ModelSerializer):
     valor_objetivo_cuantitativo = serializers.FloatField(required=False)
     descripcion = serializers.CharField(max_length=150, required=False)

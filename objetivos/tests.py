@@ -40,6 +40,9 @@ class ObjetivoTests(APITestCase):
         cls.group_admin.permissions.add(
             Permission.objects.get(name="Can view objetivo")
         )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede crear multiples objetivos")
+        )
         cls.group_admin.save()
 
         cls.group_docente = Group.objects.create(name="Docente")
@@ -293,6 +296,30 @@ class ObjetivoTests(APITestCase):
     #############
     #   CREATE  #
     #############
+
+    def test_create_multiple_objetivo_admin(self):
+        """
+        Test de creacion correcta de Objetivo por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_1.id
+        tipo_objetivo = self.tipo_objetivo_3.id
+        tipo_objetivo_2 = self.tipo_objetivo_1.id
+        data = {
+            "seguimiento": seguimiento,
+            "objetivos": [
+                {
+                    "valor_objetivo_cuantitativo": 85,
+                    "tipo_objetivo": tipo_objetivo,
+                },
+                {"descripcion": "Holasss", "tipo_objetivo": tipo_objetivo_2,},
+            ],
+        }
+        response = self.client.post(
+            "/api/objetivos/multiple/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(len(response.data) == 2)
 
     def test_create_objetivo_admin(self):
         """
@@ -1367,3 +1394,50 @@ class AlumnoObjetivoTests(APITestCase):
             response.data["detail"], "No encontrado.",
         )
 
+    #############
+    #    LIST   #
+    #############
+
+    def test_list_correcto(self):
+        """
+        Test de listado de AlumnoObjetivo correcto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        objetivo = Objetivo.objects.get(
+            valor_objetivo_cuantitativo=70,
+            seguimiento=self.seguimiento_1,
+            tipo_objetivo=self.tipo_objetivo_2,
+        ).id
+
+        response = self.client.get(
+            f"/api/objetivos/{str(objetivo)}/alumno/{self.alumno_1.id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response.data, dict))
+
+    #############
+    #   UPDATE  #
+    #############
+
+    def test_update_correcto(self):
+        """
+        Test de obtencion de AlumnoObjetivo correcto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        seguimiento = self.seguimiento_1.id
+        objetivo = Objetivo.objects.get(
+            descripcion="conducta",
+            seguimiento=self.seguimiento_1,
+            tipo_objetivo=self.tipo_objetivo_1,
+        ).id
+
+        data = {
+            "alumno": self.alumno_1.id,
+            "alcanzada": False,
+        }
+
+        response = self.client.patch(
+            f"/api/objetivos/{objetivo}/alumno/", data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response.data, dict))
