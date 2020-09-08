@@ -277,6 +277,7 @@ class LoginResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
+            "id",
             "email",
             "groups",
             "name",

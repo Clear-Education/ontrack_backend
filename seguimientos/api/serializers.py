@@ -11,6 +11,7 @@ class ListSeguimientoSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Seguimiento
         fields = [
+            "id",
             "nombre",
             "descripcion",
             "en_progreso",

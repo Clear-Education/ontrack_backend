@@ -135,7 +135,6 @@ class ObjetivoTests(APITestCase):
             fecha_cierre=datetime.date(2020, 12, 31),
             descripcion=".",
             anio_lectivo=cls.anio_lectivo_1,
-            encargado=cls.user_admin,
         )
         cls.seguimiento_1.alumnos.add(cls.alumno_curso_1, cls.alumno_curso_2)
         cls.seguimiento_1.materias.add(cls.materia_1, cls.materia_2)
@@ -149,7 +148,6 @@ class ObjetivoTests(APITestCase):
             fecha_cierre=datetime.date(2020, 12, 31),
             descripcion=".",
             anio_lectivo=cls.anio_lectivo_1,
-            encargado=cls.user_admin,
         )
         cls.seguimiento_2.alumnos.add(cls.alumno_curso_1, cls.alumno_curso_2)
         cls.seguimiento_2.materias.add(cls.materia_1, cls.materia_2)
@@ -163,7 +161,6 @@ class ObjetivoTests(APITestCase):
             fecha_cierre=datetime.date(2020, 12, 31),
             descripcion=".",
             anio_lectivo=cls.anio_lectivo_1,
-            encargado=cls.user_admin,
         )
 
         cls.seguimiento_4 = Seguimiento.objects.create(
@@ -174,7 +171,6 @@ class ObjetivoTests(APITestCase):
             fecha_cierre=datetime.date(2020, 12, 31),
             descripcion=".",
             anio_lectivo=cls.anio_lectivo_1,
-            encargado=cls.user_admin,
         )
 
         cls.rol_1 = RolSeguimiento.objects.create(
@@ -945,7 +941,6 @@ class AlumnoObjetivoTests(APITestCase):
             fecha_cierre=datetime.date(2020, 12, 31),
             descripcion=".",
             anio_lectivo=cls.anio_lectivo_1,
-            encargado=cls.user_admin,
         )
         cls.seguimiento_1.alumnos.add(cls.alumno_curso_1, cls.alumno_curso_2)
         cls.seguimiento_1.materias.add(cls.materia_1, cls.materia_2)
@@ -959,7 +954,6 @@ class AlumnoObjetivoTests(APITestCase):
             fecha_cierre=datetime.date(2020, 12, 31),
             descripcion=".",
             anio_lectivo=cls.anio_lectivo_1,
-            encargado=cls.user_admin,
         )
         cls.seguimiento_2.alumnos.add(cls.alumno_curso_1, cls.alumno_curso_2)
         cls.seguimiento_2.materias.add(cls.materia_1, cls.materia_2)
@@ -973,7 +967,6 @@ class AlumnoObjetivoTests(APITestCase):
             fecha_cierre=datetime.date(2020, 12, 31),
             descripcion=".",
             anio_lectivo=cls.anio_lectivo_1,
-            encargado=cls.user_admin,
         )
 
         cls.rol_1 = RolSeguimiento.objects.create(

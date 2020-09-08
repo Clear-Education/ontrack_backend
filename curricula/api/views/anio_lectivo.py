@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
 from django.core.exceptions import ValidationError
+import datetime
 
 
 class AnioLectivoViewSet(ModelViewSet):
@@ -33,6 +34,29 @@ class AnioLectivoViewSet(ModelViewSet):
         if anio_lectivo.institucion != request.user.institucion:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = serializers.ViewAnioLectivoSerializer(anio_lectivo)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_id="get_anio_lectivo_actual",
+        operation_description="""
+        Obtener el año lectivo que transcurre actualmente
+
+        Se deben ignorar los parámetros limit y offset, ya que no aplican a este endpoint.
+        """,
+        responses={**OK_VIEW, **responses.STANDARD_ERRORS},
+    )
+    def actual(self, request):
+        hoy = datetime.date.today()
+
+        current = AnioLectivo.objects.filter(
+            institucion=request.user.institucion,
+            fecha_hasta__gte=hoy,
+            fecha_desde__lte=hoy,
+        ).first()
+        if current:
+            serializer = serializers.ViewAnioLectivoSerializer(current)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
@@ -212,6 +236,8 @@ class AnioLectivoViewSet(ModelViewSet):
 
 create_anio_lectivo = AnioLectivoViewSet.as_view({"post": "create"})
 list_anio_lectivo = AnioLectivoViewSet.as_view({"get": "list"})
+actual_anio_lectivo = AnioLectivoViewSet.as_view({"get": "actual"})
+
 update_anio_lectivo = AnioLectivoViewSet.as_view(
     {"get": "get", "patch": "update", "delete": "destroy"}
 )
