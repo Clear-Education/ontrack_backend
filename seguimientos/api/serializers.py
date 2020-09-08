@@ -308,7 +308,7 @@ class StatusSeguimientoSerializer(serializers.ModelSerializer):
         seguimiento.en_progreso = self.validated_data.get(
             "en_progreso", seguimiento.en_progreso
         )
-
+        seguimiento.save()
         return seguimiento
 
 

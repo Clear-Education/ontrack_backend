@@ -354,6 +354,71 @@ class SeguimientosTest(APITestCase):
 
     def test_list_seguimiento(self):
         """
+        Test de listado de seguimientos solo en progreso
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+        self.client.post(url, data, format="json")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Segundo Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+        self.client.post(url, data, format="json")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Tercer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+        self.client.post(url, data, format="json")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Cuarto Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+        response = self.client.post(url, data, format="json")
+        data = {
+            "en_progreso": False,
+        }
+        response = self.client.patch(
+            f"/api/seguimientos/{response.data['id']}/status/",
+            data,
+            format="json",
+        )
+        response = self.client.get("/api/seguimientos/list/", format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 3)
+
+    def test_list_seguimiento_w_cerrados(self):
+        """
         Test de creacion de seguimientos + fecha_cierre invalida
         Fecha inválida ya que es previa al comienzo
 
@@ -373,7 +438,7 @@ class SeguimientosTest(APITestCase):
         self.client.post(url, data, format="json")
         data = {
             "anio_lectivo": self.anio_lectivo.pk,
-            "nombre": "Primer Seguimiento",
+            "nombre": "Segundo Seguimiento",
             "descripcion": "La gran descripción de este seguimiento",
             "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
             "fecha_cierre": "12/12/2020",
@@ -385,7 +450,7 @@ class SeguimientosTest(APITestCase):
         self.client.post(url, data, format="json")
         data = {
             "anio_lectivo": self.anio_lectivo.pk,
-            "nombre": "Primer Seguimiento",
+            "nombre": "Tercer Seguimiento2",
             "descripcion": "La gran descripción de este seguimiento",
             "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
             "fecha_cierre": "12/12/2020",
@@ -395,9 +460,31 @@ class SeguimientosTest(APITestCase):
             "materias": [self.materia.pk],
         }
         self.client.post(url, data, format="json")
-
-        response = self.client.get("/api/seguimientos/list/", format="json")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Cuarto Seguimiento3",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+        response = self.client.post(url, data, format="json")
+        data = {
+            "en_progreso": False,
+        }
+        response = self.client.patch(
+            f"/api/seguimientos/{response.data['id']}/status/",
+            data,
+            format="json",
+        )
+        response = self.client.get(
+            "/api/seguimientos/list/?cerrado=1", format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 4)
 
     def test_edit_seguimiento_descripcion_nombre(self):
         """

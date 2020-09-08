@@ -28,6 +28,26 @@ class SeguimientoViewSet(ModelViewSet):
     OK_CREATED = {201: serializers.ViewSeguimientoSerializer}
     OK_EMPTY = {200: ""}
 
+    cerrado_param = openapi.Parameter(
+        "cerrado",
+        openapi.IN_QUERY,
+        description="Incluir seguimientos cerrados o no (booleano)",
+        type=openapi.TYPE_BOOLEAN,
+    )
+
+    def get_queryset(self, request):
+        """
+        Restringir la busqueda a Seguimientos Cerrados o no
+        """
+        queryset = Seguimiento.objects.filter(
+            institucion=request.user.institucion,
+            integrantes__usuario_id=request.user.pk,
+        )
+        cerrado = self.request.query_params.get("cerrado", None)
+        if cerrado is None or not cerrado:
+            queryset = queryset.filter(en_progreso=True)
+        return queryset
+
     @swagger_auto_schema(
         request_body=serializers.CreateSeguimientoSerializer,
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
@@ -48,7 +68,6 @@ class SeguimientoViewSet(ModelViewSet):
                     data={"detail": e.message},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            s = get_object_or_404(Seguimiento.objects.all(), pk=s.pk,)
             view_serializer = serializers.ViewSeguimientoSerializer(instance=s)
         else:
             data = serializer.errors
@@ -135,7 +154,10 @@ class SeguimientoViewSet(ModelViewSet):
         seguimiento.delete()
         return Response(status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(responses={**OK_LIST, **responses.STANDARD_ERRORS},)
+    @swagger_auto_schema(
+        manual_parameters=[cerrado_param],
+        responses={**OK_LIST, **responses.STANDARD_ERRORS},
+    )
     def list(self, request):
         """
         Listar Seguimientos (Paginado!)
@@ -146,10 +168,7 @@ class SeguimientoViewSet(ModelViewSet):
             - fecha_inicio
             - fecha_cierre
         """
-        queryset = Seguimiento.objects.filter(
-            institucion=request.user.institucion,
-            integrantes__usuario_id=request.user.pk,
-        )
+        queryset = self.get_queryset(request)
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
