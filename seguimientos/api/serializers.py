@@ -322,3 +322,35 @@ class ViewRolSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.RolSeguimiento
         fields = "__all__"
+
+
+# Solciitudes de Seguimiento
+
+
+class ViewEstadoSolicitudSeguimiento(serializers.Serializer):
+    estado = serializers.CharField(read_only=True)
+
+
+class ViewSolicitudSeguimientoSerializer(serializers.ModelSerializer):
+    alumnos = serializers.PrimaryKeyRelatedField(
+        queryset=AlumnoCurso.objects.all(), many=True
+    )
+    estado = ViewEstadoSolicitudSeguimiento()
+
+    class Meta:
+        model = models.SolicitudSeguimiento
+        fields = [
+            "fecha_creacion",
+            "creador",
+            "alumnos",
+            "motivo_solicitud",
+            "estado",
+        ]
+
+
+class CreateSolicitudSeguimientoSerializer(serializers.ModelSerializer):
+    pass
+
+
+class EditSolicitudSeguimientosSerializer(serializers.ModelSerializer):
+    pass
