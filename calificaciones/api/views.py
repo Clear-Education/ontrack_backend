@@ -13,6 +13,8 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from ontrack import responses
 from functools import reduce
+import django_rq
+from calificaciones.rq_funcions import alumno_calificacion
 
 
 class CalificacionViewSet(ModelViewSet):
@@ -83,6 +85,11 @@ class CalificacionViewSet(ModelViewSet):
             ).count()
             if count == 0:
                 calificacion = serializer.create()
+                django_rq.enqueue(
+                    alumno_calificacion,
+                    calificacion.alumno.id,
+                    calificacion.evaluacion.materia.id,
+                )
                 serializer = serializers.ViewCalficacionSerializer(
                     instance=calificacion
                 )
@@ -110,7 +117,18 @@ class CalificacionViewSet(ModelViewSet):
         data = {}
 
         if serializer.is_valid(raise_exception=True):
+            alumnos_id = set(
+                c.alumno.id
+                for c in serializer.validated_data["calificaciones"]
+            )
             serializer.create(serializer.validated_data)
+            for alumno in alumnos_id:
+                django_rq.enqueue(
+                    alumno_calificacion,
+                    alumno,
+                    serializer.validated_data["evaluacion"].materia.id,
+                )
+
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
@@ -137,6 +155,11 @@ class CalificacionViewSet(ModelViewSet):
         data = {}
         if serializer.is_valid(raise_exception=True):
             serializer.update(calificacion, serializer.validated_data)
+            django_rq.enqueue(
+                alumno_calificacion,
+                calificacion.alumno.id,
+                calificacion.evaluacion.materia.id,
+            )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
@@ -155,7 +178,10 @@ class CalificacionViewSet(ModelViewSet):
             ),
             pk=pk,
         )
+        alumno_id = calificacion.alumno.id
+        materia_id = calificacion.evaluacion.materia.id
         calificacion.delete()
+        django_rq.enqueue(alumno_calificacion, alumno_id, materia_id)
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
@@ -180,7 +206,11 @@ class CalificacionViewSet(ModelViewSet):
                     "evaluacion"
                 ].anio_lectivo_id,
             )
+            alumnos_id = set(c.alumno.id for c in calificaciones)
+            materia_id = serializer.validated_data["evaluacion"].materia.id
             calificaciones.delete()
+            for alumno in alumnos_id:
+                django_rq.enqueue(alumno_calificacion, alumno, materia_id)
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)

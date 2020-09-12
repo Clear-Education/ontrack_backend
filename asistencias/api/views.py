@@ -20,6 +20,8 @@ from itertools import chain
 import re
 import datetime
 from django.db.models import Avg
+import django_rq
+from asistencias.rq_funcions import alumno_asistencia
 
 DATE_REGEX = r"(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[13-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})"
 
@@ -275,6 +277,9 @@ class AsistenciaViewSet(ModelViewSet):
                 "descripcion", asistencia_retrieved.descripcion
             )
             asistencia_retrieved.save()
+            django_rq.enqueue(
+                alumno_asistencia, asistencia_retrieved.alumno_curso.alumno.id,
+            )
             return Response(status=status.HTTP_200_OK)
         else:
             return Response(
@@ -293,7 +298,11 @@ class AsistenciaViewSet(ModelViewSet):
             != request.user.institucion
         ):
             return Response(status=status.HTTP_404_NOT_FOUND,)
+        alumno_id = (retrieved_asistencia.alumno_curso.alumno.id,)
         retrieved_asistencia.delete()
+        django_rq.enqueue(
+            alumno_asistencia, alumno_id,
+        )
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
@@ -354,6 +363,10 @@ class AsistenciaViewSet(ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             serializer.save()
+            django_rq.enqueue(
+                alumno_asistencia,
+                serializer.validated_data["alumno_curso"].alumno.id,
+            )
             return Response(status=status.HTTP_201_CREATED)
         else:
             for value in serializer.errors.values():
@@ -480,6 +493,14 @@ class AsistenciaViewSet(ModelViewSet):
                         "detail": "Ya existen asistencias cargadas para algun alumno de los listados en el día especificado. Se debe modificar o borrar dicha asistencia"
                     },
                     status=status.HTTP_400_BAD_REQUEST,
+                )
+            alumnos_id = set(
+                asis["alumno_curso"].alumno.id
+                for asis in serializer.validated_data
+            )
+            for alum in alumnos_id:
+                django_rq.enqueue(
+                    alumno_asistencia, alum,
                 )
             serializer.save()
             return Response(status=status.HTTP_201_CREATED)
@@ -621,8 +642,14 @@ class AsistenciaViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        alumnos_id = set(asis.alumno_curso.alumno.id for asis in queryset)
+
         queryset.delete()
 
+        for alum in alumnos_id:
+            django_rq.enqueue(
+                alumno_asistencia, alum,
+            )
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(

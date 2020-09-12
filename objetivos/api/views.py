@@ -1,8 +1,4 @@
 from rest_framework.viewsets import ModelViewSet
-
-# from rest_framework.decorators import action
-# from curricula.models import Curso, AnioLectivo
-# from instituciones.models import Institucion
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -12,20 +8,12 @@ from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from ontrack import responses
-
-# from users.models import User
 from alumnos.models import Alumno, AlumnoCurso
-
-# from django.core.validators import validate_integer
 from objetivos.api import serializers
 from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
 from seguimientos.models import Seguimiento, IntegranteSeguimiento
-
-# from itertools import chain
 import re
 import datetime
-
-# from django.db.models import Avg
 
 DATE_REGEX = r"(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[13-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})"
 
