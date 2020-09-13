@@ -1,7 +1,12 @@
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from seguimientos.api import serializers
 from seguimientos.models import Seguimiento, IntegranteSeguimiento
-from seguimientos.models import RolSeguimiento, SolicitudSeguimiento
+from seguimientos.models import (
+    RolSeguimiento,
+    SolicitudSeguimiento,
+    FechaEstadoSolicitudSeguimiento,
+    EstadoSolicitudSeguimiento,
+)
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -433,15 +438,20 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
         Crear una Solicitud de Seguimiento
         """
         serializer = serializers.CreateSolicitudSeguimientoSerializer(
-            data=request.data
+            data=request.data, context={"request": request}
         )
         data = {}
         if serializer.is_valid():
-            serializer.save()
+            sol, f_estado = serializer.save()
+            view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
+                instance=sol
+            )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(
+            data=view_serializer.data, status=status.HTTP_201_CREATED
+        )
 
     @swagger_auto_schema(
         request_body=serializers.EditSolicitudSeguimientosSerializer,
@@ -451,29 +461,32 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
         """
         Editar una Solicitud de Seguimiento
         """
-        queryset = SolicitudSeguimiento.objects.all(
+        queryset = SolicitudSeguimiento.objects.filter(
             creador__institucion_id=request.user.institucion_id
         )
         sol = get_object_or_404(queryset, pk=pk)
         serializer = serializers.EditSolicitudSeguimientosSerializer(
-            sol, data=request.data, partial=True
+            instance=sol, data=request.data, partial=True
         )
         data = {}
         if serializer.is_valid():
-            serializer.update(sol, serializer.validated_data)
-            data = serializer.data
+            sol = serializer.update(sol)
+            view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
+                instance=sol
+            )
         else:
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
-        return Response(data=data, status=status.HTTP_200_OK)
+        return Response(data=view_serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(responses={**OK_EMPTY, **responses.STANDARD_ERRORS},)
     def destroy(self, request, pk=None):
         """
         Eliminar una Solicitud de Seguimiento
         """
-        queryset = SolicitudSeguimiento.objects.all(
-            creador__institucion_id=request.user.institucion_id
+        queryset = SolicitudSeguimiento.objects.filter(
+            creador__institucion_id=request.user.institucion_id,
+            creador=request.user,
         )
         sol = get_object_or_404(queryset, pk=pk)
         sol.delete()
@@ -483,11 +496,12 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
     def list(self, request):
         """
         Listar Solicitudes de Seguimiento
-
         """
-        queryset = SolicitudSeguimiento.objects.all(
+        queryset = SolicitudSeguimiento.objects.filter(
             creador__institucion_id=request.user.institucion_id,
         )
+        if request.user.groups.name == "Docente":
+            queryset = queryset.filter(creador=request.user,)
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -509,14 +523,14 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-        request_body=serializers.StatusSeguimientoSerializer,
+        request_body=serializers.EstadoSolicitudSeguimiento,
         responses={**OK_VIEW, **responses.STANDARD_ERRORS},
     )
     def status(self, request, pk=None):
         """
         Editar el estado de la solicitud de seguimiento
         """
-        serializer = serializers.StatusSolicitudSeguimientoSerializer(
+        serializer = serializers.EstadoSolicitudSeguimiento(
             data=request.data, context={"request": request}
         )
         data = {}
@@ -527,8 +541,10 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
                 ),
                 pk=pk,
             )
-            estado = None  # buscar estado
-            s = serializer.update(estado=estado)
+            estado = EstadoSolicitudSeguimiento.objects.filter(
+                nombre=serializer.data["estado"]
+            ).first()
+            s = serializer.update(solicitud=s, estado=estado)
             view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
                 instance=s
             )
@@ -565,9 +581,8 @@ create_rol = RolSeguimientoViewSet.as_view({"post": "create"})
 # Solicitud de Seguimiento
 
 list_solicitudes = SolicitudSeguimientoViewSet.as_view({"get": "list"})
-view_delete_solicitudes = SolicitudSeguimientoViewSet.as_view(
-    {"get": "get", "delete": "destroy"}
+view_edit_delete_solicitudes = SolicitudSeguimientoViewSet.as_view(
+    {"get": "get", "delete": "destroy", "patch": "update"}
 )
 status_solicitud = SolicitudSeguimientoViewSet.as_view({"patch": "status"})
-
-edit_solicitudes = SolicitudSeguimientoViewSet.as_view({"patch": "update"})
+create_solicitudes = SolicitudSeguimientoViewSet.as_view({"post": "create"})

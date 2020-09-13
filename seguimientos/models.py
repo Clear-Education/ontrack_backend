@@ -98,12 +98,19 @@ class SolicitudSeguimiento(SoftDeleteObject):
     class Meta:
         permissions = [
             ("list_solicitudseguimiento", "Listar Solciitudes de Seguimiento"),
+            (
+                "status_solicitudseguimiento",
+                "Cambiar el estado de Solciitudes de Seguimiento",
+            ),
         ]
 
 
 class EstadoSolicitudSeguimiento(SoftDeleteObject):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     nombre = models.CharField(max_length=256)
+
+    def __str__(self):
+        return self.nombre
 
     class Meta:
         permissions = [
@@ -117,13 +124,15 @@ class EstadoSolicitudSeguimiento(SoftDeleteObject):
 class FechaEstadoSolicitudSeguimiento(SoftDeleteObject):
     fecha = models.DateTimeField(auto_now_add=True)
     solicitud = models.ForeignKey(
-        SolicitudSeguimiento, on_delete=models.CASCADE
+        SolicitudSeguimiento, on_delete=models.CASCADE, related_name="estado",
     )
     estado_solicitud = models.ForeignKey(
         EstadoSolicitudSeguimiento, on_delete=models.CASCADE
     )
 
     class Meta:
+        ordering = ["fecha"]
+
         permissions = [
             (
                 "list_fechaestadosolicitudseguimiento",
