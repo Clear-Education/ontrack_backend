@@ -529,6 +529,8 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
     def status(self, request, pk=None):
         """
         Editar el estado de la solicitud de seguimiento
+        Estados posibles: "Pendiente", "Aceptada" y "Rechazada"
+        Una vez que se llega a rechazada  o aceptada no hay vuelta atrás
         """
         serializer = serializers.EstadoSolicitudSeguimiento(
             data=request.data, context={"request": request}
