@@ -563,7 +563,7 @@ class SeguimientosTest(APITestCase):
         response = self.client.get(
             f"/api/seguimientos/{response.data['id']}/", format="json",
         )
-
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["nombre"], "PRIMER SEGUIMIENTO")
 
