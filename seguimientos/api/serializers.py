@@ -5,6 +5,7 @@ from users.models import User
 from ontrack import settings
 from alumnos.models import AlumnoCurso
 import datetime
+from alumnos.api.serializers import PartialViewAlumnoCursoSerializer
 
 
 class ListSeguimientoSerializer(serializers.ModelSerializer):
@@ -137,9 +138,7 @@ class ViewSeguimientoSerializer(serializers.ModelSerializer):
     )
     descripcion = serializers.CharField(required=True)
     nombre = serializers.CharField(required=True)
-    alumnos = serializers.PrimaryKeyRelatedField(
-        queryset=AlumnoCurso.objects.all(), many=True
-    )
+    alumnos = PartialViewAlumnoCursoSerializer(many=True)
     materias = serializers.PrimaryKeyRelatedField(
         queryset=Materia.objects.all(), many=True, required=False
     )

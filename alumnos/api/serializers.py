@@ -119,6 +119,19 @@ class ViewAlumnoSerializer(serializers.ModelSerializer):
         ]
 
 
+class PartialViewAlumnoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Alumno
+        fields = [
+            "id",
+            "dni",
+            "nombre",
+            "apellido",
+            "email",
+            "legajo",
+        ]
+
+
 class CreateAlumnoCursoSerializer(serializers.ModelSerializer):
     alumno = serializers.PrimaryKeyRelatedField(
         queryset=Alumno.objects.all(), many=False, required=True
@@ -151,4 +164,17 @@ class ViewAlumnoCursoSerializer(serializers.ModelSerializer):
             "alumno",
             "curso",
             "anio_lectivo",
+        ]
+
+
+class PartialViewAlumnoCursoSerializer(serializers.ModelSerializer):
+    alumno = PartialViewAlumnoSerializer(many=False)
+    curso = CursoSerializerWithCarrera(many=False)
+
+    class Meta:
+        model = AlumnoCurso
+        fields = [
+            "id",
+            "alumno",
+            "curso",
         ]
