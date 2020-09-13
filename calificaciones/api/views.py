@@ -118,7 +118,7 @@ class CalificacionViewSet(ModelViewSet):
 
         if serializer.is_valid(raise_exception=True):
             alumnos_id = set(
-                c.alumno.id
+                c["alumno"].id
                 for c in serializer.validated_data["calificaciones"]
             )
             serializer.create(serializer.validated_data)

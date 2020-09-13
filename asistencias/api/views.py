@@ -298,7 +298,7 @@ class AsistenciaViewSet(ModelViewSet):
             != request.user.institucion
         ):
             return Response(status=status.HTTP_404_NOT_FOUND,)
-        alumno_id = (retrieved_asistencia.alumno_curso.alumno.id,)
+        alumno_id = retrieved_asistencia.alumno_curso.alumno.id
         retrieved_asistencia.delete()
         django_rq.enqueue(
             alumno_asistencia, alumno_id,
