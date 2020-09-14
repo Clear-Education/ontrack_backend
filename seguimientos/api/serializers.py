@@ -6,6 +6,8 @@ from ontrack import settings
 from alumnos.models import AlumnoCurso
 import datetime
 from alumnos.api.serializers import PartialViewAlumnoCursoSerializer
+from curricula.api.serializers.materia import PartialViewMateriasSerializer
+from users.api.serializers import PartialViewUserSeralizer
 
 
 class ListSeguimientoSerializer(serializers.ModelSerializer):
@@ -22,7 +24,8 @@ class ListSeguimientoSerializer(serializers.ModelSerializer):
 
 
 class ViewIntegranteSerializer(serializers.ModelSerializer):
-    rol = serializers.PrimaryKeyRelatedField(read_only=True)
+    rol = serializers.StringRelatedField(read_only=True)
+    usuario = PartialViewUserSeralizer()
 
     class Meta:
         model = models.IntegranteSeguimiento
@@ -139,9 +142,7 @@ class ViewSeguimientoSerializer(serializers.ModelSerializer):
     descripcion = serializers.CharField(required=True)
     nombre = serializers.CharField(required=True)
     alumnos = PartialViewAlumnoCursoSerializer(many=True)
-    materias = serializers.PrimaryKeyRelatedField(
-        queryset=Materia.objects.all(), many=True, required=False
-    )
+    materias = PartialViewMateriasSerializer(many=True)
     integrantes = ViewIntegranteSerializer(many=True)
 
     class Meta:
