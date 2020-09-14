@@ -36,4 +36,19 @@ urlpatterns = [
         "rol/<int:pk>/", views.view_edit_rol, name="rolseguimiento-view-edit"
     ),
     path("rol/list/", views.list_rol, name="rolseguimiento-list"),
+    # Solicitudes de Seguimiento
+    path(
+        "solicitudes/list/", views.list_solicitudes, name="solicitudes-list",
+    ),
+    path(
+        "solicitudes/<int:pk>/",
+        views.view_edit_delete_solicitudes,
+        name="solicitudes-view-edit",
+    ),
+    path(
+        "solicitudes/<int:pk>/status/",
+        views.status_solicitud,
+        name="solicitudes-status",
+    ),
+    path("solicitudes/", views.create_solicitudes, name="solicitudes-create"),
 ]
