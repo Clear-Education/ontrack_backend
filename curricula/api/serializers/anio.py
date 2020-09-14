@@ -2,6 +2,14 @@ from rest_framework import serializers
 from curricula import models
 
 
+class PartialAnioSerializer(serializers.ModelSerializer):
+    carrera = serializers.StringRelatedField()
+
+    class Meta:
+        model = models.Anio
+        fields = ["nombre", "carrera"]
+
+
 class ListAnioSerializer(serializers.Serializer):
     carrera = serializers.PrimaryKeyRelatedField(
         required=True, queryset=models.Carrera.objects.all()
