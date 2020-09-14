@@ -96,10 +96,10 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 RQ_QUEUES = {
     "default": {
-        "HOST": "redis",
-        "PORT": 6379,
+        "HOST": os.getenv("REDIS_URL", "redis"),
+        "PORT": os.getenv("REDIS_PORT", 6379),
         "DB": 0,
-        "PASSWORD": "redis_ontrack",
+        "PASSWORD": os.getenv("REDIS_PASSWORD", "redis_ontrack"),
         "DEFAULT_TIMEOUT": 360,
     },
 }
