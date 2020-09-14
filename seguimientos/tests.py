@@ -656,7 +656,6 @@ class SeguimientosTest(APITestCase):
         response = self.client.get(
             f"/api/seguimientos/{response.data['id']}/", format="json",
         )
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["nombre"], "PRIMER SEGUIMIENTO")
 
@@ -852,6 +851,8 @@ class SolicitudSeguimientoTest(APITestCase):
         }
 
         response = self.client.post(url, data, format="json")
+        print(response.data)
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(SolicitudSeguimiento.objects.count(), 1)
         self.assertEqual(
@@ -887,7 +888,6 @@ class SolicitudSeguimientoTest(APITestCase):
             "motivo_solicitud": "",
             "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
         }
-
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(SolicitudSeguimiento.objects.count(), 0)
@@ -1092,3 +1092,21 @@ class SolicitudSeguimientoTest(APITestCase):
         self.assertEqual(type(response.data["results"]), ReturnList)
         self.assertEqual(len(response.data["results"]), 4)
 
+    def test_list_solicitudes_otro(self):
+        """
+        Test de listado solicitudes ajenas, deberia listar vacío
+        """
+        url = reverse("solicitudes-create")
+        data = {
+            "motivo_solicitud": "Motivo muy justificado",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+        }
+        for i in range(4):
+            self.client.post(url, data, format="json")
+        self.client.force_authenticate(user=self.user_docente)
+        response = self.client.get(
+            "/api/seguimientos/solicitudes/list/", format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(type(response.data["results"]), ReturnList)
+        self.assertEqual(len(response.data["results"]), 0)

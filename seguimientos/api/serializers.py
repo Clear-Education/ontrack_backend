@@ -336,14 +336,14 @@ class ViewEstadoSolicitudSeguimiento(serializers.ModelSerializer):
 
 
 class ViewSolicitudSeguimientoSerializer(serializers.ModelSerializer):
-    alumnos = serializers.PrimaryKeyRelatedField(
-        queryset=AlumnoCurso.objects.all(), many=True
-    )
+    alumnos = PartialViewAlumnoCursoSerializer(many=True)
     estado = ViewEstadoSolicitudSeguimiento(many=True)
+    creador = PartialViewUserSeralizer()
 
     class Meta:
         model = models.SolicitudSeguimiento
         fields = [
+            "id",
             "fecha_creacion",
             "creador",
             "alumnos",
