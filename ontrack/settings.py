@@ -213,11 +213,10 @@ if os.getenv("DJANGO_DEVELOPMENT") is not None:
 
 # MAIL
 
-EMAIL_HOST = "smtp.sendgrid.net"
-EMAIL_HOST_USER = "apikey"
-EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_PASSWORD")
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = os.environ.get("MAILGUN_SMTP_SERVER", "")
+EMAIL_PORT = os.environ.get("MAILGUN_SMTP_PORT", "")
+EMAIL_HOST_USER = os.environ.get("MAILGUN_SMTP_LOGIN", "")
+EMAIL_HOST_PASSWORD = os.environ.get("MAILGUN_SMTP_PASSWORD", "")
 
 
 django_heroku.settings(locals())

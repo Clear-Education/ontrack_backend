@@ -15,7 +15,6 @@ from seguimientos.models import Seguimiento
 from curricula.models import Materia
 from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
 import datetime
-import django_rq
 from asistencias.rq_funcions import alumno_asistencia
 
 
@@ -208,13 +207,11 @@ class QueueAsistenciaTests(APITestCase):
             tipo_objetivo=cls.tipo_objetivo_3,
         )
 
-        cls.queue = django_rq.get_queue("default", is_async=False)
-
     def test_objetivos_queue(self):
         """
         Test de creacion correcta de AlumnoObjetivos
         """
-        self.queue.enqueue(alumno_asistencia, self.alumno_1.id)
+        alumno_asistencia(self.alumno_1.id)
         alumnos_objetivos = AlumnoObjetivo.objects.all()
         assert alumnos_objetivos[0].valor == 0.5
 

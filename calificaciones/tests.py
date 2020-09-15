@@ -19,7 +19,6 @@ from seguimientos.models import Seguimiento
 from curricula.models import Materia
 from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
 import datetime
-import django_rq
 from calificaciones.rq_funcions import alumno_calificacion
 
 
@@ -243,15 +242,13 @@ class QueueCalificacionesTests(APITestCase):
             tipo_objetivo=cls.tipo_objetivo_3,
         )
 
-        cls.queue = django_rq.get_queue("default", is_async=False)
-
     def test_objetivos_queue(self):
         """
         Test de creacion correcta de AlumnoObjetivos
         """
-        self.queue.enqueue(
-            alumno_calificacion, self.alumno_1.id, self.materia_1.id
-        )
+
+        alumno_calificacion(self.alumno_1.id, self.materia_1.id)
+
         alumnos_objetivos = AlumnoObjetivo.objects.all()
         assert alumnos_objetivos[0].valor == 97
 
@@ -262,17 +259,13 @@ class QueueCalificacionesTests(APITestCase):
             evaluacion=self.evaluacion_2,
         )
 
-        self.queue.enqueue(
-            alumno_calificacion, self.alumno_1.id, self.materia_2.id
-        )
+        alumno_calificacion(self.alumno_1.id, self.materia_2.id)
         alumnos_objetivos = AlumnoObjetivo.objects.all()
         assert alumnos_objetivos[1].valor == 79.5
 
         Calificacion.objects.all().delete()
         AlumnoObjetivo.objects.all().delete()
-        self.queue.enqueue(
-            alumno_calificacion, self.alumno_1.id, self.materia_2.id
-        )
+        alumno_calificacion(self.alumno_1.id, self.materia_1.id)
         alumnos_objetivos = AlumnoObjetivo.objects.all()
         assert alumnos_objetivos[0].valor == -1
 

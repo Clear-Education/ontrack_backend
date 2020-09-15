@@ -618,8 +618,9 @@ class AlumnoCursoViewSet(ModelViewSet):
                     anio_lectivo__exact=alumno_curso.get("anio_lectivo"),
                     alumno__institucion__exact=request.user.institucion,
                 )
-                if len(alumno_c) == 1:
+                if len(alumno_c) >= 1:
                     alumno_c[0].delete()
+
             return Response(status=status.HTTP_200_OK)
 
         else:
