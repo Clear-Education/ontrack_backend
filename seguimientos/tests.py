@@ -851,7 +851,6 @@ class SolicitudSeguimientoTest(APITestCase):
         }
 
         response = self.client.post(url, data, format="json")
-        print(response.data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(SolicitudSeguimiento.objects.count(), 1)

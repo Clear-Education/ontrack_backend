@@ -8,19 +8,19 @@ def alumno_calificacion(alumno, materia):
     seguimientos = Seguimiento.objects.filter(
         alumnos__alumno__id=alumno, en_progreso=True, materias__id=materia
     ).distinct()
-    if seguimientos:
-        map(check_objetivos, [(s, alumno) for s in seguimientos])
+    for seguimiento in seguimientos:
+        check_objetivos(seguimiento, alumno)
 
 
-def check_objetivos(seguimiento_alumno):
+def check_objetivos(seguimiento, alumno):
     objetivo = Objetivo.objects.filter(
-        seguimiento__exact=seguimiento_alumno[0],
+        seguimiento__exact=seguimiento,
         tipo_objetivo__nombre__icontains="Calific",
-        tipo_objetivo__cuantitativo__equals=True,
-        tipo_objetivo__multiple__exact=False,
+        tipo_objetivo__cuantitativo=True,
+        tipo_objetivo__multiple=False,
     )
     if objetivo:
-        calculate_promedio(objetivo[0], seguimiento_alumno[1])
+        calculate_promedio(objetivo[0], alumno)
 
 
 def calculate_promedio(objetivo, alumno_id):
@@ -32,20 +32,20 @@ def calculate_promedio(objetivo, alumno_id):
         calculate_promedio_one_subject,
         [(alumno_curso, materia) for materia in materias],
     )
-    promedios_ponderaciones = [x for x in promedios if x is not None]
+    promedios_ponderaciones = [
+        x for x in promedios_ponderaciones if x is not None
+    ]
     promedios = list()
     for nota, ponderacion in promedios_ponderaciones:
         promedios.append(
             nota + (1 - ponderacion) * objetivo.tipo_objetivo.valor_maximo
         )
-
     alumno_objetivo = AlumnoObjetivo(
         objetivo=objetivo,
         alumno_curso=alumno_curso,
         alcanzada=False,
-        valor=mean(promedios),
+        valor=round(mean(promedios if promedios else [-1]), 2),
     )
-    print(alumno_objetivo)
     alumno_objetivo.save()
 
 
