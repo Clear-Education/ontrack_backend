@@ -295,3 +295,15 @@ class LoginResponseSerializer(serializers.ModelSerializer):
             "reset_token",
             "institucion",
         ]
+
+
+class PartialViewUserSeralizer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "groups",
+            "name",
+            "last_name",
+            "cargo",
+        ]

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from curricula import models
+from curricula.api.serializers.anio import PartialAnioSerializer
 
 
 class CreateMateriaSerializer(serializers.ModelSerializer):
@@ -35,3 +36,12 @@ class ViewMateriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Materia
         fields = "__all__"
+
+
+class PartialViewMateriasSerializer(serializers.ModelSerializer):
+    nombre = serializers.CharField(required=True)
+    anio = PartialAnioSerializer()
+
+    class Meta:
+        model = models.Materia
+        fields = ["nombre", "anio"]

@@ -5,6 +5,9 @@ from users.models import User
 from ontrack import settings
 from alumnos.models import AlumnoCurso
 import datetime
+from alumnos.api.serializers import PartialViewAlumnoCursoSerializer
+from curricula.api.serializers.materia import PartialViewMateriasSerializer
+from users.api.serializers import PartialViewUserSeralizer
 
 
 class ListSeguimientoSerializer(serializers.ModelSerializer):
@@ -21,7 +24,8 @@ class ListSeguimientoSerializer(serializers.ModelSerializer):
 
 
 class ViewIntegranteSerializer(serializers.ModelSerializer):
-    rol = serializers.PrimaryKeyRelatedField(read_only=True)
+    rol = serializers.StringRelatedField(read_only=True)
+    usuario = PartialViewUserSeralizer()
 
     class Meta:
         model = models.IntegranteSeguimiento
@@ -137,12 +141,8 @@ class ViewSeguimientoSerializer(serializers.ModelSerializer):
     )
     descripcion = serializers.CharField(required=True)
     nombre = serializers.CharField(required=True)
-    alumnos = serializers.PrimaryKeyRelatedField(
-        queryset=AlumnoCurso.objects.all(), many=True
-    )
-    materias = serializers.PrimaryKeyRelatedField(
-        queryset=Materia.objects.all(), many=True, required=False
-    )
+    alumnos = PartialViewAlumnoCursoSerializer(many=True)
+    materias = PartialViewMateriasSerializer(many=True)
     integrantes = ViewIntegranteSerializer(many=True)
 
     class Meta:
@@ -231,7 +231,7 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        # agregar creacion de materias
+
         institucion_id = self.context["request"].user.institucion_id
         integrantes = []
         if "integrantes" in validated_data:
@@ -308,7 +308,7 @@ class StatusSeguimientoSerializer(serializers.ModelSerializer):
         seguimiento.en_progreso = self.validated_data.get(
             "en_progreso", seguimiento.en_progreso
         )
-
+        seguimiento.save()
         return seguimiento
 
 
@@ -322,3 +322,117 @@ class ViewRolSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.RolSeguimiento
         fields = "__all__"
+
+
+# Solciitudes de Seguimiento
+
+
+class ViewEstadoSolicitudSeguimiento(serializers.ModelSerializer):
+    estado_solicitud = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = models.FechaEstadoSolicitudSeguimiento
+        fields = ["estado_solicitud", "fecha"]
+
+
+class ViewSolicitudSeguimientoSerializer(serializers.ModelSerializer):
+    alumnos = PartialViewAlumnoCursoSerializer(many=True)
+    estado = ViewEstadoSolicitudSeguimiento(many=True)
+    creador = PartialViewUserSeralizer()
+
+    class Meta:
+        model = models.SolicitudSeguimiento
+        fields = [
+            "id",
+            "fecha_creacion",
+            "creador",
+            "alumnos",
+            "motivo_solicitud",
+            "estado",
+        ]
+
+
+class CreateSolicitudSeguimientoSerializer(serializers.ModelSerializer):
+    alumnos = serializers.PrimaryKeyRelatedField(
+        queryset=AlumnoCurso.objects.all(), many=True, required=True
+    )
+    motivo_solicitud = serializers.CharField(required=True)
+
+    class Meta:
+        model = models.SolicitudSeguimiento
+        fields = [
+            "alumnos",
+            "motivo_solicitud",
+        ]
+
+    def validate(self, data):
+        if "alumnos" in data:
+            anio_lectivo = [
+                alumno.anio_lectivo_id for alumno in data["alumnos"]
+            ]
+            curso = [alumno.curso_id for alumno in data["alumnos"]]
+
+            if len(set(anio_lectivo)) != 1 or len(set(curso)) != 1:
+                raise serializers.ValidationError(detail="Alumnos invalidos")
+        return data
+
+    def create(self, validated_data):
+        creador = self.context["request"].user
+
+        sol = models.SolicitudSeguimiento(
+            creador=creador,
+            motivo_solicitud=validated_data.pop("motivo_solicitud"),
+        )
+        sol.save()
+        sol.alumnos.add(*validated_data.pop("alumnos"))
+        estado = models.EstadoSolicitudSeguimiento.objects.filter(
+            nombre="Pendiente"
+        ).first()
+        f_estado = models.FechaEstadoSolicitudSeguimiento(
+            solicitud=sol, estado_solicitud=estado
+        )
+        f_estado.save()
+        return sol, f_estado
+
+
+class EditSolicitudSeguimientosSerializer(serializers.ModelSerializer):
+    motivo_solicitud = serializers.CharField(required=True)
+
+    class Meta:
+        model = models.SolicitudSeguimiento
+        fields = ["motivo_solicitud"]
+
+    def update(self, solicitud):
+        solicitud.motivo_solicitud = self.validated_data.get(
+            "motivo_solicitud", solicitud.motivo_solicitud
+        )
+        solicitud.save()
+        return solicitud
+
+
+class EstadoSolicitudSeguimiento(serializers.Serializer):
+    estado = serializers.CharField(required=True)
+
+    class Meta:
+        fields = ["estado"]
+
+    def validate(self, data):
+        estados = ["Pendiente", "Aceptada", "Rechazada"]
+        if data["estado"] not in estados:
+            raise serializers.ValidationError(detail="Estado inválido")
+        return data
+
+    def update(self, solicitud, estado):
+        estados = models.FechaEstadoSolicitudSeguimiento.objects.filter(
+            solicitud=solicitud
+        )
+        for e in estados:
+            if e.estado_solicitud.nombre != "Pendiente":
+                raise serializers.ValidationError(
+                    detail="No se puede cambiar el estado"
+                )
+        f_estado = models.FechaEstadoSolicitudSeguimiento(
+            solicitud=solicitud, estado_solicitud=estado
+        )
+        f_estado.save()
+        return solicitud
