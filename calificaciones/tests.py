@@ -15,6 +15,266 @@ from django.contrib.auth.models import Permission
 from alumnos.models import Alumno, AlumnoCurso
 from rest_framework import status
 from unittest.mock import patch
+from seguimientos.models import Seguimiento
+from curricula.models import Materia
+from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
+import datetime
+import django_rq
+from calificaciones.rq_funcions import alumno_calificacion
+
+
+class QueueCalificacionesTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Setup de User y permisos para poder ejecutar todas las acciones
+        """
+        cls.client = APIClient()
+        cls.group_admin = Group.objects.create(name="Admin")
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can add asistencia")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can change asistencia")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can delete asistencia")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede listar asistencias")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can view asistencia")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede crear multiples asistencias")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede borrar multiples asistencias")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(
+                name="Puede obtener el porcentaje de asistencias"
+            )
+        )
+        cls.group_admin.save()
+
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_1.save()
+
+        cls.user_admin = User.objects.create_user(
+            "admin@admin.com",
+            password="password",
+            groups=cls.group_admin,
+            institucion=cls.institucion_1,
+        )
+
+        cls.carrera_1 = Carrera.objects.create(
+            nombre="Carrera1",
+            descripcion=".",
+            institucion=cls.institucion_1,
+            color=".",
+        )
+
+        cls.anio_1 = Anio.objects.create(
+            nombre="Anio1", carrera=cls.carrera_1, color="."
+        )
+
+        cls.curso_1 = Curso.objects.create(nombre="Curso1", anio=cls.anio_1)
+
+        cls.anio_lectivo_1 = AnioLectivo.objects.create(
+            nombre="2019",
+            fecha_desde="2019-01-01",
+            fecha_hasta="2019-12-31",
+            institucion=cls.institucion_1,
+        )
+        cls.anio_lectivo_1.save()
+
+        cls.anio_lectivo_2 = AnioLectivo.objects.create(
+            nombre="2020",
+            fecha_desde="2020-01-01",
+            fecha_hasta="2020-12-31",
+            institucion=cls.institucion_1,
+        )
+        cls.anio_lectivo_2.save()
+
+        cls.alumno_1 = Alumno.objects.create(
+            dni=1,
+            nombre="Alumno",
+            apellido="1",
+            institucion=cls.institucion_1,
+        )
+        cls.alumno_1.save()
+
+        cls.alumno_2 = Alumno.objects.create(
+            dni=2,
+            nombre="Alumno",
+            apellido="2",
+            institucion=cls.institucion_1,
+        )
+        cls.alumno_2.save()
+
+        cls.alumno_curso_1 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_1,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_1,
+        )
+        cls.alumno_curso_1.save()
+
+        cls.alumno_curso_2 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_1,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_2,
+        )
+        cls.alumno_curso_2.save()
+
+        cls.alumno_curso_3 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_2,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_1,
+        )
+        cls.alumno_curso_3.save()
+
+        cls.alumno_curso_4 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_2,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_2,
+        )
+        cls.alumno_curso_4.save()
+
+        cls.materia_1 = Materia.objects.create(
+            nombre="Matematicas", anio=cls.anio_1
+        )
+        cls.materia_1.save()
+
+        cls.materia_2 = Materia.objects.create(
+            nombre="Lengua", anio=cls.anio_1
+        )
+        cls.materia_2.save()
+
+        cls.evaluacion_1 = Evaluacion.objects.create(
+            nombre="Evaluacion Mat 1",
+            materia=cls.materia_1,
+            anio_lectivo=cls.anio_lectivo_1,
+            ponderacion=0.3,
+        )
+        cls.evaluacion_2 = Evaluacion.objects.create(
+            nombre="Evaluacion Mat 2",
+            materia=cls.materia_1,
+            anio_lectivo=cls.anio_lectivo_1,
+            ponderacion=0.7,
+        )
+        cls.evaluacion_3 = Evaluacion.objects.create(
+            nombre="Evaluacion Mat 1 otro anio",
+            materia=cls.materia_1,
+            anio_lectivo=cls.anio_lectivo_2,
+            ponderacion=1,
+        )
+        cls.evaluacion_4 = Evaluacion.objects.create(
+            nombre="Evaluacion Lengua 1",
+            materia=cls.materia_2,
+            anio_lectivo=cls.anio_lectivo_1,
+            ponderacion=1,
+        )
+
+        cls.calificacion_1 = Calificacion.objects.create(
+            fecha=datetime.date(2019, 3, 4),
+            puntaje=80,
+            alumno=cls.alumno_1,
+            evaluacion=cls.evaluacion_1,
+        )
+        cls.calificacion_2 = Calificacion.objects.create(
+            fecha=datetime.date(2019, 3, 4),
+            puntaje=100,
+            alumno=cls.alumno_1,
+            evaluacion=cls.evaluacion_4,
+        )
+        cls.calificacion_3 = Calificacion.objects.create(
+            fecha=datetime.date(2020, 3, 4),
+            puntaje=10,
+            alumno=cls.alumno_1,
+            evaluacion=cls.evaluacion_3,
+        )
+
+        cls.seguimiento_1 = Seguimiento.objects.create(
+            nombre="seguimiento_1",
+            en_progreso=True,
+            institucion=cls.institucion_1,
+            fecha_inicio=datetime.date(2019, 1, 1),
+            fecha_cierre=datetime.date(2019, 12, 31),
+            descripcion=".",
+            anio_lectivo=cls.anio_lectivo_1,
+        )
+        cls.seguimiento_1.alumnos.add(cls.alumno_curso_1, cls.alumno_curso_3)
+        cls.seguimiento_1.materias.add(cls.materia_1, cls.materia_2)
+        cls.seguimiento_1.save()
+
+        cls.tipo_objetivo_1 = TipoObjetivo.objects.create(
+            nombre="Cualitativo", cuantitativo=False, multiple=True,
+        )
+        cls.tipo_objetivo_2 = TipoObjetivo.objects.create(
+            nombre="Promedio calificaciones",
+            cuantitativo=True,
+            multiple=False,
+            valor_minimo=0,
+            valor_maximo=100,
+        )
+        cls.tipo_objetivo_3 = TipoObjetivo.objects.create(
+            nombre="Porcentaje asistencias",
+            cuantitativo=True,
+            multiple=False,
+            valor_minimo=0,
+            valor_maximo=100,
+        )
+
+        cls.objetivo_1 = Objetivo.objects.create(
+            descripcion="conducta",
+            seguimiento=cls.seguimiento_1,
+            tipo_objetivo=cls.tipo_objetivo_1,
+        )
+        cls.objetivo_2 = Objetivo.objects.create(
+            valor_objetivo_cuantitativo=70,
+            seguimiento=cls.seguimiento_1,
+            tipo_objetivo=cls.tipo_objetivo_2,
+        )
+        cls.objetivo_3 = Objetivo.objects.create(
+            valor_objetivo_cuantitativo=70,
+            seguimiento=cls.seguimiento_1,
+            tipo_objetivo=cls.tipo_objetivo_3,
+        )
+
+        cls.queue = django_rq.get_queue("default", is_async=False)
+
+    def test_objetivos_queue(self):
+        """
+        Test de creacion correcta de AlumnoObjetivos
+        """
+        self.queue.enqueue(
+            alumno_calificacion, self.alumno_1.id, self.materia_1.id
+        )
+        alumnos_objetivos = AlumnoObjetivo.objects.all()
+        assert alumnos_objetivos[0].valor == 97
+
+        self.calificacion_4 = Calificacion.objects.create(
+            fecha=datetime.date(2019, 3, 4),
+            puntaje=50,
+            alumno=self.alumno_1,
+            evaluacion=self.evaluacion_2,
+        )
+
+        self.queue.enqueue(
+            alumno_calificacion, self.alumno_1.id, self.materia_2.id
+        )
+        alumnos_objetivos = AlumnoObjetivo.objects.all()
+        assert alumnos_objetivos[1].valor == 79.5
+
+        Calificacion.objects.all().delete()
+        AlumnoObjetivo.objects.all().delete()
+        self.queue.enqueue(
+            alumno_calificacion, self.alumno_1.id, self.materia_2.id
+        )
+        alumnos_objetivos = AlumnoObjetivo.objects.all()
+        assert alumnos_objetivos[0].valor == -1
 
 
 @patch("calificaciones.api.views.django_rq")
