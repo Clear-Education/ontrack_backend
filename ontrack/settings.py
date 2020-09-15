@@ -94,14 +94,21 @@ MIDDLEWARE = [
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+DEFAULT_LOCAL = {
+    "HOST": "redis",
+    "PORT": 6379,
+    "DB": 0,
+    "PASSWORD": "redis_ontrack",
+    "DEFAULT_TIMEOUT": 500,
+}
+
+DEFAULT_HEROKU = {
+    "URL": os.getenv("REDISTOGO_URL", "redis"),
+    "DEFAULT_TIMEOUT": 500,
+}
+
 RQ_QUEUES = {
-    "default": {
-        "HOST": os.getenv("REDIS_URL", "redis"),
-        "PORT": os.getenv("REDIS_PORT", 6379),
-        "DB": 0,
-        "PASSWORD": os.getenv("REDIS_PASSWORD", "redis_ontrack"),
-        "DEFAULT_TIMEOUT": 360,
-    },
+    "default": DEFAULT_HEROKU if os.getenv("HEROKU") else DEFAULT_LOCAL,
 }
 
 ROOT_URLCONF = "ontrack.urls"
