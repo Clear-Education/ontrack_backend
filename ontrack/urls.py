@@ -37,6 +37,7 @@ urlpatterns = [
     path("api/asistencias/", include("asistencias.api.urls")),
     path("api/seguimientos/", include("seguimientos.api.urls")),
     path("api/objetivos/", include("objetivos.api.urls")),
+    path("django-rq/", include("django_rq.urls")),
 ]
 
 

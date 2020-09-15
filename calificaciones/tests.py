@@ -14,8 +14,10 @@ from curricula.models import (
 from django.contrib.auth.models import Permission
 from alumnos.models import Alumno, AlumnoCurso
 from rest_framework import status
+from unittest.mock import patch
 
 
+@patch("calificaciones.api.views.django_rq")
 class MateriaEvaluacionTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
@@ -170,7 +172,7 @@ class MateriaEvaluacionTest(APITestCase):
         """
         self.client.force_authenticate(user=self.user)
 
-    def test_create_multiples_calificaciones(self):
+    def test_create_multiples_calificaciones(self, mock):
         """
         Test de creacion de calificaciones para un curso y una evaluacion
         """
@@ -189,7 +191,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Calificacion.objects.count(), 3)
 
-    def test_create_invalid_multiples_calificaciones(self):
+    def test_create_invalid_multiples_calificaciones(self, mock):
         """
         Test de creacion de calificaciones para un curso y una evaluacion
         """
@@ -217,7 +219,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Calificacion.objects.count(), 0)
 
-    def test_create_single_calificaciones(self):
+    def test_create_single_calificaciones(self, mock):
         """
         Test de creacion de calificaciones para un curso y una evaluacion
         """
@@ -233,7 +235,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Calificacion.objects.count(), 1)
 
-    def test_create_invalid_single_calificaciones(self):
+    def test_create_invalid_single_calificaciones(self, mock):
         """
         Test de creacion de calificaciones para un curso y una evaluacion
         """
@@ -273,7 +275,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Calificacion.objects.count(), 0)
 
-    def test_edit_single_calificaciones(self):
+    def test_edit_single_calificaciones(self, mock):
         """
         Test de edición de una calificacion, edicion correcta
         """
@@ -295,7 +297,7 @@ class MateriaEvaluacionTest(APITestCase):
         fecha = c.fecha.strftime("%Y-%m-%d")
         self.assertEqual(fecha, "2020-10-12")
 
-    def test_edit_invalid_puntaje_single_calificaciones(self):
+    def test_edit_invalid_puntaje_single_calificaciones(self, mock):
         """
         Test de edición de una calificacion, puntaje invalido
         """
@@ -316,7 +318,7 @@ class MateriaEvaluacionTest(APITestCase):
         fecha = c.fecha.strftime("%Y-%m-%d")
         self.assertEqual(fecha, "2020-12-12")
 
-    def test_edit_invalid_fecha_single_calificaciones(self):
+    def test_edit_invalid_fecha_single_calificaciones(self, mock):
         """
         Test de edición de una calificacion, formato de fecha
         """
@@ -336,7 +338,7 @@ class MateriaEvaluacionTest(APITestCase):
         fecha = c.fecha.strftime("%Y-%m-%d")
         self.assertEqual(fecha, "2020-12-12")
 
-    def test_edit_alumno_no_effect_single_calificaciones(self):
+    def test_edit_alumno_no_effect_single_calificaciones(self, mock):
         """
         Test de edición de una calificacion, no debe editarse la FK alumno
         """
@@ -358,7 +360,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(fecha, "2020-12-13")
         self.assertEqual(c.alumno_id, self.alumno1.pk)
 
-    def test_edit_evaluacion_no_effect_single_calificaciones(self):
+    def test_edit_evaluacion_no_effect_single_calificaciones(self, mock):
         """
         Test de edición de una calificacion, no debe editarse la FK alumno
         """
@@ -379,7 +381,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(fecha, "2020-12-13")
         self.assertEqual(c.evaluacion_id, self.evaluacion1.pk)
 
-    def test_delete_single_calificaciones(self):
+    def test_delete_single_calificaciones(self, mock):
         """
         Test para eliminacion de una calificacion
         """
@@ -396,7 +398,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Calificacion.objects.count(), 0)
 
-    def test_delete_non_existent_single_calificaciones(self):
+    def test_delete_non_existent_single_calificaciones(self, mock):
         """
         Test para eliminacion de una calificacion
         """
@@ -413,7 +415,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(Calificacion.objects.count(), 1)
 
-    def test_delete_different_institucion_single_calificaciones(self):
+    def test_delete_different_institucion_single_calificaciones(self, mock):
         """
         Test para eliminacion de una calificacion
         """
@@ -437,7 +439,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(Calificacion.objects.count(), 2)
 
-    def test_delete_multiple_calificaciones(self):
+    def test_delete_multiple_calificaciones(self, mock):
         """
         Test para eliminacion de multiples
         """
@@ -485,7 +487,7 @@ class MateriaEvaluacionTest(APITestCase):
         Ver calificaciones de un alumno para un año lectivo
     """
 
-    def test_list_curso_evaluacion_calificaciones(self):
+    def test_list_curso_evaluacion_calificaciones(self, mock):
         """
         Test para listar calificaciones segun curso y evaluacion
         """
@@ -537,7 +539,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 3)
 
-    def test_list_alumno_materia_aniolectivo_calificaciones(self):
+    def test_list_alumno_materia_aniolectivo_calificaciones(self, mock):
         """
         Test para listar calificaciones segun alumno, materia y año_lectivo
         """
@@ -607,7 +609,7 @@ class MateriaEvaluacionTest(APITestCase):
         prom = prom / len(response.data["results"])
         self.assertEqual(prom, 8)
 
-    def test_list_alumno_aniolectivo_calificaciones(self):
+    def test_list_alumno_aniolectivo_calificaciones(self, mock):
         """
         Test para listar calificaciones segun alumno y año_lectivo
         """
@@ -678,7 +680,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 4)
 
-    def test_list_invalid_alumno_aniolectivo_calificaciones(self):
+    def test_list_invalid_alumno_aniolectivo_calificaciones(self, mock):
         """
         Test para listar calificaciones segun alumno y año_lectivo
         Alumno de otra institucion
@@ -748,7 +750,7 @@ class MateriaEvaluacionTest(APITestCase):
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_list_without_alumno_aniolectivo_calificaciones(self):
+    def test_list_without_alumno_aniolectivo_calificaciones(self, mock):
         """
         Test para listar calificaciones segun alumno y año_lectivo
         param alumno faltante
@@ -763,7 +765,7 @@ class MateriaEvaluacionTest(APITestCase):
             "Es necesario especificar el id del alumno",
         )
 
-    def test_list_alumno_without_aniolectivo_calificaciones(self):
+    def test_list_alumno_without_aniolectivo_calificaciones(self, mock):
         """
         Test para listar calificaciones segun alumno y año_lectivo
         param año_lectivo faltante
@@ -776,7 +778,7 @@ class MateriaEvaluacionTest(APITestCase):
             "Es necesario especificar el id del anio_lectivo",
         )
 
-    def test_list_curso_without_evaluacion_calificaciones(self):
+    def test_list_curso_without_evaluacion_calificaciones(self, mock):
         """
         Test para listar calificaciones segun curso y evaluacion
         param evaluacion faltante
@@ -789,7 +791,7 @@ class MateriaEvaluacionTest(APITestCase):
             "Es necesario especificar el id de la evaluacion",
         )
 
-    def test_list_without_curso_evaluacion_calificaciones(self):
+    def test_list_without_curso_evaluacion_calificaciones(self, mock):
         """
         Test para listar calificaciones segun curso y evaluacion
         param curso faltante
@@ -804,7 +806,9 @@ class MateriaEvaluacionTest(APITestCase):
             "Es necesario especificar el id del curso",
         )
 
-    def test_list_alumno_materia_without_aniolectivo_calificaciones(self):
+    def test_list_alumno_materia_without_aniolectivo_calificaciones(
+        self, mock
+    ):
         """
         Test para listar calificaciones segun alumno materia y anio_lectivo
         param anio_lectivo faltante
@@ -819,7 +823,9 @@ class MateriaEvaluacionTest(APITestCase):
             "Es necesario especificar el id del anio_lectivo",
         )
 
-    def test_list_without_alumno_materia_aniolectivo_calificaciones(self):
+    def test_list_without_alumno_materia_aniolectivo_calificaciones(
+        self, mock
+    ):
         """
         Test para listar calificaciones segun alumno materia y anio_lectivo
         param materia faltante
@@ -834,7 +840,7 @@ class MateriaEvaluacionTest(APITestCase):
             "Es necesario especificar el id del alumno",
         )
 
-    def test_promedio_alumno_aniolectivo_calificaciones(self):
+    def test_promedio_alumno_aniolectivo_calificaciones(self, mock):
         """
         Test para obtener el promedio de calificaciones segun alumno y año_lectivo
         Se debe recibir un promedio por cada materia y un promedio general del año lectivo
@@ -922,7 +928,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.data["alumno"], self.alumno1.pk)
         self.assertEqual(response.data["promedio_general"], 9)
 
-    def test_promedio_alumno_materia_aniolectivo_calificaciones(self):
+    def test_promedio_alumno_materia_aniolectivo_calificaciones(self, mock):
         """
         Test para obtener el promedio de calificaciones segun alumno, materia y año_lectivo
         Se debe recibir el promedio del alumno en la materia
@@ -1001,7 +1007,7 @@ class MateriaEvaluacionTest(APITestCase):
 
         self.assertEqual(response.data["alumno"], self.alumno1.pk)
 
-    def test_promedio_missing_alumno_calificaciones(self):
+    def test_promedio_missing_alumno_calificaciones(self, mock):
         """
         Test para obtener el promedio de calificaciones segun alumno, materia y año_lectivo
         Debe verificar que el alumno no se pasó y emitir el error
@@ -1017,7 +1023,7 @@ class MateriaEvaluacionTest(APITestCase):
             "Es necesario especificar el id del alumno",
         )
 
-    def test_promedio_missing_aniolectivo_calificaciones(self):
+    def test_promedio_missing_aniolectivo_calificaciones(self, mock):
         """
         Test para obtener el promedio de calificaciones segun alumno, materia y año_lectivo
         Debe verificar que el alumno no se pasó y emitir el error
@@ -1034,7 +1040,7 @@ class MateriaEvaluacionTest(APITestCase):
         )
 
     # Nota FINAL
-    def test_notafinal_alumno_aniolectivo_calificaciones(self):
+    def test_notafinal_alumno_aniolectivo_calificaciones(self, mock):
         """
         Test para obtener la nota final de calificaciones segun alumno y año_lectivo
         Se debe recibir una nota final por cada materia y un promedio general del año lectivo
@@ -1125,7 +1131,7 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(response.data["alumno"], self.alumno1.pk)
         self.assertEqual(response.data["promedio_general"], 9.1)
 
-    def test_notafinal_alumno_materia_aniolectivo_calificaciones(self):
+    def test_notafinal_alumno_materia_aniolectivo_calificaciones(self, mock):
         """
         Test para obtener la nota final de calificaciones segun alumno, materia y año_lectivo
         Se debe recibir la nota final del alumno en la materia
@@ -1204,7 +1210,7 @@ class MateriaEvaluacionTest(APITestCase):
 
         self.assertEqual(response.data["alumno"], self.alumno1.pk)
 
-    def test_notafinal_missing_alumno_calificaciones(self):
+    def test_notafinal_missing_alumno_calificaciones(self, mock):
         """
         Test para obtener la nota final de calificaciones segun alumno, materia y año_lectivo
         Debe verificar que el alumno no se pasó y emitir el error
@@ -1220,7 +1226,7 @@ class MateriaEvaluacionTest(APITestCase):
             "Es necesario especificar el id del alumno",
         )
 
-    def test_notafinal_missing_aniolectivo_calificaciones(self):
+    def test_notafinal_missing_aniolectivo_calificaciones(self, mock):
         """
         Test para obtener la nota final de calificaciones segun alumno, materia y año_lectivo
         Debe verificar que el alumno no se pasó y emitir el error

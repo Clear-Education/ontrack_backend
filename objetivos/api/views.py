@@ -1,8 +1,4 @@
 from rest_framework.viewsets import ModelViewSet
-
-# from rest_framework.decorators import action
-# from curricula.models import Curso, AnioLectivo
-# from instituciones.models import Institucion
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -12,20 +8,15 @@ from rest_framework.pagination import LimitOffsetPagination
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from ontrack import responses
-
-# from users.models import User
 from alumnos.models import Alumno, AlumnoCurso
-
-# from django.core.validators import validate_integer
 from objetivos.api import serializers
 from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
 from seguimientos.models import Seguimiento, IntegranteSeguimiento
-
-# from itertools import chain
 import re
 import datetime
-
-# from django.db.models import Avg
+import django_rq
+from asistencias.rq_funcions import alumno_asistencia
+from calificaciones.rq_funcions import alumno_calificacion
 
 DATE_REGEX = r"(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[13-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})"
 
@@ -336,6 +327,14 @@ class ObjetivoViewSet(ModelViewSet):
 
             new_objetivo = serializer.create(serializer.validated_data)
             return_serializer = serializers.ReturnId({"id": new_objetivo.id})
+            for alumno_curso in new_objetivo.seguimiento.alumnos.all():
+                django_rq.enqueue(
+                    alumno_asistencia, alumno_curso.alumno.id,
+                )
+                materia = new_objetivo.seguimiento.materias.all()[0]
+                django_rq.enqueue(
+                    alumno_calificacion, alumno_curso.alumno.id, materia.id,
+                )
 
             return Response(
                 data=return_serializer.data, status=status.HTTP_201_CREATED
@@ -446,6 +445,19 @@ class ObjetivoViewSet(ModelViewSet):
                 objetivo_list.append(objetivo)
 
             if objetivo_list:
+                new_objetivo = objetivo_list[0]
+
+                for alumno_curso in new_objetivo.seguimiento.alumnos.all():
+                    django_rq.enqueue(
+                        alumno_asistencia, alumno_curso.alumno.id,
+                    )
+                    materia = new_objetivo.seguimiento.materias.all()[0]
+                    django_rq.enqueue(
+                        alumno_calificacion,
+                        alumno_curso.alumno.id,
+                        materia.id,
+                    )
+
                 return_serializer = serializers.ReturnId(
                     [{"id": obj.id} for obj in objetivo_list], many=True,
                 )
