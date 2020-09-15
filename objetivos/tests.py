@@ -236,10 +236,6 @@ class ObjetivoTests(APITestCase):
         cls.tipo_objetivo_1 = TipoObjetivo.objects.create(
             nombre="Cualitativo", cuantitativo=False, multiple=True,
         )
-
-        cls.tipo_objetivo_1 = TipoObjetivo.objects.create(
-            nombre="Cualitativo", cuantitativo=False, multiple=True,
-        )
         cls.tipo_objetivo_2 = TipoObjetivo.objects.create(
             nombre="Promedio notas",
             cuantitativo=True,
