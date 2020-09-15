@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "django_rest_passwordreset",
     "drf_yasg",
     "corsheaders",
+    "django_rq",
     # Custom
     "users",
     "instituciones",
@@ -93,6 +94,15 @@ MIDDLEWARE = [
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+RQ_QUEUES = {
+    "default": {
+        "HOST": os.getenv("REDIS_URL", "redis"),
+        "PORT": os.getenv("REDIS_PORT", 6379),
+        "DB": 0,
+        "PASSWORD": os.getenv("REDIS_PASSWORD", "redis_ontrack"),
+        "DEFAULT_TIMEOUT": 360,
+    },
+}
 
 ROOT_URLCONF = "ontrack.urls"
 
