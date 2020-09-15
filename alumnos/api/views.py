@@ -172,19 +172,11 @@ class AlumnoViewSet(ModelViewSet):
         retrieved_alumno = get_object_or_404(Alumno, pk=pk)
         if retrieved_alumno.institucion != request.user.institucion:
             return Response(status=status.HTTP_404_NOT_FOUND,)
-        hoy = datetime.date.today()
-        anio_corriente = AnioLectivo.objects.filter(
-            fecha_hasta__gte=hoy, fecha_desde__lte=hoy
-        ).first()
-        if anio_corriente:
-            if AlumnoCurso.objects.filter(
-                alumno_id=retrieved_alumno.pk,
-                anio_lectivo_id=anio_corriente.pk,
-            ):
-                data = {
-                    "detail": "No se puede eliminar un alumno que esté cursando actualmente"
-                }
-                return Response(data=data, status=status.HTTP_400_BAD_REQUEST,)
+        if AlumnoCurso.objects.filter(alumno_id=retrieved_alumno.pk,):
+            data = {
+                "detail": "No se puede eliminar un alumno que esté cursando actualmente"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST,)
 
         retrieved_alumno.delete()
         return Response(status=status.HTTP_200_OK)
