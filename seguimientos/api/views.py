@@ -546,6 +546,8 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
             estado = EstadoSolicitudSeguimiento.objects.filter(
                 nombre=serializer.data["estado"]
             ).first()
+            if estado is None:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             s = serializer.update(solicitud=s, estado=estado)
             view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
                 instance=s
