@@ -4,6 +4,7 @@ from rest_framework.authtoken.models import Token
 from users.models import User, Group
 from django.contrib.auth.models import Permission
 from instituciones.models import Institucion
+import logging
 
 
 class AuthenticationTests(APITestCase):
@@ -26,6 +27,10 @@ class AuthenticationTests(APITestCase):
         )
 
         self.token = Token.objects.create(user=self.user)
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_login(self):
         user = {"username": "juan@juan.com", "password": "juan123"}
@@ -86,6 +91,10 @@ class PermissionsTests(APITestCase):
             Permission.objects.get(name="Can add user")
         )
         self.group_otro = Group.objects.create(name="Otro")
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_forbidden_action(self):
         user = User.objects.create_user(
@@ -217,6 +226,10 @@ class UsersTests(APITestCase):
             institucion=cls.institucion_2,
         )
         cls.user_docente_4.save()
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_create_user_admin_authenticated(self):
         token = Token.objects.create(user=self.user_admin_1)
