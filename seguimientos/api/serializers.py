@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from seguimientos import models
-from curricula.models import Materia, AnioLectivo, Anio
+from curricula.models import Materia, AnioLectivo
 from users.models import User
 from ontrack import settings
 from alumnos.models import AlumnoCurso
