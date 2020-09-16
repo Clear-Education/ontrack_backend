@@ -32,11 +32,6 @@ class AuthenticationTests(APITestCase):
     def tearDown(self):
         logging.disable(logging.NOTSET)
 
-    def test_login(self):
-        user = {"username": "juan@juan.com", "password": "juan123"}
-        response = self.client.post("/api/users/login/", data=user)
-        self.assertEqual(self.token.key, response.data["token"])
-
     def test_register_while_logged_in_and_valid_data(self):
         new_user = {
             "email": "pedro@pedro.com",
