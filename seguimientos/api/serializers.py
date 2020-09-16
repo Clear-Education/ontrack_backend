@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from seguimientos import models
-from curricula.models import Materia, AnioLectivo, Anio
+from curricula.models import Materia, AnioLectivo
 from users.models import User
 from ontrack import settings
 from alumnos.models import AlumnoCurso
@@ -56,6 +56,7 @@ class CreateIntegranteSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
+
         if data["usuario"].groups.name != "Pedagogía":
             if data["rol"].nombre == "Encargado de Seguimiento":
                 raise serializers.ValidationError(
@@ -63,6 +64,7 @@ class CreateIntegranteSerializer(serializers.ModelSerializer):
                         data["usuario"].groups.name
                     )
                 )
+
         return data
 
 
@@ -114,6 +116,7 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
                             integrante["usuario"].groups.name
                         )
                     )
+
         return data
 
 
@@ -192,6 +195,27 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
+        if "integrantes" in data:
+            integrantes = data["integrantes"]
+            if len(integrantes) == 0:
+                raise serializers.ValidationError(
+                    "Se deben agregar al menos 1 integrante!"
+                )
+            encargados = 0
+            for integrante in integrantes:
+                if integrante["usuario"].groups.name != "Pedagogía":
+                    if integrante["rol"].nombre == "Encargado de Seguimiento":
+                        raise serializers.ValidationError(
+                            "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
+                                integrante["usuario"].groups.name
+                            )
+                        )
+                else:
+                    encargados += 1
+            if encargados == 0:
+                raise serializers.ValidationError(
+                    "Se deben agregar al menos 1 encargado!"
+                )
         if "materias" in data:
             materias = data["materias"]
             for alumno in data["alumnos"]:

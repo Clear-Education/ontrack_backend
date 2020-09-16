@@ -222,6 +222,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
                 }
             )
         user.set_password(new_password)
+        user.first_login = False
         user.save()
         return user
 
@@ -294,6 +295,7 @@ class LoginResponseSerializer(serializers.ModelSerializer):
             "token",
             "reset_token",
             "institucion",
+            "first_login",
         ]
 
 

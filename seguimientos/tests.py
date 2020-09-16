@@ -22,6 +22,7 @@ from curricula.models import (
 from alumnos.models import Alumno, AlumnoCurso
 from django.urls import reverse
 from rest_framework import status
+import logging
 
 
 class SeguimientosTest(APITestCase):
@@ -30,6 +31,7 @@ class SeguimientosTest(APITestCase):
         """
         Setup de User y permisos para poder ejecutar todas las acciones
         """
+
         cls.client = APIClient()
         cls.group = Group.objects.create(name="Pedagogía")
         cls.group_docente = Group.objects.create(name="Docente")
@@ -271,9 +273,9 @@ class SeguimientosTest(APITestCase):
             Seguimiento.objects.get().nombre, "PRIMER SEGUIMIENTO"
         )
 
-    def test_create_seguimiento_con_materias_completas(self):
+    def test_create_seguimiento_sin_encargado(self):
         """
-        Test de creacion de seguimientos + materias completas
+        Test de creacion de seguimientos invalido
         """
         url = reverse("seguimiento-create")
         data = {
@@ -284,13 +286,30 @@ class SeguimientosTest(APITestCase):
             "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
             "materias": [self.materia.pk, self.materia2.pk, self.materia3.pk],
             "integrantes": [
-                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
                 {"usuario": self.user_docente.pk, "rol": self.rol_profesor.pk},
             ],
         }
         response = self.client.post(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Seguimiento.objects.count(), 1)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Seguimiento.objects.count(), 0)
+
+    def test_create_seguimiento_sin_integrantes(self):
+        """
+        Test de creacion de seguimientos invalido
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "fecha_cierre": "12/12/2021",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "materias": [self.materia.pk, self.materia2.pk, self.materia3.pk],
+            "integrantes": [],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Seguimiento.objects.count(), 0)
 
     def test_create_seguimiento_con_materias_parciales(self):
         """
@@ -839,6 +858,10 @@ class SolicitudSeguimientoTest(APITestCase):
             Fuerzo la autenticacion en cada corrida
         """
         self.client.force_authenticate(user=self.user)
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_create_solicitud_seguimiento(self):
         """
@@ -960,7 +983,7 @@ class SolicitudSeguimientoTest(APITestCase):
         FechaEstadoSolicitudSeguimiento.objects.create(
             solicitud=sol, estado_solicitud=estado
         )
-        url = f"/api/seguimientos/solicitudes/{sol.pk}/status/"
+        url = "/api/seguimientos/solicitudes/{}/status/".format(sol.pk)
         data = {"estado": "Aceptada"}
 
         response = self.client.patch(url, data, format="json")
@@ -979,11 +1002,15 @@ class SolicitudSeguimientoTest(APITestCase):
         estado = EstadoSolicitudSeguimiento.objects.filter(
             nombre="Pendiente"
         ).first()
-        FechaEstadoSolicitudSeguimiento.objects.create(
+        fecha = FechaEstadoSolicitudSeguimiento.objects.create(
             solicitud=sol, estado_solicitud=estado
         )
-        url = f"/api/seguimientos/solicitudes/{sol.pk}/status/"
+        fecha.save()
+        url = "/api/seguimientos/solicitudes/{}/status/".format(sol.pk)
         data = {"estado": "Aprobada"}
+        # import pdb
+
+        # pdb.set_trace()
         response = self.client.patch(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -1027,7 +1054,6 @@ class SolicitudSeguimientoTest(APITestCase):
         url = f"/api/seguimientos/solicitudes/{sol.pk}/status/"
         data = {"estado": "Pendiente"}
         response = self.client.patch(url, data, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_delete_solicitud(self):

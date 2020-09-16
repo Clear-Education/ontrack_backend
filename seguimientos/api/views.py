@@ -1,10 +1,9 @@
-from rest_framework.viewsets import ModelViewSet, ViewSet
+from rest_framework.viewsets import ModelViewSet
 from seguimientos.api import serializers
 from seguimientos.models import Seguimiento, IntegranteSeguimiento
 from seguimientos.models import (
     RolSeguimiento,
     SolicitudSeguimiento,
-    FechaEstadoSolicitudSeguimiento,
     EstadoSolicitudSeguimiento,
 )
 from users.permissions import permission_required
@@ -348,7 +347,7 @@ class RolSeguimientoViewSet(ModelViewSet):
         """
         serializer = serializers.CreateRolSerializer(data=request.data)
         data = {}
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
         else:
             data = serializer.errors
@@ -370,7 +369,7 @@ class RolSeguimientoViewSet(ModelViewSet):
             rol, data=request.data, partial=True
         )
         data = {}
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.update(rol, serializer.validated_data)
             data = serializer.data
         else:
@@ -441,7 +440,7 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
             data=request.data, context={"request": request}
         )
         data = {}
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             sol, f_estado = serializer.save()
             view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
                 instance=sol
@@ -469,7 +468,7 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
             instance=sol, data=request.data, partial=True
         )
         data = {}
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             sol = serializer.update(sol)
             view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
                 instance=sol
@@ -546,6 +545,8 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
             estado = EstadoSolicitudSeguimiento.objects.filter(
                 nombre=serializer.data["estado"]
             ).first()
+            if estado is None:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             s = serializer.update(solicitud=s, estado=estado)
             view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
                 instance=s
