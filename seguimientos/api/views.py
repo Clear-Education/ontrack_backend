@@ -210,6 +210,32 @@ class SeguimientoViewSet(ModelViewSet):
         )
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        request_body=serializers.NombreSeguimientoSerializer,
+        responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
+    )
+    def unique(self, request):
+        """
+        Checkear si el nombre de seguimiento esta en uso
+        200 -> Está Disponible
+        400 -> No esta disponible o se mando un nombre invalido
+        """
+        serializer = serializers.NombreSeguimientoSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            if len(
+                Seguimiento.objects.filter(
+                    nombre__exact=serializer.data["nombre"].upper(),
+                    institucion__exact=request.user.institucion_id,
+                )
+            ):
+                data = {"detail": "El nombre ya esta en uso!"}
+                return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(status=status.HTTP_200_OK)
+        else:
+            data = serializer.errors
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+
 
 class IntegrateSeguimientoViewSet(ModelViewSet):
     permission_classes = [
@@ -564,6 +590,7 @@ view_edit_seguimiento = SeguimientoViewSet.as_view(
     {"get": "get", "patch": "update", "delete": "destroy"}
 )
 create_seguimiento = SeguimientoViewSet.as_view({"post": "create"})
+unique_seguimiento = SeguimientoViewSet.as_view({"post": "unique"})
 
 # Integrantes
 list_integrantes = IntegrateSeguimientoViewSet.as_view({"get": "list"})
