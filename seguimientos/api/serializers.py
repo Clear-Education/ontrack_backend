@@ -10,6 +10,14 @@ from curricula.api.serializers.materia import PartialViewMateriasSerializer
 from users.api.serializers import PartialViewUserSeralizer
 
 
+class NombreSeguimientoSerializer(serializers.ModelSerializer):
+    nombre = serializers.CharField(required=True)
+
+    class Meta:
+        model = models.Seguimiento
+        fields = ["nombre"]
+
+
 class ListSeguimientoSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Seguimiento
