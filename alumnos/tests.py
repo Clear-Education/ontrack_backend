@@ -44,12 +44,8 @@ class AlumnoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(
-            nombre="Institucion_1"
-        )
-        cls.institucion_2 = Institucion.objects.create(
-            nombre="Institucion_2"
-        )
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1", identificador="1234")
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2", identificador="12345")
 
         cls.user_admin = User.objects.create_user(
             "admin@admin.com",
@@ -513,13 +509,9 @@ class AlumnoCursoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(
-            nombre="Institucion_1"
-        )
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1", identificador="1234")
         cls.institucion_1.save()
-        cls.institucion_2 = Institucion.objects.create(
-            nombre="Institucion_2"
-        )
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2", identificador="12345")
         cls.institucion_2.save()
 
         cls.user_admin = User.objects.create_user(
@@ -643,6 +635,14 @@ class AlumnoCursoTests(APITestCase):
         )
         cls.alumno_5.save()
 
+        cls.alumno_6 = Alumno.objects.create(
+            dni=6,
+            nombre="Alumno",
+            apellido="6",
+            institucion=cls.institucion_1,
+        )
+        cls.alumno_1.save()
+
         cls.alumno_curso_1 = AlumnoCurso.objects.create(
             alumno=cls.alumno_1,
             curso=cls.curso_1,
@@ -728,6 +728,7 @@ class AlumnoCursoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         alumno_1 = Alumno.objects.get(apellido="1").pk
         alumno_2 = Alumno.objects.get(apellido="2").pk
+        alumno_6 = Alumno.objects.get(apellido="6").pk
         curso = Curso.objects.get(nombre="CURSO2").pk
         anio_lectivo = AnioLectivo.objects.get(nombre="2022").pk
         data = [
@@ -746,6 +747,32 @@ class AlumnoCursoTests(APITestCase):
             "/api/alumnos/curso/multiple/", data, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        amount = len(AlumnoCurso.objects.all())
+
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+            {
+                "alumno": alumno_2,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+            {
+                "alumno": alumno_6,
+                "curso": curso,
+                "anio_lectivo": anio_lectivo,
+            },
+        ]
+        response = self.client.post(
+            "/api/alumnos/curso/multiple/", data, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(amount, len(AlumnoCurso.objects.all()) - 1)
 
     def test_create_multiple_alumno_curso_docente(self):
         """
@@ -772,20 +799,6 @@ class AlumnoCursoTests(APITestCase):
             "/api/alumnos/curso/multiple/", data, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_create_multiple_alumno_curso_vacio(self):
-        """
-        Test de creacion multiple de AlumnoCurso vacio
-        """
-        self.client.force_authenticate(user=self.user_admin)
-        data = []
-        response = self.client.post(
-            "/api/alumnos/curso/multiple/", data, format="json"
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(
-            response.data["detail"], "No se recibió ninguna información"
-        )
 
     def test_create_multiple_alumno_curso_not_existing(self):
         """

@@ -58,7 +58,9 @@ class QueueCalificacionesTests(APITestCase):
         )
         cls.group_admin.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", identificador="1234"
+        )
         cls.institucion_1.save()
 
         cls.user_admin = User.objects.create_user(
@@ -282,7 +284,9 @@ class MateriaEvaluacionTest(APITestCase):
         cls.group.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(
+            nombre="MIT", identificador="12345"
+        )
 
         cls.carrera = Carrera.objects.create(
             **{
@@ -344,7 +348,9 @@ class MateriaEvaluacionTest(APITestCase):
             }
         )
         # Institucion 2
-        cls.institucion2 = Institucion.objects.create(nombre="SNU")
+        cls.institucion2 = Institucion.objects.create(
+            nombre="SNU", identificador="12354"
+        )
         cls.anio_lectivo2 = AnioLectivo.objects.create(
             **{
                 "nombre": "2020/2021",
