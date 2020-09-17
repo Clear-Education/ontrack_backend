@@ -55,8 +55,8 @@ class ObjetivoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1", identificador="1234")
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2", identificador="1234asdf")
 
         cls.user_admin = User.objects.create_user(
             "admin@admin.com",
@@ -892,8 +892,8 @@ class AlumnoObjetivoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1", identificador="1234")
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2", identificador="fasdf1234")
 
         cls.user_admin = User.objects.create_user(
             "admin@admin.com",
