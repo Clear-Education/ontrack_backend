@@ -13,9 +13,7 @@ class Calificacion(models.Model):
     )
 
     def __str__(self):
-        return "{} {} {}".format(
-            self.evaluacion.nombre + " " + self.fecha + " " + self.alumno.dni
-        )
+        return "{} - {}".format(self.evaluacion.nombre, self.alumno.dni)
 
     class Meta:
         permissions = [
