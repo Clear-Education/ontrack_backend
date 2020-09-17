@@ -53,16 +53,6 @@ class CustomAuthToken(ObtainAuthToken):
         user = serializer.validated_data["user"]
         user = User.objects.get(pk=user.pk)
 
-        if user.first_login:
-            token = ResetPasswordToken.objects.create(
-                user=user,
-                user_agent=request.META.get(HTTP_USER_AGENT_HEADER, ""),
-                ip_address=request.META.get(HTTP_IP_ADDRESS_HEADER, ""),
-            )
-            user.reset_token = token.key
-            response_serializer = serializers.LoginResponseSerializer(user)
-            return Response(data=response_serializer.data)
-
         if not user.is_superuser and not user.institucion.activa:
             return Response(status=status.HTTP_404_NOT_FOUND)
         token, created = Token.objects.get_or_create(user=user)
