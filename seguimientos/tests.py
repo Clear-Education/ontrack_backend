@@ -39,7 +39,9 @@ class SeguimientosTest(APITestCase):
         cls.group.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT", identificador="1234")
+        cls.institucion = Institucion.objects.create(
+            nombre="MIT", identificador="1234"
+        )
         cls.user = User.objects.create_user(
             "juan@juan.com",
             password="juan123",
@@ -678,6 +680,60 @@ class SeguimientosTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["nombre"], "PRIMER SEGUIMIENTO")
 
+    def test_seguimiento_unique_positive(self):
+        """
+        Test de verificacion de seguimiento unico
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "fecha_cierre": "12/12/2020",
+            "materias": [self.materia.pk],
+        }
+
+        response = self.client.post(url, data, format="json")
+        url = reverse("seguimiento-unique")
+        data = {
+            "nombre": "Primer Seguimiento",
+        }
+        response = self.client.post(
+            "/api/seguimientos/unique/", data, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_seguimiento_unique_negative(self):
+        """
+        Test de verificacion de seguimiento unico
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "fecha_cierre": "12/12/2020",
+            "materias": [self.materia.pk],
+        }
+
+        response = self.client.post(url, data, format="json")
+        url = reverse("seguimiento-unique")
+        data = {
+            "nombre": "Primer Seguimiento 2",
+        }
+        response = self.client.post(
+            "/api/seguimientos/unique/", data, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_list_integrantes(self):
         """
         Test de listado de integrantes 
@@ -741,7 +797,9 @@ class SolicitudSeguimientoTest(APITestCase):
         cls.group_docente.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT", identificador="1234")
+        cls.institucion = Institucion.objects.create(
+            nombre="MIT", identificador="1234"
+        )
         cls.user = User.objects.create_user(
             "juan@juan.com",
             password="juan123",
