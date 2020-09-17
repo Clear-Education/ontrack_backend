@@ -500,10 +500,7 @@ class AlumnoCursoViewSet(ModelViewSet):
         )
         if serializer.is_valid():
             if len(serializer.validated_data) == 0:
-                return Response(
-                    data={"detail": "No se recibió ninguna información"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                return Response(status=status.HTTP_200_OK)
             cursos = list(
                 set([a.get("curso") for a in serializer.validated_data])
             )
@@ -561,7 +558,7 @@ class AlumnoCursoViewSet(ModelViewSet):
                         AlumnoCurso.objects.filter(
                             alumno__exact=alumno,
                             anio_lectivo__exact=anios_lectivos[0],
-                        )
+                        ).exclude(curso__exact=cursos[0])
                     )
                     != 0
                 ):
@@ -571,6 +568,29 @@ class AlumnoCursoViewSet(ModelViewSet):
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+
+            lista_de_ids = [a["alumno"].id for a in serializer.validated_data]
+
+            query_alumnos = AlumnoCurso.objects.filter(
+                alumno__id__in=lista_de_ids,
+                anio_lectivo__exact=anios_lectivos[0],
+                curso__exact=cursos[0],
+            )
+            to_delete = list()
+
+            for alumno_curso in serializer.validated_data:
+                for q in query_alumnos:
+                    if (
+                        alumno_curso["alumno"] == q.alumno
+                        and alumno_curso["curso"] == q.curso
+                        and alumno_curso["anio_lectivo"] == q.anio_lectivo
+                    ):
+                        to_delete.append(alumno_curso)
+                        break
+
+            for a in to_delete:
+                serializer.validated_data.remove(a)
+
             serializer.save()
             return Response(status=status.HTTP_201_CREATED)
         else:

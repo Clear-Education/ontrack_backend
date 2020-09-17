@@ -218,5 +218,4 @@ EMAIL_PORT = os.environ.get("MAILGUN_SMTP_PORT", "")
 EMAIL_HOST_USER = os.environ.get("MAILGUN_SMTP_LOGIN", "")
 EMAIL_HOST_PASSWORD = os.environ.get("MAILGUN_SMTP_PASSWORD", "")
 
-
 django_heroku.settings(locals())

@@ -54,7 +54,9 @@ class QueueAsistenciaTests(APITestCase):
         )
         cls.group_admin.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", identificador="1234"
+        )
         cls.institucion_1.save()
 
         cls.user_admin = User.objects.create_user(
@@ -267,9 +269,13 @@ class AsistenciaTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", identificador="12347"
+        )
         cls.institucion_1.save()
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", identificador="12345"
+        )
         cls.institucion_2.save()
 
         cls.user_admin = User.objects.create_user(
