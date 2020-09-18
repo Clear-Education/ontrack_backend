@@ -540,7 +540,7 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
         """
         Ver una solicitud de Seguimiento
         """
-        queryset = SolicitudSeguimiento.objects.all(
+        queryset = SolicitudSeguimiento.objects.filter(
             creador__institucion_id=request.user.institucion_id,
         )
         sol = get_object_or_404(queryset, pk=pk)

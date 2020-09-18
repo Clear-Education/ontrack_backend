@@ -1000,6 +1000,30 @@ class SolicitudSeguimientoTest(APITestCase):
             "Motivo de solicitud 2",
         )
 
+    def test_view_solicitud_seguimiento(self):
+        """
+        Test de view solicitud de seguimiento
+        """
+        sol = SolicitudSeguimiento.objects.create(
+            motivo_solicitud="Motivo de solicitud", creador=self.user
+        )
+        sol.alumnos.add(*[self.alumno_curso1.pk, self.alumno_curso2.pk])
+        sol.save()
+        estado = EstadoSolicitudSeguimiento.objects.filter(
+            nombre="Pendiente"
+        ).first()
+        FechaEstadoSolicitudSeguimiento.objects.create(
+            solicitud=sol, estado_solicitud=estado
+        )
+        url = f"/api/seguimientos/solicitudes/{sol.pk}/"
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(SolicitudSeguimiento.objects.count(), 1)
+        self.assertEqual(
+            response.data["motivo_solicitud"], "Motivo de solicitud",
+        )
+
     def test_edit_solicitud_seguimiento_motivo_invalido(self):
         """
         Test de edicion de solicitud de seguimiento con motivos invalidos
