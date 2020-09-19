@@ -306,10 +306,7 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if "fecha_cierre" in data:
-            if (
-                data["fecha_cierre"] < datetime.date.today()
-                or data["fecha_cierre"] < data["anio_lectivo"].fecha_desde
-            ):
+            if data["fecha_cierre"] < datetime.date.today():
                 raise serializers.ValidationError(
                     detail="Fecha de cierre inválida"
                 )
