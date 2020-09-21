@@ -19,14 +19,14 @@ class UserAdmin(BaseUserAdmin):
 
     fieldsets = (
         (None, {"fields": ("email", "is_active",)},),
-        ("Personal info", {"fields": ("name", "last_name", "phone",)},),
-        ("Groups", {"fields": ("groups", "institucion", "cargo")}),
+        ("Información Personal", {"fields": ("name", "last_name",)},),
+        ("Información Insititucional", {"fields": ("groups", "institucion",)}),
     )
 
     add_fieldsets = (
         (None, {"fields": ("email", "password1", "password2",)},),
-        ("Personal info", {"fields": ("name", "last_name", "phone",)},),
-        ("Groups", {"fields": ("groups", "institucion", "cargo")}),
+        ("Información Personal", {"fields": ("name", "last_name",)},),
+        ("Información Insititucional", {"fields": ("groups", "institucion",)}),
     )
 
     search_fields = ("email", "name", "last_name", "institucion")
