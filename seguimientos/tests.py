@@ -576,6 +576,78 @@ class SeguimientosTest(APITestCase):
         self.assertEqual(response.data["nombre"], data["nombre"].upper())
         self.assertEqual(response.data["descripcion"], data["descripcion"])
 
+    def test_edit_seguimiento_invalido(self):
+        """
+        Test de edicion de seguimiento
+        Valido ya que se puede editar
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+        response = self.client.post(url, data, format="json")
+        id_s = response.data["id"]
+        data = {
+            "en_progreso": False,
+        }
+        self.client.patch(
+            f"/api/seguimientos/{id_s}/status/", data, format="json"
+        )
+        data = {
+            "nombre": "Primer Seguimiento ###",
+            "descripcion": "La descripcion",
+        }
+        response = self.client.patch(
+            f"/api/seguimientos/{id_s}/", data, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_edit_integrantes_seguimiento_invalido(self):
+        """
+        Test de edicion de seguimiento
+        Valido ya que se puede editar
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+        response = self.client.post(url, data, format="json")
+        id_s = response.data["id"]
+        data = {
+            "en_progreso": False,
+        }
+        response = self.client.patch(
+            f"/api/seguimientos/{id_s}/status/", data, format="json"
+        )
+
+        data = [
+            {
+                "seguimiento": response.data["id"],
+                "usuario": self.user_docente.pk,
+                "rol": self.rol_profesor.pk,
+            },
+        ]
+        response = self.client.patch(
+            f"/api/seguimientos/{id_s}/integrantes/", data, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_edit_seguimiento_integrantes_cannot_erase_encargado(self):
         """
         Test de edicion de integrantes validando que no se pueda borrar al encargado

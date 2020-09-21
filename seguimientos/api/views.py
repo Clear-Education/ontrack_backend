@@ -100,7 +100,8 @@ class SeguimientoViewSet(ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             s = get_object_or_404(
                 Seguimiento.objects.filter(
-                    institucion_id=request.user.institucion_id
+                    institucion_id=request.user.institucion_id,
+                    en_progreso=True,
                 ),
                 pk=pk,
             )
@@ -276,6 +277,7 @@ class IntegrateSeguimientoViewSet(ModelViewSet):
                 Seguimiento.objects.filter(
                     institucion=request.user.institucion,
                     integrantes__usuario_id=request.user.pk,
+                    en_progreso=True,
                 ),
                 pk=seguimiento,
             )
