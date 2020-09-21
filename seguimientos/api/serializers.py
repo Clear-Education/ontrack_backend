@@ -244,12 +244,6 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         detail="No se pueden elegir materias de distintos años!"
                     )
-                for anio in anio_ids:
-                    materias = Materia.objects.filter(anio_id=anio)
-                if len(materias) != cant_materias:
-                    raise serializers.ValidationError(
-                        detail="Se deben elegir o una materia o todas las del año"
-                    )
 
         if "fecha_cierre" in data:
             if (
