@@ -228,11 +228,9 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
 
 class GroupSerializer(serializers.ModelSerializer):
-    permissions = serializers.StringRelatedField(many=True, read_only=True)
-
     class Meta:
         model = Group
-        fields = ["id", "name", "permissions"]
+        fields = ["id", "name"]
 
 
 class ListUserSerializer(serializers.ModelSerializer):
