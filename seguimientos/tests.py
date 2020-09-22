@@ -54,9 +54,7 @@ class SeguimientosTest(APITestCase):
             groups=cls.group_docente,
             institucion=cls.institucion,
         )
-        cls.rol_pedagogo = RolSeguimiento.objects.create(
-            nombre="Encargado de Seguimiento"
-        )
+        cls.rol_pedagogo = RolSeguimiento.objects.create(nombre="Encargado")
         cls.rol_profesor = RolSeguimiento.objects.create(nombre="Profesor")
         cls.rol_tutor = RolSeguimiento.objects.create(nombre="Tutor")
 
@@ -856,7 +854,7 @@ class SeguimientosTest(APITestCase):
 
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["nombre"], "Encargado de Seguimiento")
+        self.assertEqual(response.data["nombre"], "Encargado")
 
     def test_rol_seguimiento_view_invalid(self):
         url = "/api/seguimientos/rol/900/"
@@ -900,9 +898,7 @@ class SolicitudSeguimientoTest(APITestCase):
             groups=cls.group_docente,
             institucion=cls.institucion,
         )
-        cls.rol_pedagogo = RolSeguimiento.objects.create(
-            nombre="Encargado de Seguimiento"
-        )
+        cls.rol_pedagogo = RolSeguimiento.objects.create(nombre="Encargado")
         cls.rol_profesor = RolSeguimiento.objects.create(nombre="Profesor")
         cls.rol_tutor = RolSeguimiento.objects.create(nombre="Tutor")
 
