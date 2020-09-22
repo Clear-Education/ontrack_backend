@@ -219,7 +219,8 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
                             )
                         )
                 else:
-                    encargados += 1
+                    if integrante["rol"].nombre == "Encargado de Seguimiento":
+                        encargados += 1
             if encargados == 0:
                 raise serializers.ValidationError(
                     "Se deben agregar al menos 1 encargado!"
