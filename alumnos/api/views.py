@@ -138,8 +138,9 @@ class AlumnoViewSet(ModelViewSet):
                 ):
                     try:
                         Alumno.objects.get(
-                            dni=serializer.validated_data.get("dni")
-                        )
+                            dni=serializer.validated_data.get("dni"),
+                            institucion__exact=institucion,
+                        ).exclude(pk=pk)
                         return Response(
                             data={
                                 "detail": "Alumno con el mismo dni existente"
@@ -219,7 +220,9 @@ class AlumnoViewSet(ModelViewSet):
             for alumno in serializer.validated_data:
                 try:
                     # TODO optimize with a single query
-                    Alumno.objects.get(dni=alumno.get("dni"))
+                    Alumno.objects.get(
+                        dni=alumno.get("dni"), institucion__exact=institucion
+                    )
                 except Alumno.DoesNotExist:
                     continue
                 except:
