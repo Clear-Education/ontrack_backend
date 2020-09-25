@@ -8,6 +8,7 @@ from curricula.models import Carrera, AnioLectivo, Curso, Anio
 from alumnos.models import Alumno, AlumnoCurso
 from rest_framework import status
 from rest_framework.utils.serializer_helpers import ReturnList
+from unittest.mock import patch, Mock
 
 
 class AlumnoTests(APITestCase):
@@ -44,8 +45,12 @@ class AlumnoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1", identificador="1234")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2", identificador="12345")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", identificador="1234"
+        )
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", identificador="12345"
+        )
 
         cls.user_admin = User.objects.create_user(
             "admin@admin.com",
@@ -509,9 +514,13 @@ class AlumnoCursoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1", identificador="1234")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", identificador="1234"
+        )
         cls.institucion_1.save()
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2", identificador="12345")
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", identificador="12345"
+        )
         cls.institucion_2.save()
 
         cls.user_admin = User.objects.create_user(
@@ -720,6 +729,44 @@ class AlumnoCursoTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(AlumnoCurso.objects.all()), 6)
+
+    def test_delete_multiple_alumno_curso_admin_incorrect(self):
+        """
+        Test de borrado multiple de AlumnoCurso por admin incorrecto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        alumno_1 = Alumno.objects.get(apellido="1").pk
+        curso_1 = Curso.objects.get(nombre="CURSO1").pk
+        anio_lectivo_1 = AnioLectivo.objects.get(nombre="2019").pk
+        alumno_2 = Alumno.objects.get(apellido="5").pk
+        curso_2 = Curso.objects.get(nombre="CURSO3").pk
+        anio_lectivo_2 = AnioLectivo.objects.get(nombre="2021").pk
+        data = [
+            {
+                "alumno": alumno_1,
+                "curso": curso_1,
+                "anio_lectivo": anio_lectivo_1,
+            },
+            {
+                "alumno": alumno_2,
+                "curso": curso_2,
+                "anio_lectivo": anio_lectivo_2,
+            },
+        ]
+        function_mock = Mock(return_value=True)
+        with patch(
+            "alumnos.api.views.check_alumno_curso_no_seguimiento",
+            function_mock,
+        ):
+            response = self.client.delete(
+                "/api/alumnos/curso/multiple/", data, format="json"
+            )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "El alumno no puede ser desasignado de un curso si tiene un seguimiento activo",
+        )
+        self.assertEqual(len(AlumnoCurso.objects.all()), 7)
 
     def test_create_multiple_alumno_curso_admin(self):
         """
@@ -1228,6 +1275,26 @@ class AlumnoCursoTests(APITestCase):
 
         response = self.client.get("/api/alumnos/curso/list/")
         self.assertEqual(response.data["count"], 5)
+
+    def test_destroy_alumno_curso_admin_incorrect(self):
+        """
+        Test de borrado correcto de AlumnoCurso por admin incorrecto
+        """
+        self.client.force_authenticate(user=self.user_admin)
+        function_mock = Mock(return_value=True)
+        with patch(
+            "alumnos.api.views.check_alumno_curso_no_seguimiento",
+            function_mock,
+        ):
+            response = self.client.delete("/api/alumnos/curso/1/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "El alumno no puede ser desasignado de un curso si tiene un seguimiento activo",
+        )
+
+        response = self.client.get("/api/alumnos/curso/list/")
+        self.assertEqual(response.data["count"], 6)
 
     def test_destroy_alumno_curso_docente(self):
         """

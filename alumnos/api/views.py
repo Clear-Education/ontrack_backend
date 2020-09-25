@@ -18,6 +18,7 @@ from django.core.validators import validate_integer
 from itertools import chain
 from django.core.exceptions import ValidationError
 import datetime
+from seguimientos.models import Seguimiento
 
 
 class AlumnoViewSet(ModelViewSet):
@@ -265,6 +266,13 @@ mix_alumno = AlumnoViewSet.as_view(
 )
 
 
+def check_alumno_curso_no_seguimiento(id_alumno_curso_list):
+    seguimientos = Seguimiento.objects.filter(
+        alumnos__id__in=id_alumno_curso_list, en_progreso=True
+    )
+    return len(seguimientos) or False
+
+
 class AlumnoCursoViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, permission_required("alumnocurso")]
     OK_EMPTY = {200: ""}
@@ -409,6 +417,15 @@ class AlumnoCursoViewSet(ModelViewSet):
             != request.user.institucion
         ):
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if check_alumno_curso_no_seguimiento([retrieved_alumno_curso.id]):
+            return Response(
+                data={
+                    "detail": "El alumno no puede ser desasignado de un curso si tiene un seguimiento activo"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         retrieved_alumno_curso.delete()
         return Response(status=status.HTTP_200_OK)
 
@@ -625,7 +642,9 @@ class AlumnoCursoViewSet(ModelViewSet):
         serializer = serializers.CreateAlumnoCursoSerializer(
             many=True, data=request.data
         )
+
         if serializer.is_valid():
+            to_delete = list()
             for alumno_curso in serializer.validated_data:
                 alumno_c = AlumnoCurso.objects.filter(
                     alumno__exact=alumno_curso.get("alumno"),
@@ -634,7 +653,18 @@ class AlumnoCursoViewSet(ModelViewSet):
                     alumno__institucion__exact=request.user.institucion,
                 )
                 if len(alumno_c) >= 1:
-                    alumno_c[0].delete()
+                    to_delete.extend(alumno_c)
+                    # alumno_c[0].delete()
+            id_list = [ac.id for ac in to_delete]
+            if check_alumno_curso_no_seguimiento(id_list):
+                return Response(
+                    data={
+                        "detail": "El alumno no puede ser desasignado de un curso si tiene un seguimiento activo"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            AlumnoCurso.objects.filter(id__in=id_list).delete()
 
             return Response(status=status.HTTP_200_OK)
 
