@@ -66,7 +66,7 @@ class CreateIntegranteSerializer(serializers.ModelSerializer):
     def validate(self, data):
 
         if data["usuario"].groups.name != "Pedagogía":
-            if data["rol"].nombre == "Encargado de Seguimiento":
+            if data["rol"].nombre == "Encargado":
                 raise serializers.ValidationError(
                     "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
                         data["usuario"].groups.name
@@ -107,7 +107,7 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
         # Eliminar integrantes
         for int_id, integrante in int_mapping.items():
             if int_id not in data_mapping:
-                if integrante.rol.nombre != "Encargado de Seguimiento":
+                if integrante.rol.nombre != "Encargado":
                     integrante.delete()
                 else:
                     raise serializers.ValidationError(
@@ -118,7 +118,7 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
     def validate(self, data):
         for integrante in data:
             if integrante["usuario"].groups.name != "Pedagogía":
-                if integrante["rol"].nombre == "Encargado de Seguimiento":
+                if integrante["rol"].nombre == "Encargado":
                     raise serializers.ValidationError(
                         "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
                             integrante["usuario"].groups.name
@@ -212,14 +212,15 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
             encargados = 0
             for integrante in integrantes:
                 if integrante["usuario"].groups.name != "Pedagogía":
-                    if integrante["rol"].nombre == "Encargado de Seguimiento":
+                    if integrante["rol"].nombre == "Encargado":
                         raise serializers.ValidationError(
                             "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
                                 integrante["usuario"].groups.name
                             )
                         )
                 else:
-                    encargados += 1
+                    if integrante["rol"].nombre == "Encargado":
+                        encargados += 1
             if encargados == 0:
                 raise serializers.ValidationError(
                     "Se deben agregar al menos 1 encargado!"

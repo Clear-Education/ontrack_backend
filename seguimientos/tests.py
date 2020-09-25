@@ -54,9 +54,7 @@ class SeguimientosTest(APITestCase):
             groups=cls.group_docente,
             institucion=cls.institucion,
         )
-        cls.rol_pedagogo = RolSeguimiento.objects.create(
-            nombre="Encargado de Seguimiento"
-        )
+        cls.rol_pedagogo = RolSeguimiento.objects.create(nombre="Encargado")
         cls.rol_profesor = RolSeguimiento.objects.create(nombre="Profesor")
         cls.rol_tutor = RolSeguimiento.objects.create(nombre="Tutor")
 
@@ -204,6 +202,26 @@ class SeguimientosTest(APITestCase):
             "integrantes": [
                 {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
                 {"usuario": self.user_docente.pk, "rol": self.rol_pedagogo.pk},
+            ],
+        }
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Seguimiento.objects.count(), 0)
+
+    def test_create_seguimiento_sin_encargado_invalid(self):
+        """
+        Test de creacion de seguimientos + integrantes con roles malos
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_profesor.pk},
+                {"usuario": self.user_docente.pk, "rol": self.rol_profesor.pk},
             ],
         }
 
@@ -836,7 +854,7 @@ class SeguimientosTest(APITestCase):
 
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["nombre"], "Encargado de Seguimiento")
+        self.assertEqual(response.data["nombre"], "Encargado")
 
     def test_rol_seguimiento_view_invalid(self):
         url = "/api/seguimientos/rol/900/"
@@ -880,9 +898,7 @@ class SolicitudSeguimientoTest(APITestCase):
             groups=cls.group_docente,
             institucion=cls.institucion,
         )
-        cls.rol_pedagogo = RolSeguimiento.objects.create(
-            nombre="Encargado de Seguimiento"
-        )
+        cls.rol_pedagogo = RolSeguimiento.objects.create(nombre="Encargado")
         cls.rol_profesor = RolSeguimiento.objects.create(nombre="Profesor")
         cls.rol_tutor = RolSeguimiento.objects.create(nombre="Tutor")
 
