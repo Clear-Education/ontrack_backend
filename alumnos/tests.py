@@ -764,7 +764,7 @@ class AlumnoCursoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             response.data["detail"],
-            "El alumno no puede ser desasignado de un curso si tiene un seguimiento activo",
+            "El alumno no puede ser desasignado de un curso si tiene un seguimiento o solicitud de seguimiento",
         )
         self.assertEqual(len(AlumnoCurso.objects.all()), 7)
 
@@ -1290,7 +1290,7 @@ class AlumnoCursoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             response.data["detail"],
-            "El alumno no puede ser desasignado de un curso si tiene un seguimiento activo",
+            "El alumno no puede ser desasignado de un curso si tiene un seguimiento o solicitud de seguimiento",
         )
 
         response = self.client.get("/api/alumnos/curso/list/")

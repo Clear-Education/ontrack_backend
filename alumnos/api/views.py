@@ -18,7 +18,7 @@ from django.core.validators import validate_integer
 from itertools import chain
 from django.core.exceptions import ValidationError
 import datetime
-from seguimientos.models import Seguimiento
+from seguimientos.models import Seguimiento, SolicitudSeguimiento
 
 
 class AlumnoViewSet(ModelViewSet):
@@ -268,9 +268,12 @@ mix_alumno = AlumnoViewSet.as_view(
 
 def check_alumno_curso_no_seguimiento(id_alumno_curso_list):
     seguimientos = Seguimiento.objects.filter(
-        alumnos__id__in=id_alumno_curso_list, en_progreso=True
+        alumnos__id__in=id_alumno_curso_list
     )
-    return len(seguimientos) or False
+    solicitudes = SolicitudSeguimiento.objects.filter(
+        alumnos__id__in=id_alumno_curso_list
+    )
+    return len(seguimientos) or len(solicitudes) or False
 
 
 class AlumnoCursoViewSet(ModelViewSet):
@@ -421,7 +424,7 @@ class AlumnoCursoViewSet(ModelViewSet):
         if check_alumno_curso_no_seguimiento([retrieved_alumno_curso.id]):
             return Response(
                 data={
-                    "detail": "El alumno no puede ser desasignado de un curso si tiene un seguimiento activo"
+                    "detail": "El alumno no puede ser desasignado de un curso si tiene un seguimiento o solicitud de seguimiento"
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -659,7 +662,7 @@ class AlumnoCursoViewSet(ModelViewSet):
             if check_alumno_curso_no_seguimiento(id_list):
                 return Response(
                     data={
-                        "detail": "El alumno no puede ser desasignado de un curso si tiene un seguimiento activo"
+                        "detail": "El alumno no puede ser desasignado de un curso si tiene un seguimiento o solicitud de seguimiento"
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
