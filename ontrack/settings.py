@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "asistencias",
     "seguimientos",
     "objetivos",
+    "actualizaciones",
 ]
 
 REST_FRAMEWORK = {
