@@ -21,6 +21,12 @@ class CreateActualizacionSerializer(serializers.ModelSerializer):
             "seguimiento",
         ]
 
+    def set_user(self, user):
+        self.user = user
+
+    def create(self, validated_data):
+        return Actualizacion.objects.create(**validated_data)
+
 
 class UpdateActualizacionSerializer(serializers.ModelSerializer):
     cuerpo = serializers.CharField(required=True)

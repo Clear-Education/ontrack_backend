@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 from users.models import User
 from seguimientos.models import Seguimiento
@@ -31,6 +32,19 @@ class Actualizacion(models.Model):
         permissions = [("list_actualizacion", "Puede listar actualizaciones")]
 
 
+def seguimiento_file_path(instance, filename):
+    return f"seguimiento_{str(instance.actualizacion.seguimiento.id)}/user_{instance.actualizacion.usuario.id}/{filename}"
+
+
+def validate_file_size(value):
+    filesize = value.size
+
+    if filesize > 10485760:
+        raise ValidationError("El tamaño máximo de un archivo es 10MB")
+    else:
+        return value
+
+
 class ActualizacionAdjunto(models.Model):
     actualizacion = models.ForeignKey(
         to=Actualizacion,
@@ -40,7 +54,12 @@ class ActualizacionAdjunto(models.Model):
         null=False,
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True, blank=True)
-    url = models.URLField(blank=False, null=False)
+    file = models.FileField(
+        blank=False,
+        null=False,
+        upload_to=seguimiento_file_path,
+        validators=[validate_file_size],
+    )
 
     def __str__(self):
         return self.actualizacion + " " + self.url
