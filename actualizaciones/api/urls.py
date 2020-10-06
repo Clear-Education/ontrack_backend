@@ -22,4 +22,9 @@ urlpatterns = [
         views.upload_file,
         name="actualizacion-upload",
     ),
+    path(
+        "files/<int:file_pk>/",
+        views.delete_file,
+        name="actualizacion-delete-file",
+    ),
 ]

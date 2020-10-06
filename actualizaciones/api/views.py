@@ -3,6 +3,11 @@ from actualizaciones.api import serializers
 from seguimientos.models import Seguimiento, IntegranteSeguimiento
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
+from django.core.files.storage import default_storage
+import os
+from django.db import transaction
+
+# from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -133,6 +138,18 @@ class ActualizacionViewSet(ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        try:
+            integrante = IntegranteSeguimiento.objects.get(
+                seguimiento__exact=actualizacion.seguimiento,
+                usuario__exact=request.user,
+                fecha_hasta__isnull=True,
+            )
+        except IntegranteSeguimiento.DoesNotExist:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         if not actualizacion.seguimiento.en_progreso:
             return Response(
                 data={
@@ -194,6 +211,18 @@ class ActualizacionViewSet(ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        try:
+            integrante = IntegranteSeguimiento.objects.get(
+                seguimiento__exact=actualizacion.seguimiento,
+                usuario__exact=request.user,
+                fecha_hasta__isnull=True,
+            )
+        except IntegranteSeguimiento.DoesNotExist:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         if not actualizacion.seguimiento.en_progreso:
             return Response(
                 data={
@@ -245,7 +274,7 @@ class ActualizacionViewSet(ModelViewSet):
             integrante_seguimiento = IntegranteSeguimiento.objects.get(
                 seguimiento__id=seguimiento_pk, fecha_hasta__isnull=True
             )
-        except Actualizacion.DoesNotExist:
+        except IntegranteSeguimiento.DoesNotExist:
             return Response(
                 data={"detail": "No encontrado."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -296,8 +325,8 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
         IsAuthenticated,
         permission_required("actualizacion"),
     ]
-    OK_EMPTY = {200: ""}
-    OK_CREATED = {201: ""}
+    OK_EMPTY = {200: serializers.GetActualizacionSerializer}
+    OK_CREATED = {201: serializers.GetActualizacionSerializer}
 
     @swagger_auto_schema(
         operation_id="upload_actualizacion_file",
@@ -305,14 +334,116 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
         Subir un archivo adjunto a la actualización.
         
         El archivo no puede tener el mismo nombre que otro anteriormente subido.
+        No se pueden subir archivos luego de 30 minutos de la última modificación de la actualización.
         En una actualización no se puede subir más de 3 archivos.
         El tamaño máximo del archivo es de 10MB.
         """,
         request_body=serializers.CreateActualizacionAdjuntoSerializer,
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
-    def create(self, request):
-        pass
+    def create(self, request, actualizacion_pk=None):
+        try:
+            actualizacion = Actualizacion.objects.get(pk=actualizacion_pk)
+        except Actualizacion.DoesNotExist:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if actualizacion.usuario != request.user:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            integrante = IntegranteSeguimiento.objects.get(
+                seguimiento__exact=actualizacion.seguimiento,
+                usuario__exact=request.user,
+                fecha_hasta__isnull=True,
+            )
+        except IntegranteSeguimiento.DoesNotExist:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if actualizacion.fecha_modificacion < datetime.now() - timedelta(
+            minutes=30
+        ):
+            return Response(
+                data={
+                    "detail": "No se puede subir archivos a una actualización luego de que pasaron 30 minutos desde su última modificación"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not actualizacion.seguimiento.en_progreso:
+            return Response(
+                data={
+                    "detail": "No se pueden subir archivos para un Seguimiento que no se encuentra en progreso"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        file_set = {file.name for file in request.FILES.getlist("file")}
+
+        if len(file_set) != len(request.FILES.getlist("files")):
+            return Response(
+                data={
+                    "detail": "Está subiendo dos archivos con el mismo nombre"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        for file in request.FILES.getlist("files"):
+            if default_storage.exists(
+                os.path.join(
+                    f"/seguimiento_{actualizacion.seguimiento.id}/actualizacion_{actualizacion.id}/{file.name}"
+                )
+            ):
+                return Response(
+                    data={
+                        "detail": "Ya existe un archivo con el mismo nombre, debe borrar dicho archivo antes de poder subir uno nuevo"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        if len(file_set) + len(actualizacion.adjuntos.all()) > 3:
+            return Response(
+                data={
+                    "detail": "No se pueden subir más de 3 archivos a una actualización"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            with transaction.atomic():
+                for file in request.FILES.getlist("files"):
+                    data = {
+                        actualizacion: actualizacion.id,
+                        file: file,
+                    }
+                    serializer = serializers.CreateActualizacionAdjuntoSerializer(
+                        data=data
+                    )
+                    if serializer.is_valid():
+                        serializer.save()
+                    else:
+                        raise Exception
+
+        except Exception as e:
+            return Response(
+                data={"detail": "Internal error while saving files"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        actualizacion = Actualizacion.objects.get(pk=actualizacion.id)
+        serializer = serializers.GetActualizacionSerializer(
+            actualizacion, many=False
+        )
+
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_id="delete_actualizacion_file",
@@ -324,11 +455,61 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
         """,
         responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
     )
-    def destroy(self, request, pk=None):
-        pass
+    def destroy(self, request, file_pk=None):
+        try:
+            file = ActualizacionAdjunto.objects.get(pk=file_pk)
+        except ActualizacionAdjunto.DoesNotExist:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if file.actualizacion.usuario != request.user:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            integrante = IntegranteSeguimiento.objects.get(
+                seguimiento__exact=file.actualizacion.seguimiento,
+                usuario__exact=request.user,
+                fecha_hasta__isnull=True,
+            )
+        except IntegranteSeguimiento.DoesNotExist:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if file.fecha_creacion < datetime.now() - timedelta(minutes=30):
+            return Response(
+                data={
+                    "detail": "No se puede borrar archivos de una actualización luego de que pasaron 30 minutos desde su carga"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not file.actualizacion.seguimiento.en_progreso:
+            return Response(
+                data={
+                    "detail": "No se pueden subir archivos para un Seguimiento que no se encuentra en progreso"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        actualizacion_id = file.actualizacion.id
+
+        file.delete()
+
+        actualizacion = Actualizacion.objects.get(pk=actualizacion_id)
+        serializer = serializers.GetActualizacionSerializer(
+            actualizacion, many=False
+        )
+
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-upload_file = ActualizacionAdjuntoViewSet.as_view(
-    {"post": "create", "delete": "destroy"}
-)
+upload_file = ActualizacionAdjuntoViewSet.as_view({"post": "create"})
+delete_file = ActualizacionAdjuntoViewSet.as_view({"delete": "destroy"})
 

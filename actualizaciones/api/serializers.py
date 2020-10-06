@@ -40,30 +40,23 @@ class UpdateActualizacionSerializer(serializers.ModelSerializer):
 
 class GetActualizacionAdjuntoSerializer(serializers.ModelSerializer):
     fecha_creacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
-    url = serializers.URLField()
 
     class Meta:
         model = ActualizacionAdjunto
-        fields = [
-            "id",
-            "url",
-            "fecha_creacion",
-        ]
+        fields = ["id", "fecha_creacion", "file"]
 
 
 class CreateActualizacionAdjuntoSerializer(serializers.ModelSerializer):
     actualizacion = serializers.PrimaryKeyRelatedField(
         queryset=Actualizacion.objects.all(), many=False
     )
-    fecha_creacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
-    url = serializers.URLField()
+    file = serializers.FileField(max_length=100000, allow_empty_file=False,)
 
     class Meta:
         model = ActualizacionAdjunto
         fields = [
             "actualizacion",
-            "url",
-            "fecha_creacion",
+            "file",
         ]
 
 

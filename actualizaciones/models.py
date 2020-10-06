@@ -33,7 +33,7 @@ class Actualizacion(models.Model):
 
 
 def seguimiento_file_path(instance, filename):
-    return f"seguimiento_{str(instance.actualizacion.seguimiento.id)}/user_{instance.actualizacion.usuario.id}/{filename}"
+    return f"seguimiento_{str(instance.actualizacion.seguimiento.id)}/actualizacion_{instance.actualizacion.id}/{filename}"
 
 
 def validate_file_size(value):
