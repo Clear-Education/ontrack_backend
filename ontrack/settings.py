@@ -28,7 +28,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-DEVELOPER_ADMIN = False
+DEVELOPER_ADMIN = True
 
 SILENCED_SYSTEM_CHECKS = ["auth.E003", "auth.W004"]
 
