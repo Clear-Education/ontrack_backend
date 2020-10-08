@@ -12,4 +12,3 @@ if settings.DEVELOPER_ADMIN:
     admin.site.register(Seguimiento)
     admin.site.register(RolSeguimiento)
     admin.site.register(IntegranteSeguimiento)
-    admin.site.register()
