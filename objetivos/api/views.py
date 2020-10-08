@@ -850,7 +850,7 @@ class AlumnoObjetivoViewSet(ModelViewSet):
             fecha_hasta = datetime.date(
                 int(temp[2]), int(temp[1]), int(temp[0])
             )
-            queryset = queryset.filter(fecha__lte=fecha_hasta)
+            queryset = queryset.filter(fecha_creacion__lte=fecha_hasta)
 
         if fecha_hasta and fecha_desde:
             if fecha_hasta <= fecha_desde:
