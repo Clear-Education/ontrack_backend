@@ -692,13 +692,51 @@ class SeguimientosTest(APITestCase):
                 "rol": self.rol_profesor.pk,
             },
         ]
-
+        id_seguimiento = response.data["id"]
         response = self.client.patch(
-            f"/api/seguimientos/{response.data['id']}/integrantes/",
+            f"/api/seguimientos/{id_seguimiento}/integrantes/",
             data,
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_edit_seguimiento_integrantes_cannot_edit_docente_as_encargado(
+        self,
+    ):
+        """
+        Test de edicion de integrantes validando 
+        que no se pueda editar como encargado a uno que no es pedagogo
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+
+        response = self.client.post(url, data, format="json")
+
+        data = [
+            {
+                "seguimiento": response.data["id"],
+                "usuario": self.user_docente.pk,
+                "rol": self.rol_pedagogo.pk,
+            },
+        ]
+        id_seguimiento = response.data["id"]
+        response = self.client.patch(
+            f"/api/seguimientos/{id_seguimiento}/integrantes/",
+            data,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.get(f"/api/seguimientos/{id_seguimiento}/")
 
     def test_edit_seguimiento_integrantes_valid(self):
         """
