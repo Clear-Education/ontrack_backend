@@ -94,15 +94,13 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
                 data_mapping[item["id"]] = item
             else:
                 data_mapping[0].append(item)
-        # Crear y actualizar los integrantes existentes.
-        ret = []
-        for int_id, data in data_mapping.items():
-            e = int_mapping.get(int_id, None)
-            if e is not None:
-                ret.append(self.child.update(e, data))
-        for data in data_mapping[0]:
-            data.seguimiento_id = seguimiento.pk
-            ret.append(self.child.create(data))
+
+        for int_id, integrante in int_mapping.items():
+            if int_id not in data_mapping:
+                if integrante.rol.nombre == "Encargado":
+                    raise serializers.ValidationError(
+                        detail="No se pueden eliminar encargados!"
+                    )
 
         # Eliminar integrantes
         for int_id, integrante in int_mapping.items():
@@ -113,10 +111,23 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
                     raise serializers.ValidationError(
                         detail="No se pueden eliminar encargados!"
                     )
+
+        # Crear y actualizar los integrantes existentes.
+        ret = []
+        for int_id, data in data_mapping.items():
+            e = int_mapping.get(int_id, None)
+            if e is not None:
+                ret.append(self.child.update(e, data))
+        for data in data_mapping[0]:
+            data.seguimiento_id = seguimiento.pk
+            ret.append(self.child.create(data))
+
         return ret
 
     def validate(self, data):
+        seguimiento = []
         for integrante in data:
+            seguimiento.append(integrante["seguimiento"])
             if integrante["usuario"].groups.name != "Pedagogía":
                 if integrante["rol"].nombre == "Encargado":
                     raise serializers.ValidationError(
@@ -124,6 +135,11 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
                             integrante["usuario"].groups.name
                         )
                     )
+
+        if len(set(seguimiento)) != 1:
+            raise serializers.ValidationError(
+                detail="No se pueden elegir distintos seguimientos!"
+            )
 
         return data
 
