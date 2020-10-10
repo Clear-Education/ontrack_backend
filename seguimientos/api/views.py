@@ -284,9 +284,9 @@ class IntegrateSeguimientoViewSet(ModelViewSet):
             instance = IntegranteSeguimiento.objects.filter(
                 seguimiento=seguimiento,
             )
-            integrantes = serializer.update(instance, seguimiento=seguimiento)
-            r_serializer = serializers.ViewIntegranteSerializer(
-                instance=integrantes, many=True
+            serializer.update(instance, seguimiento=seguimiento)
+            r_serializer = serializers.ViewSeguimientoSerializer(
+                instance=seguimiento
             )
         else:
             data = serializer.errors
