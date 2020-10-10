@@ -52,10 +52,13 @@ class EvaluacionViewSet(ModelViewSet):
         """
         Ver una evaluacion
         """
+        # Busca el objeto por clave primaria, si falla 404
         evaluacion = get_object_or_404(
             self.get_queryset(request.user.institucion), pk=pk
         )
+        # Serializa para poder devolver los datos
         serializer = serializers.ViewEvaluacionSerializer(evaluacion)
+        # Devuelve el resultado
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
@@ -66,17 +69,22 @@ class EvaluacionViewSet(ModelViewSet):
         """
         Listar las materias de la institucion del usuario logeado
         """
+        # Busca la materia, sino 404 (debe ser de su institucion)
         get_object_or_404(
             Materia.objects.filter(
                 anio__carrera__institucion_id=request.user.institucion.id,
             ),
             pk=materia_id,
         )
+        # Busca el filtro que le permite ejecutar la busqueda
         evaluacion_list = self.get_queryset(request.user.institucion)
+        # Ejecuta la busqueda de evaluaciones
         evaluacion_list = evaluacion_list.filter(materia_id=materia_id)
+        # Procesa el resultado para devolver
         serializer = serializers.ViewEvaluacionSerializer(
             evaluacion_list, many=True
         )
+        # Responde con resultados
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
@@ -91,14 +99,16 @@ class EvaluacionViewSet(ModelViewSet):
             data=request.data, many=True
         )
         data = {}
-
+        # Valida los datos con el serializador de crear evaluacion
         if serializer.is_valid(raise_exception=True):
+            # Valida que la materia sea de la institucion
             get_object_or_404(
                 Materia.objects.filter(
                     anio__carrera__institucion_id=request.user.institucion.id,
                 ),
                 pk=serializer.validated_data[0]["materia"].pk,
             )
+            # Valida que el año lectivo sea de la institucion
             get_object_or_404(
                 AnioLectivo.objects.filter(
                     institucion_id=request.user.institucion.id,
@@ -106,13 +116,16 @@ class EvaluacionViewSet(ModelViewSet):
                 pk=serializer.validated_data[0]["anio_lectivo"].pk,
             )
             try:
+                # Crea las evaluaciones
                 serializer.create(serializer.validated_data)
             except ValidationError as e:
+                # Si existió un error responde con un BAD REQUEST
                 return Response(
                     data={"detail": e.message},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
+            # Si fallaron las primeras validaciones devuelve 404
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_201_CREATED)
@@ -129,20 +142,24 @@ class EvaluacionViewSet(ModelViewSet):
             data=request.data, many=True
         )
         data = {}
-
+        # Valida datos ingresados
         if serializer.is_valid(raise_exception=True):
+            # Busca las evaluaciones existentes a editar
             instance = Evaluacion.objects.filter(
                 materia=serializer.validated_data[0]["materia"].pk,
                 anio_lectivo=serializer.validated_data[0]["anio_lectivo"].pk,
             )
             try:
+                # Actualiza pasando instancias actuales y datos recibidos
                 serializer.update(instance, serializer.validated_data)
             except ValidationError as e:
+                # Si hubieron errores entonces 400
                 return Response(
                     data={"detail": e.message},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
+            # Si no era válido entonces 400
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
@@ -157,24 +174,32 @@ class EvaluacionViewSet(ModelViewSet):
         """
         serializer = serializers.DeleteEvaluacionSerializer(data=request.data)
         data = {}
-
+        # Valida datos ingresados
         if serializer.is_valid(raise_exception=True):
+            # Busca instancias a eliminar
             instances = Evaluacion.objects.filter(
                 materia=serializer.validated_data["materia"].pk,
                 anio_lectivo=serializer.validated_data["anio_lectivo"].pk,
             )
             if not instances:
+                # Si no hay instancias no pasa nada
                 Response(status=status.HTTP_200_OK)
             for e in instances:
+                # Checkea que cada instancia no tenga calificaciones
                 if Calificacion.objects.filter(evaluacion=e).count() != 0:
+                    # Si tiene calificaciones no se puede borrar
+                    # se perderían datos
                     data = {
-                        "detail": "No se puede eliminar una evaluación que ya contenga calificaciones!"
+                        "detail": "No se puede eliminar una evaluación que \
+                            ya contenga calificaciones!"
                     }
                     return Response(
                         data=data, status=status.HTTP_400_BAD_REQUEST
                     )
+            # Si todo OK, borra las evaluaciones
             instances.delete()
         else:
+            # Si hubieron errores de validación 400
             data = serializer.errors
             return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_200_OK)
