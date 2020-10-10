@@ -43,12 +43,13 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
         eval_mapping = {e.id: e for e in instance}
         # data_mapping = {item["id"]: item for item in validated_data}
         data_mapping = {0: []}
+        # Procesamos todos los datos enviados
         for item in validated_data:
             if "id" in item:
                 data_mapping[item["id"]] = item
             else:
                 data_mapping[0].append(item)
-        # Checkeo de nested instances
+        # Checkeo para prevenir la eliminación de evaluaciones con calificacion
         for eval_id, evaluacion in eval_mapping.items():
             if eval_id not in data_mapping:
                 if (
@@ -62,13 +63,16 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
         ret = []
         for eval_id, data in data_mapping.items():
             e = eval_mapping.get(eval_id, None)
+            # Si existe una evaluacion con ese ID, actualiza
             if e is not None:
                 ret.append(self.child.update(e, data))
         for data in data_mapping[0]:
+            # Si no tiene ID, entonces es nueva y cre
             ret.append(self.child.create(data))
 
         # Eliminar evaluaciones
         for eval_id, evaluacion in eval_mapping.items():
+            # Si una existente no fue enviada, entonces borra
             if eval_id not in data_mapping:
                 evaluacion.delete()
         return ret
