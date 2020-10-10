@@ -15,7 +15,7 @@ def alumno_calificacion(alumno, materia):
 def check_objetivos(seguimiento, alumno):
     objetivo = Objetivo.objects.filter(
         seguimiento__exact=seguimiento,
-        tipo_objetivo__nombre__icontains="Calific",
+        tipo_objetivo__nombre__icontains="promedio",
         tipo_objetivo__cuantitativo=True,
         tipo_objetivo__multiple=False,
     )

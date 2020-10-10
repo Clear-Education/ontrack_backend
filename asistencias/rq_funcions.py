@@ -27,8 +27,9 @@ def calculate_asistencia(objetivo, alumno_id):
     average = Asistencia.objects.filter(
         fecha__gte=objetivo.seguimiento.anio_lectivo.fecha_desde,
         fecha__lte=objetivo.seguimiento.anio_lectivo.fecha_hasta,
+        alumno_curso__alumno__id__exact=alumno_id,
     ).aggregate(Avg("asistio"))
-    average = average["asistio__avg"] if average["asistio__avg"] else 1
+    average = average["asistio__avg"] or 1
     alumno_curso = objetivo.seguimiento.alumnos.get(
         alumno__id__exact=alumno_id
     )
