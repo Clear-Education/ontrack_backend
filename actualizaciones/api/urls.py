@@ -3,7 +3,7 @@ from django.urls import path
 
 urlpatterns = [
     path(
-        "<int:seguimiento_pk>",
+        "<int:seguimiento_pk>/",
         views.create_actualizacion,
         name="actualizacion-create",
     ),

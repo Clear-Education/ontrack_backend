@@ -6,8 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from django.core.files.storage import default_storage
 import os
 from django.db import transaction
-
-# from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -17,16 +15,6 @@ from drf_yasg import openapi
 from ontrack import responses
 from actualizaciones.models import Actualizacion, ActualizacionAdjunto
 from datetime import datetime, timedelta
-
-# from curricula.models import Carrera, Anio, Curso, AnioLectivo
-# from instituciones.models import Institucion
-# from users.models import User
-# from alumnos.models import Alumno, AlumnoCurso
-# from django.core.validators import validate_integer
-# from itertools import chain
-# from django.core.exceptions import ValidationError
-# import datetime
-# from rest_framework.decorators import action
 
 
 class ActualizacionViewSet(ModelViewSet):
@@ -300,7 +288,10 @@ class ActualizacionViewSet(ModelViewSet):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            actualizacion = serializer.save(usuario=request.user)
+            actualizacion = serializer.save(
+                usuario=request.user,
+                seguimiento=integrante_seguimiento.seguimiento,
+            )
             response_serializer = serializers.GetActualizacionSerializer(
                 actualizacion, many=False
             )

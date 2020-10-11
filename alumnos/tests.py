@@ -1128,9 +1128,9 @@ class AlumnoCursoTests(APITestCase):
         """
         self.client.force_authenticate(user=self.user_admin)
         data = {
-            "alumno": 2,
-            "curso": 2,
-            "anio_lectivo": 2,
+            "alumno": self.alumno_2.id,
+            "curso": self.curso_2.id,
+            "anio_lectivo": self.anio_lectivo_2.id,
         }
         response = self.client.post("/api/alumnos/curso/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1140,9 +1140,9 @@ class AlumnoCursoTests(APITestCase):
         )
 
         data = {
-            "alumno": 1,
-            "curso": 2,
-            "anio_lectivo": 1,
+            "alumno": self.alumno_1.id,
+            "curso": self.curso_2.id,
+            "anio_lectivo": self.anio_lectivo_1.id,
         }
         response = self.client.post("/api/alumnos/curso/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1152,9 +1152,9 @@ class AlumnoCursoTests(APITestCase):
         )
 
         data = {
-            "alumno": 1,
-            "curso": 2,
-            "anio_lectivo": 3,
+            "alumno": self.alumno_1.id,
+            "curso": self.curso_2.id,
+            "anio_lectivo": self.anio_lectivo_3.id,
         }
         response = self.client.post("/api/alumnos/curso/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -1162,25 +1162,25 @@ class AlumnoCursoTests(APITestCase):
 
         data = {
             "alumno": 20,
-            "curso": 2,
-            "anio_lectivo": 2,
+            "curso": self.curso_2.id,
+            "anio_lectivo": self.anio_lectivo_2.id,
         }
         response = self.client.post("/api/alumnos/curso/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
         data = {
-            "alumno": 1,
-            "curso": 3,
-            "anio_lectivo": 2,
+            "alumno": self.alumno_1.id,
+            "curso": self.curso_3.id,
+            "anio_lectivo": self.anio_lectivo_2.id,
         }
         response = self.client.post("/api/alumnos/curso/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
         data = {
-            "alumno": 1,
-            "curso": 3,
+            "alumno": self.alumno_1.id,
+            "curso": self.curso_3.id,
         }
         response = self.client.post("/api/alumnos/curso/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1190,7 +1190,7 @@ class AlumnoCursoTests(APITestCase):
         Test de obtencion correcta de AlumnoCurso por admin
         """
         self.client.force_authenticate(user=self.user_admin)
-        response = self.client.get("/api/alumnos/curso/1/")
+        response = self.client.get(f"/api/alumnos/curso/{self.curso_1.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_get_alumno_curso_admin_incorrect(self):
@@ -1198,7 +1198,9 @@ class AlumnoCursoTests(APITestCase):
         Test de obtencion incorrecta de AlumnoCurso por admin
         """
         self.client.force_authenticate(user=self.user_admin)
-        response = self.client.get("/api/alumnos/curso/7/")
+        response = self.client.get(
+            f"/api/alumnos/curso/{self.alumno_curso_7.id}/"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         response = self.client.get("/api/alumnos/curso/20/")
@@ -1209,7 +1211,7 @@ class AlumnoCursoTests(APITestCase):
         Test de obtencion correcta de AlumnoCurso por docente
         """
         self.client.force_authenticate(user=self.user_docente)
-        response = self.client.get("/api/alumnos/curso/1/")
+        response = self.client.get(f"/api/alumnos/curso/{self.curso_1.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list_alumno_curso_admin(self):
@@ -1270,7 +1272,7 @@ class AlumnoCursoTests(APITestCase):
         Test de borrado correcto de AlumnoCurso por admin
         """
         self.client.force_authenticate(user=self.user_admin)
-        response = self.client.delete("/api/alumnos/curso/1/")
+        response = self.client.delete(f"/api/alumnos/curso/{self.curso_1.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get("/api/alumnos/curso/list/")
@@ -1286,7 +1288,9 @@ class AlumnoCursoTests(APITestCase):
             "alumnos.api.views.check_alumno_curso_no_seguimiento",
             function_mock,
         ):
-            response = self.client.delete("/api/alumnos/curso/1/")
+            response = self.client.delete(
+                f"/api/alumnos/curso/{self.curso_1.id}/"
+            )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             response.data["detail"],
@@ -1312,7 +1316,9 @@ class AlumnoCursoTests(APITestCase):
         Test de borrado incorrecto de AlumnoCurso por admin
         """
         self.client.force_authenticate(user=self.user_admin)
-        response = self.client.delete("/api/alumnos/curso/7/")
+        response = self.client.delete(
+            f"/api/alumnos/curso/{self.alumno_curso_7.id}/"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         response = self.client.delete("/api/alumnos/curso/20/")

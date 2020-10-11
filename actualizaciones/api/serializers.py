@@ -9,9 +9,6 @@ class CreateActualizacionSerializer(serializers.ModelSerializer):
     padre = serializers.PrimaryKeyRelatedField(
         queryset=Actualizacion.objects.all(), many=False, required=False
     )
-    seguimiento = serializers.PrimaryKeyRelatedField(
-        queryset=Seguimiento.objects.all(), many=False, required=True
-    )
 
     class Meta:
         model = Actualizacion
