@@ -1003,8 +1003,10 @@ class AnioLectivoTests(APITestCase):
         response1 = self.client.get(
             "/api/anio_lectivo/{}/".format(self.anio_lectivo_institucion_1.pk)
         )
-        response2 = self.client.get("/api/anio_lectivo/2/")
-        response3 = self.client.get("/api/anio_lectivo/20/")
+        response2 = self.client.get(
+            f"/api/anio_lectivo/{self.anio_lectivo_institucion_2.id}/"
+        )
+        response3 = self.client.get("/api/anio_lectivo/20000/")
 
         self.assertEqual(response1.status_code, status.HTTP_200_OK)
         self.assertDictContainsSubset(
