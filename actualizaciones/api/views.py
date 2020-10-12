@@ -17,6 +17,11 @@ from actualizaciones.models import Actualizacion, ActualizacionAdjunto
 from datetime import datetime, timedelta
 from django.utils import timezone
 from ontrack import settings
+from rest_framework.parsers import (
+    FormParser,
+    MultiPartParser,
+    FileUploadParser,
+)
 
 
 class ActualizacionViewSet(ModelViewSet):
@@ -320,6 +325,7 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
         IsAuthenticated,
         permission_required("actualizacion"),
     ]
+    parser_class = (FileUploadParser,)
     OK_EMPTY = {200: serializers.GetActualizacionSerializer}
     OK_CREATED = {201: serializers.GetActualizacionSerializer}
 
@@ -400,8 +406,7 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
         for file in request.FILES.getlist("files"):
             if default_storage.exists(
                 os.path.join(
-                    settings.MEDIA_ROOT,
-                    f"/seguimiento_{actualizacion.seguimiento.id}/actualizacion_{actualizacion.id}/{file.name}",
+                    f"{settings.MEDIA_ROOT}/seguimiento_{actualizacion.seguimiento.id}/actualizacion_{actualizacion.id}/{file.name}",
                 )
             ):
                 return Response(
