@@ -16,6 +16,7 @@ from ontrack import responses
 from actualizaciones.models import Actualizacion, ActualizacionAdjunto
 from datetime import datetime, timedelta
 from django.utils import timezone
+from ontrack import settings
 
 
 class ActualizacionViewSet(ModelViewSet):
@@ -382,6 +383,12 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
 
         file_set = {file.name for file in request.FILES.getlist("files")}
 
+        if not len(file_set):
+            return Response(
+                data={"detail": "Debe subir al menos un archivo."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if len(file_set) != len(request.FILES.getlist("files")):
             return Response(
                 data={
@@ -393,7 +400,8 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
         for file in request.FILES.getlist("files"):
             if default_storage.exists(
                 os.path.join(
-                    f"/seguimiento_{actualizacion.seguimiento.id}/actualizacion_{actualizacion.id}/{file.name}"
+                    settings.MEDIA_ROOT,
+                    f"/seguimiento_{actualizacion.seguimiento.id}/actualizacion_{actualizacion.id}/{file.name}",
                 )
             ):
                 return Response(
