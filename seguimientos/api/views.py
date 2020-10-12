@@ -46,7 +46,8 @@ class SeguimientoViewSet(ModelViewSet):
         queryset = Seguimiento.objects.filter(
             institucion=request.user.institucion,
             integrantes__usuario_id=request.user.pk,
-        )
+        ).order_by("-fecha_creacion")
+
         cerrado = self.request.query_params.get("cerrado", None)
         if cerrado is None or not cerrado:
             queryset = queryset.filter(en_progreso=True)
