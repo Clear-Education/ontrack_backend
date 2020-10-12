@@ -130,3 +130,28 @@ class ObjetivoTests(APITestCase):
             f"/api/actualizaciones/{seguimiento}/", data, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response = self.client.get(f"/api/actualizaciones/{seguimiento}/list/")
+        self.assertEqual(response.data["count"], 1)
+
+        data = {
+            "cuerpo": "cuerpo del comentario",
+            "padre": response.data["results"][0]["id"],
+        }
+        response2 = self.client.post(
+            f"/api/actualizaciones/{seguimiento}/", data, format="json"
+        )
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+
+        response3 = self.client.get(
+            f"/api/actualizaciones/{seguimiento}/list/"
+        )
+        self.assertEqual(len(response3.data["results"][0]["comentarios"]), 1)
+
+        response4 = self.client.delete(
+            f"/api/actualizaciones/{response.data['results'][0]['id']}/mix/",
+        )
+        self.assertEqual(response4.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(f"/api/actualizaciones/{seguimiento}/list/")
+        self.assertEqual(response.data["count"], 0)

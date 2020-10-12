@@ -428,20 +428,21 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
             with transaction.atomic():
                 for file in request.FILES.getlist("files"):
                     data = {
-                        actualizacion: actualizacion.id,
-                        file: file,
+                        "actualizacion": actualizacion,
+                        "file": file,
                     }
                     serializer = serializers.CreateActualizacionAdjuntoSerializer(
-                        data=data
+                        data=data,
                     )
                     if serializer.is_valid():
                         serializer.save()
                     else:
+                        print(serializer.errors)
                         raise Exception
-
         except Exception as e:
+            print(e)
             return Response(
-                data={"detail": "Internal error while saving files"},
+                data={"detail": "Error interno al guardar el archivo"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

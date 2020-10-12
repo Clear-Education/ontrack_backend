@@ -13,7 +13,7 @@ urlpatterns = [
         name="actualizacion-list",
     ),
     path(
-        "<int:actualizacion_pk>/",
+        "<int:actualizacion_pk>/mix/",
         views.mix_actualizacion,
         name="mix-actualizacion",
     ),
