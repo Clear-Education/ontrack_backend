@@ -379,7 +379,7 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        file_set = {file.name for file in request.FILES.getlist("file")}
+        file_set = {file.name for file in request.FILES.getlist("files")}
 
         if len(file_set) != len(request.FILES.getlist("files")):
             return Response(
