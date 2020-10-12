@@ -260,7 +260,9 @@ class ActualizacionViewSet(ModelViewSet):
     def create(self, request, seguimiento_pk=None):
         try:
             integrante_seguimiento = IntegranteSeguimiento.objects.get(
-                seguimiento__id=seguimiento_pk, fecha_hasta__isnull=True
+                seguimiento__id=seguimiento_pk,
+                fecha_hasta__isnull=True,
+                usuario__exact=request.user,
             )
         except IntegranteSeguimiento.DoesNotExist:
             return Response(
