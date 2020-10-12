@@ -303,5 +303,6 @@ class PartialViewUserSeralizer(serializers.ModelSerializer):
             "groups",
             "name",
             "last_name",
+            "picture",
             "cargo",
         ]
