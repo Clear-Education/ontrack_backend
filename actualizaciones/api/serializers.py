@@ -74,7 +74,6 @@ class GetSimpleActualizacionSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "cuerpo",
-            "comentarios",
             "seguimiento",
             "usuario",
             "fecha_creacion",
