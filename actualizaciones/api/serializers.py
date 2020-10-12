@@ -57,11 +57,8 @@ class CreateActualizacionAdjuntoSerializer(serializers.ModelSerializer):
         ]
 
 
-class GetActualizacionSerializer(serializers.ModelSerializer):
+class GetSimpleActualizacionSerializer(serializers.ModelSerializer):
     cuerpo = serializers.CharField()
-    padre = serializers.PrimaryKeyRelatedField(
-        queryset=Actualizacion.objects.all(), many=False
-    )
     seguimiento = serializers.PrimaryKeyRelatedField(
         queryset=Seguimiento.objects.all(), many=False
     )
@@ -77,7 +74,34 @@ class GetActualizacionSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "cuerpo",
-            "padre",
+            "comentarios",
+            "seguimiento",
+            "usuario",
+            "fecha_creacion",
+            "fecha_modificacion",
+            "adjuntos",
+        ]
+
+
+class GetActualizacionSerializer(serializers.ModelSerializer):
+    cuerpo = serializers.CharField()
+    comentarios = GetSimpleActualizacionSerializer(many=True)
+    seguimiento = serializers.PrimaryKeyRelatedField(
+        queryset=Seguimiento.objects.all(), many=False
+    )
+    usuario = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), many=False
+    )
+    fecha_creacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
+    fecha_modificacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
+    adjuntos = GetActualizacionAdjuntoSerializer(many=True)
+
+    class Meta:
+        model = Actualizacion
+        fields = [
+            "id",
+            "cuerpo",
+            "comentarios",
             "seguimiento",
             "usuario",
             "fecha_creacion",

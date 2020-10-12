@@ -10,7 +10,7 @@ class Actualizacion(models.Model):
     padre = models.ForeignKey(
         to="self",
         on_delete=models.CASCADE,
-        related_name="hijo",
+        related_name="comentarios",
         blank=True,
         null=True,
     )
