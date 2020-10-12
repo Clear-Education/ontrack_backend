@@ -91,7 +91,7 @@ class ActualizacionViewSet(ModelViewSet):
             )
 
         queryset = Actualizacion.objects.filter(
-            seguimiento__id__exact=seguimiento_pk,
+            seguimiento__id__exact=seguimiento_pk, padre__isnull=True,
         ).order_by("-fecha_creacion")
 
         page = self.paginate_queryset(queryset)
@@ -362,7 +362,9 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if actualizacion.fecha_modificacion < timezone.now() - timedelta(minutes=30):
+        if actualizacion.fecha_modificacion < timezone.now() - timedelta(
+            minutes=30
+        ):
             return Response(
                 data={
                     "detail": "No se puede subir archivos a una actualización luego de que pasaron 30 minutos desde su última modificación"
