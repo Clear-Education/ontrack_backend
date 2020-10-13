@@ -34,7 +34,7 @@ class InstitucionTests(APITestCase):
         Test de creacion de instituciones
         """
         url = reverse("institucion-create")
-        data = {"nombre": "US Federal Reserve"}
+        data = {"nombre": "US Federal Reserve", "identificador": "asdfwwe"}
 
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -47,7 +47,9 @@ class InstitucionTests(APITestCase):
         """
         Test de creacion de instituciones
         """
-        inst = Institucion.objects.create(nombre="Hoover Institution")
+        inst = Institucion.objects.create(
+            nombre="Hoover Institution", identificador="1234"
+        )
         inst.save()
         id_inst = inst.pk
         response = self.client.get(
@@ -64,6 +66,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "identificador": "1234f",
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -84,6 +87,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "identificador": "123asdf4",
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -103,6 +107,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "identificador": "asdfjasdf",
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -124,6 +129,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "identificador": "asdhf",
         }
         inst = Institucion.objects.create(**data)
         inst.save()
@@ -144,6 +150,7 @@ class InstitucionTests(APITestCase):
             "nombre": "Lenin Academy",
             "direccion": "Kaliningrad, 777",
             "pais": "USSR",
+            "identificador": "hfyya",
         }
         inst = Institucion.objects.create(**data)
         inst.save()

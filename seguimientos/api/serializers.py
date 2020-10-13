@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from seguimientos import models
-from curricula.models import Materia, AnioLectivo, Anio
+from curricula.models import Materia, AnioLectivo
 from users.models import User
 from ontrack import settings
 from alumnos.models import AlumnoCurso
@@ -8,6 +8,14 @@ import datetime
 from alumnos.api.serializers import PartialViewAlumnoCursoSerializer
 from curricula.api.serializers.materia import PartialViewMateriasSerializer
 from users.api.serializers import PartialViewUserSeralizer
+
+
+class NombreSeguimientoSerializer(serializers.ModelSerializer):
+    nombre = serializers.CharField(required=True)
+
+    class Meta:
+        model = models.Seguimiento
+        fields = ["nombre"]
 
 
 class ListSeguimientoSerializer(serializers.ModelSerializer):
@@ -56,13 +64,15 @@ class CreateIntegranteSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
+
         if data["usuario"].groups.name != "Pedagogía":
-            if data["rol"].nombre == "Encargado de Seguimiento":
+            if data["rol"].nombre == "Encargado":
                 raise serializers.ValidationError(
                     "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
                         data["usuario"].groups.name
                     )
                 )
+
         return data
 
 
@@ -84,6 +94,24 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
                 data_mapping[item["id"]] = item
             else:
                 data_mapping[0].append(item)
+
+        for int_id, integrante in int_mapping.items():
+            if int_id not in data_mapping:
+                if integrante.rol.nombre == "Encargado":
+                    raise serializers.ValidationError(
+                        detail="No se pueden eliminar encargados!"
+                    )
+
+        # Eliminar integrantes
+        for int_id, integrante in int_mapping.items():
+            if int_id not in data_mapping:
+                if integrante.rol.nombre != "Encargado":
+                    integrante.delete()
+                else:
+                    raise serializers.ValidationError(
+                        detail="No se pueden eliminar encargados!"
+                    )
+
         # Crear y actualizar los integrantes existentes.
         ret = []
         for int_id, data in data_mapping.items():
@@ -94,26 +122,25 @@ class EditIntegranteListSerializer(serializers.ListSerializer):
             data.seguimiento_id = seguimiento.pk
             ret.append(self.child.create(data))
 
-        # Eliminar integrantes
-        for int_id, integrante in int_mapping.items():
-            if int_id not in data_mapping:
-                if integrante.rol.nombre != "Encargado de Seguimiento":
-                    integrante.delete()
-                else:
-                    raise serializers.ValidationError(
-                        detail="No se pueden eliminar encargados!"
-                    )
         return ret
 
     def validate(self, data):
+        seguimiento = []
         for integrante in data:
+            seguimiento.append(integrante["seguimiento"])
             if integrante["usuario"].groups.name != "Pedagogía":
-                if integrante["rol"].nombre == "Encargado de Seguimiento":
+                if integrante["rol"].nombre == "Encargado":
                     raise serializers.ValidationError(
                         "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
                             integrante["usuario"].groups.name
                         )
                     )
+
+        if len(set(seguimiento)) != 1:
+            raise serializers.ValidationError(
+                detail="No se pueden elegir distintos seguimientos!"
+            )
+
         return data
 
 
@@ -192,6 +219,28 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
+        if "integrantes" in data:
+            integrantes = data["integrantes"]
+            if len(integrantes) == 0:
+                raise serializers.ValidationError(
+                    "Se deben agregar al menos 1 integrante!"
+                )
+            encargados = 0
+            for integrante in integrantes:
+                if integrante["usuario"].groups.name != "Pedagogía":
+                    if integrante["rol"].nombre == "Encargado":
+                        raise serializers.ValidationError(
+                            "Una cuenta de tipo {} no puede ser encargado/a de Seguimiento!".format(
+                                integrante["usuario"].groups.name
+                            )
+                        )
+                else:
+                    if integrante["rol"].nombre == "Encargado":
+                        encargados += 1
+            if encargados == 0:
+                raise serializers.ValidationError(
+                    "Se deben agregar al menos 1 encargado!"
+                )
         if "materias" in data:
             materias = data["materias"]
             for alumno in data["alumnos"]:
@@ -211,12 +260,6 @@ class CreateSeguimientoSerializer(serializers.ModelSerializer):
                 if len(anio_ids) != 1:
                     raise serializers.ValidationError(
                         detail="No se pueden elegir materias de distintos años!"
-                    )
-                for anio in anio_ids:
-                    materias = Materia.objects.filter(anio_id=anio)
-                if len(materias) != cant_materias:
-                    raise serializers.ValidationError(
-                        detail="Se deben elegir o una materia o todas las del año"
                     )
 
         if "fecha_cierre" in data:

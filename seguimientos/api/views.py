@@ -1,10 +1,9 @@
-from rest_framework.viewsets import ModelViewSet, ViewSet
+from rest_framework.viewsets import ModelViewSet
 from seguimientos.api import serializers
 from seguimientos.models import Seguimiento, IntegranteSeguimiento
 from seguimientos.models import (
     RolSeguimiento,
     SolicitudSeguimiento,
-    FechaEstadoSolicitudSeguimiento,
     EstadoSolicitudSeguimiento,
 )
 from users.permissions import permission_required
@@ -47,7 +46,8 @@ class SeguimientoViewSet(ModelViewSet):
         queryset = Seguimiento.objects.filter(
             institucion=request.user.institucion,
             integrantes__usuario_id=request.user.pk,
-        )
+        ).order_by("-fecha_creacion")
+
         cerrado = self.request.query_params.get("cerrado", None)
         if cerrado is None or not cerrado:
             queryset = queryset.filter(en_progreso=True)
@@ -101,7 +101,8 @@ class SeguimientoViewSet(ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             s = get_object_or_404(
                 Seguimiento.objects.filter(
-                    institucion_id=request.user.institucion_id
+                    institucion_id=request.user.institucion_id,
+                    en_progreso=True,
                 ),
                 pk=pk,
             )
@@ -211,6 +212,32 @@ class SeguimientoViewSet(ModelViewSet):
         )
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        request_body=serializers.NombreSeguimientoSerializer,
+        responses={**OK_EMPTY, **responses.STANDARD_ERRORS},
+    )
+    def unique(self, request):
+        """
+        Checkear si el nombre de seguimiento esta en uso
+        200 -> Está Disponible
+        400 -> No esta disponible o se mando un nombre invalido
+        """
+        serializer = serializers.NombreSeguimientoSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            if len(
+                Seguimiento.objects.filter(
+                    nombre__exact=serializer.data["nombre"].upper(),
+                    institucion__exact=request.user.institucion_id,
+                )
+            ):
+                data = {"detail": "El nombre ya esta en uso!"}
+                return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(status=status.HTTP_200_OK)
+        else:
+            data = serializer.errors
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+
 
 class IntegrateSeguimientoViewSet(ModelViewSet):
     permission_classes = [
@@ -251,15 +278,16 @@ class IntegrateSeguimientoViewSet(ModelViewSet):
                 Seguimiento.objects.filter(
                     institucion=request.user.institucion,
                     integrantes__usuario_id=request.user.pk,
+                    en_progreso=True,
                 ),
                 pk=seguimiento,
             )
             instance = IntegranteSeguimiento.objects.filter(
                 seguimiento=seguimiento,
             )
-            integrantes = serializer.update(instance, seguimiento=seguimiento)
-            r_serializer = serializers.ViewIntegranteSerializer(
-                instance=integrantes, many=True
+            serializer.update(instance, seguimiento=seguimiento)
+            r_serializer = serializers.ViewSeguimientoSerializer(
+                instance=seguimiento
             )
         else:
             data = serializer.errors
@@ -348,7 +376,7 @@ class RolSeguimientoViewSet(ModelViewSet):
         """
         serializer = serializers.CreateRolSerializer(data=request.data)
         data = {}
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
         else:
             data = serializer.errors
@@ -370,7 +398,7 @@ class RolSeguimientoViewSet(ModelViewSet):
             rol, data=request.data, partial=True
         )
         data = {}
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.update(rol, serializer.validated_data)
             data = serializer.data
         else:
@@ -441,7 +469,7 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
             data=request.data, context={"request": request}
         )
         data = {}
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             sol, f_estado = serializer.save()
             view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
                 instance=sol
@@ -469,7 +497,7 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
             instance=sol, data=request.data, partial=True
         )
         data = {}
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             sol = serializer.update(sol)
             view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
                 instance=sol
@@ -515,7 +543,7 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
         """
         Ver una solicitud de Seguimiento
         """
-        queryset = SolicitudSeguimiento.objects.all(
+        queryset = SolicitudSeguimiento.objects.filter(
             creador__institucion_id=request.user.institucion_id,
         )
         sol = get_object_or_404(queryset, pk=pk)
@@ -546,6 +574,8 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
             estado = EstadoSolicitudSeguimiento.objects.filter(
                 nombre=serializer.data["estado"]
             ).first()
+            if estado is None:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             s = serializer.update(solicitud=s, estado=estado)
             view_serializer = serializers.ViewSolicitudSeguimientoSerializer(
                 instance=s
@@ -563,6 +593,7 @@ view_edit_seguimiento = SeguimientoViewSet.as_view(
     {"get": "get", "patch": "update", "delete": "destroy"}
 )
 create_seguimiento = SeguimientoViewSet.as_view({"post": "create"})
+unique_seguimiento = SeguimientoViewSet.as_view({"post": "unique"})
 
 # Integrantes
 list_integrantes = IntegrateSeguimientoViewSet.as_view({"get": "list"})

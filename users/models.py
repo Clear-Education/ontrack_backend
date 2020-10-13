@@ -11,7 +11,11 @@ from django.core.mail import EmailMultiAlternatives
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
-from django_rest_passwordreset.signals import reset_password_token_created
+from django_rest_passwordreset.signals import (
+    reset_password_token_created,
+    post_password_reset,
+)
+
 from instituciones.models import Institucion
 from django.core.exceptions import ValidationError
 import re
@@ -89,6 +93,7 @@ class User(AbstractBaseUser, SoftDeleteObject, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True)
+    first_login = models.BooleanField(default=True)
     dni = models.IntegerField(
         primary_key=False, blank=True, null=True, verbose_name="DNI",
     )
@@ -201,13 +206,15 @@ def password_reset_token_created(
     :param kwargs:
     :return:
     """
-    # send an e-mail to the user
+    # TODO : Parametrizar completamente
+    base_url = instance.request.META.get(
+        "HTTP_REFERER", "http://18.237.60.87/"
+    )
     context = {
         "current_user": reset_password_token.user,
         "email": reset_password_token.user.email,
         "reset_password_url": "{}?token={}".format(
-            reverse("password_reset:reset-password-request"),
-            reset_password_token.key,
+            base_url, reset_password_token.key,
         ),
     }
 
@@ -221,13 +228,23 @@ def password_reset_token_created(
 
     msg = EmailMultiAlternatives(
         # title:
-        "Password Reset for {title}".format(title="Some website title"),
+        "Password Reset for {title}".format(title="OnTrack"),
         # message:
         email_plaintext_message,
         # from:
-        "noreply@somehost.local",
+        "noreply@ontrack.education",
         # to:
         [reset_password_token.user.email],
     )
     msg.attach_alternative(email_html_message, "text/html")
     msg.send()
+
+
+@receiver(post_password_reset)
+def password_reset_change_first_login(user, *args, **kwargs):
+    """
+    Sets first-login to False on user model
+    """
+    if user.first_login:
+        user.first_login = False
+        user.save()

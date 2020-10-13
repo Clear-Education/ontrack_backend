@@ -22,6 +22,7 @@ from curricula.models import (
 from alumnos.models import Alumno, AlumnoCurso
 from django.urls import reverse
 from rest_framework import status
+import logging
 
 
 class SeguimientosTest(APITestCase):
@@ -30,6 +31,7 @@ class SeguimientosTest(APITestCase):
         """
         Setup de User y permisos para poder ejecutar todas las acciones
         """
+
         cls.client = APIClient()
         cls.group = Group.objects.create(name="Pedagogía")
         cls.group_docente = Group.objects.create(name="Docente")
@@ -37,7 +39,9 @@ class SeguimientosTest(APITestCase):
         cls.group.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(
+            nombre="MIT", identificador="1234"
+        )
         cls.user = User.objects.create_user(
             "juan@juan.com",
             password="juan123",
@@ -50,9 +54,7 @@ class SeguimientosTest(APITestCase):
             groups=cls.group_docente,
             institucion=cls.institucion,
         )
-        cls.rol_pedagogo = RolSeguimiento.objects.create(
-            nombre="Encargado de Seguimiento"
-        )
+        cls.rol_pedagogo = RolSeguimiento.objects.create(nombre="Encargado")
         cls.rol_profesor = RolSeguimiento.objects.create(nombre="Profesor")
         cls.rol_tutor = RolSeguimiento.objects.create(nombre="Tutor")
 
@@ -207,6 +209,26 @@ class SeguimientosTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Seguimiento.objects.count(), 0)
 
+    def test_create_seguimiento_sin_encargado_invalid(self):
+        """
+        Test de creacion de seguimientos + integrantes con roles malos
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_profesor.pk},
+                {"usuario": self.user_docente.pk, "rol": self.rol_profesor.pk},
+            ],
+        }
+
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Seguimiento.objects.count(), 0)
+
     def test_create_seguimiento_con_materias(self):
         """
         Test de creacion de seguimientos + materias
@@ -271,9 +293,9 @@ class SeguimientosTest(APITestCase):
             Seguimiento.objects.get().nombre, "PRIMER SEGUIMIENTO"
         )
 
-    def test_create_seguimiento_con_materias_completas(self):
+    def test_create_seguimiento_sin_encargado(self):
         """
-        Test de creacion de seguimientos + materias completas
+        Test de creacion de seguimientos invalido
         """
         url = reverse("seguimiento-create")
         data = {
@@ -284,13 +306,30 @@ class SeguimientosTest(APITestCase):
             "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
             "materias": [self.materia.pk, self.materia2.pk, self.materia3.pk],
             "integrantes": [
-                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
                 {"usuario": self.user_docente.pk, "rol": self.rol_profesor.pk},
             ],
         }
         response = self.client.post(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Seguimiento.objects.count(), 1)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Seguimiento.objects.count(), 0)
+
+    def test_create_seguimiento_sin_integrantes(self):
+        """
+        Test de creacion de seguimientos invalido
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "fecha_cierre": "12/12/2021",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "materias": [self.materia.pk, self.materia2.pk, self.materia3.pk],
+            "integrantes": [],
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Seguimiento.objects.count(), 0)
 
     def test_create_seguimiento_con_materias_parciales(self):
         """
@@ -311,12 +350,8 @@ class SeguimientosTest(APITestCase):
             ],
         }
         response = self.client.post(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(Seguimiento.objects.count(), 0)
-        self.assertEqual(
-            response.data["detail"][0],
-            "Se deben elegir o una materia o todas las del año",
-        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Seguimiento.objects.count(), 1)
 
     def test_create_seguimiento_con_fecha_cierre(self):
         """
@@ -559,6 +594,78 @@ class SeguimientosTest(APITestCase):
         self.assertEqual(response.data["nombre"], data["nombre"].upper())
         self.assertEqual(response.data["descripcion"], data["descripcion"])
 
+    def test_edit_seguimiento_invalido(self):
+        """
+        Test de edicion de seguimiento
+        Valido ya que se puede editar
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+        response = self.client.post(url, data, format="json")
+        id_s = response.data["id"]
+        data = {
+            "en_progreso": False,
+        }
+        self.client.patch(
+            f"/api/seguimientos/{id_s}/status/", data, format="json"
+        )
+        data = {
+            "nombre": "Primer Seguimiento ###",
+            "descripcion": "La descripcion",
+        }
+        response = self.client.patch(
+            f"/api/seguimientos/{id_s}/", data, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_edit_integrantes_seguimiento_invalido(self):
+        """
+        Test de edicion de seguimiento
+        Valido ya que se puede editar
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+        response = self.client.post(url, data, format="json")
+        id_s = response.data["id"]
+        data = {
+            "en_progreso": False,
+        }
+        response = self.client.patch(
+            f"/api/seguimientos/{id_s}/status/", data, format="json"
+        )
+
+        data = [
+            {
+                "seguimiento": response.data["id"],
+                "usuario": self.user_docente.pk,
+                "rol": self.rol_profesor.pk,
+            },
+        ]
+        response = self.client.patch(
+            f"/api/seguimientos/{id_s}/integrantes/", data, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_edit_seguimiento_integrantes_cannot_erase_encargado(self):
         """
         Test de edicion de integrantes validando que no se pueda borrar al encargado
@@ -585,13 +692,51 @@ class SeguimientosTest(APITestCase):
                 "rol": self.rol_profesor.pk,
             },
         ]
-
+        id_seguimiento = response.data["id"]
         response = self.client.patch(
-            f"/api/seguimientos/{response.data['id']}/integrantes/",
+            f"/api/seguimientos/{id_seguimiento}/integrantes/",
             data,
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_edit_seguimiento_integrantes_cannot_edit_docente_as_encargado(
+        self,
+    ):
+        """
+        Test de edicion de integrantes validando 
+        que no se pueda editar como encargado a uno que no es pedagogo
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "fecha_cierre": "12/12/2020",
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "materias": [self.materia.pk],
+        }
+
+        response = self.client.post(url, data, format="json")
+
+        data = [
+            {
+                "seguimiento": response.data["id"],
+                "usuario": self.user_docente.pk,
+                "rol": self.rol_pedagogo.pk,
+            },
+        ]
+        id_seguimiento = response.data["id"]
+        response = self.client.patch(
+            f"/api/seguimientos/{id_seguimiento}/integrantes/",
+            data,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.get(f"/api/seguimientos/{id_seguimiento}/")
 
     def test_edit_seguimiento_integrantes_valid(self):
         """
@@ -659,6 +804,60 @@ class SeguimientosTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["nombre"], "PRIMER SEGUIMIENTO")
 
+    def test_seguimiento_unique_positive(self):
+        """
+        Test de verificacion de seguimiento unico
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "fecha_cierre": "12/12/2020",
+            "materias": [self.materia.pk],
+        }
+
+        response = self.client.post(url, data, format="json")
+        url = reverse("seguimiento-unique")
+        data = {
+            "nombre": "Primer Seguimiento",
+        }
+        response = self.client.post(
+            "/api/seguimientos/unique/", data, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_seguimiento_unique_negative(self):
+        """
+        Test de verificacion de seguimiento unico
+        """
+        url = reverse("seguimiento-create")
+        data = {
+            "anio_lectivo": self.anio_lectivo.pk,
+            "nombre": "Primer Seguimiento",
+            "descripcion": "La gran descripción de este seguimiento",
+            "alumnos": [self.alumno_curso1.pk, self.alumno_curso2.pk],
+            "integrantes": [
+                {"usuario": self.user.pk, "rol": self.rol_pedagogo.pk},
+            ],
+            "fecha_cierre": "12/12/2020",
+            "materias": [self.materia.pk],
+        }
+
+        response = self.client.post(url, data, format="json")
+        url = reverse("seguimiento-unique")
+        data = {
+            "nombre": "Primer Seguimiento 2",
+        }
+        response = self.client.post(
+            "/api/seguimientos/unique/", data, format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_list_integrantes(self):
         """
         Test de listado de integrantes 
@@ -693,7 +892,7 @@ class SeguimientosTest(APITestCase):
 
         response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["nombre"], "Encargado de Seguimiento")
+        self.assertEqual(response.data["nombre"], "Encargado")
 
     def test_rol_seguimiento_view_invalid(self):
         url = "/api/seguimientos/rol/900/"
@@ -722,7 +921,9 @@ class SolicitudSeguimientoTest(APITestCase):
         cls.group_docente.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(
+            nombre="MIT", identificador="1234"
+        )
         cls.user = User.objects.create_user(
             "juan@juan.com",
             password="juan123",
@@ -735,9 +936,7 @@ class SolicitudSeguimientoTest(APITestCase):
             groups=cls.group_docente,
             institucion=cls.institucion,
         )
-        cls.rol_pedagogo = RolSeguimiento.objects.create(
-            nombre="Encargado de Seguimiento"
-        )
+        cls.rol_pedagogo = RolSeguimiento.objects.create(nombre="Encargado")
         cls.rol_profesor = RolSeguimiento.objects.create(nombre="Profesor")
         cls.rol_tutor = RolSeguimiento.objects.create(nombre="Tutor")
 
@@ -839,6 +1038,10 @@ class SolicitudSeguimientoTest(APITestCase):
             Fuerzo la autenticacion en cada corrida
         """
         self.client.force_authenticate(user=self.user)
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_create_solicitud_seguimiento(self):
         """
@@ -851,7 +1054,6 @@ class SolicitudSeguimientoTest(APITestCase):
         }
 
         response = self.client.post(url, data, format="json")
-        print(response.data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(SolicitudSeguimiento.objects.count(), 1)
@@ -920,6 +1122,30 @@ class SolicitudSeguimientoTest(APITestCase):
             "Motivo de solicitud 2",
         )
 
+    def test_view_solicitud_seguimiento(self):
+        """
+        Test de view solicitud de seguimiento
+        """
+        sol = SolicitudSeguimiento.objects.create(
+            motivo_solicitud="Motivo de solicitud", creador=self.user
+        )
+        sol.alumnos.add(*[self.alumno_curso1.pk, self.alumno_curso2.pk])
+        sol.save()
+        estado = EstadoSolicitudSeguimiento.objects.filter(
+            nombre="Pendiente"
+        ).first()
+        FechaEstadoSolicitudSeguimiento.objects.create(
+            solicitud=sol, estado_solicitud=estado
+        )
+        url = f"/api/seguimientos/solicitudes/{sol.pk}/"
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(SolicitudSeguimiento.objects.count(), 1)
+        self.assertEqual(
+            response.data["motivo_solicitud"], "Motivo de solicitud",
+        )
+
     def test_edit_solicitud_seguimiento_motivo_invalido(self):
         """
         Test de edicion de solicitud de seguimiento con motivos invalidos
@@ -961,7 +1187,7 @@ class SolicitudSeguimientoTest(APITestCase):
         FechaEstadoSolicitudSeguimiento.objects.create(
             solicitud=sol, estado_solicitud=estado
         )
-        url = f"/api/seguimientos/solicitudes/{sol.pk}/status/"
+        url = "/api/seguimientos/solicitudes/{}/status/".format(sol.pk)
         data = {"estado": "Aceptada"}
 
         response = self.client.patch(url, data, format="json")
@@ -980,11 +1206,15 @@ class SolicitudSeguimientoTest(APITestCase):
         estado = EstadoSolicitudSeguimiento.objects.filter(
             nombre="Pendiente"
         ).first()
-        FechaEstadoSolicitudSeguimiento.objects.create(
+        fecha = FechaEstadoSolicitudSeguimiento.objects.create(
             solicitud=sol, estado_solicitud=estado
         )
-        url = f"/api/seguimientos/solicitudes/{sol.pk}/status/"
+        fecha.save()
+        url = "/api/seguimientos/solicitudes/{}/status/".format(sol.pk)
         data = {"estado": "Aprobada"}
+        # import pdb
+
+        # pdb.set_trace()
         response = self.client.patch(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -1028,7 +1258,6 @@ class SolicitudSeguimientoTest(APITestCase):
         url = f"/api/seguimientos/solicitudes/{sol.pk}/status/"
         data = {"estado": "Pendiente"}
         response = self.client.patch(url, data, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_delete_solicitud(self):

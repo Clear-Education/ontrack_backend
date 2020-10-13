@@ -4,6 +4,7 @@ from rest_framework.authtoken.models import Token
 from users.models import User, Group
 from django.contrib.auth.models import Permission
 from instituciones.models import Institucion
+import logging
 
 
 class AuthenticationTests(APITestCase):
@@ -17,7 +18,9 @@ class AuthenticationTests(APITestCase):
         self.group = Group.objects.create(name="Docente")
         self.group.save()
         self.group.permissions.add(Permission.objects.get(name="Can add user"))
-        self.institucion = Institucion.objects.create(nombre="SNU")
+        self.institucion = Institucion.objects.create(
+            nombre="SNU", identificador="1234"
+        )
         self.user = User.objects.create_user(
             "juan@juan.com",
             password="juan123",
@@ -26,11 +29,10 @@ class AuthenticationTests(APITestCase):
         )
 
         self.token = Token.objects.create(user=self.user)
+        logging.disable(logging.CRITICAL)
 
-    def test_login(self):
-        user = {"username": "juan@juan.com", "password": "juan123"}
-        response = self.client.post("/api/users/login/", data=user)
-        self.assertEqual(self.token.key, response.data["token"])
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_register_while_logged_in_and_valid_data(self):
         new_user = {
@@ -86,6 +88,10 @@ class PermissionsTests(APITestCase):
             Permission.objects.get(name="Can add user")
         )
         self.group_otro = Group.objects.create(name="Otro")
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_forbidden_action(self):
         user = User.objects.create_user(
@@ -171,8 +177,12 @@ class UsersTests(APITestCase):
             Permission.objects.get(name="Can view user")
         )
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", identificador="1234"
+        )
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", identificador="12adsf34"
+        )
 
         cls.user_admin_1 = User.objects.create_user(
             "juan1@juan.com",
@@ -217,6 +227,12 @@ class UsersTests(APITestCase):
             institucion=cls.institucion_2,
         )
         cls.user_docente_4.save()
+
+    def setUp(self):
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def test_create_user_admin_authenticated(self):
         token = Token.objects.create(user=self.user_admin_1)

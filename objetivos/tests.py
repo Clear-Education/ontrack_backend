@@ -15,6 +15,7 @@ from seguimientos.models import (
 from rest_framework import status
 import datetime
 from collections import OrderedDict
+from unittest.mock import patch
 
 
 class ObjetivoTests(APITestCase):
@@ -54,8 +55,8 @@ class ObjetivoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1", identificador="1234")
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2", identificador="1234asdf")
 
         cls.user_admin = User.objects.create_user(
             "admin@admin.com",
@@ -235,10 +236,6 @@ class ObjetivoTests(APITestCase):
         cls.tipo_objetivo_1 = TipoObjetivo.objects.create(
             nombre="Cualitativo", cuantitativo=False, multiple=True,
         )
-
-        cls.tipo_objetivo_1 = TipoObjetivo.objects.create(
-            nombre="Cualitativo", cuantitativo=False, multiple=True,
-        )
         cls.tipo_objetivo_2 = TipoObjetivo.objects.create(
             nombre="Promedio notas",
             cuantitativo=True,
@@ -296,8 +293,8 @@ class ObjetivoTests(APITestCase):
     #############
     #   CREATE  #
     #############
-
-    def test_create_multiple_objetivo_admin(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_multiple_objetivo_admin(self, mock):
         """
         Test de creacion correcta de Objetivo por admin
         """
@@ -321,7 +318,8 @@ class ObjetivoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(len(response.data) == 2)
 
-    def test_create_objetivo_admin(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_admin(self, mock):
         """
         Test de creacion correcta de Objetivo por admin
         """
@@ -337,7 +335,8 @@ class ObjetivoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(response.data["id"])
 
-    def test_create_objetivo_docente(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_docente(self, mock):
         """
         Test de creacion de Objetivo por docente
         """
@@ -352,7 +351,8 @@ class ObjetivoTests(APITestCase):
         response = self.client.post("/api/objetivos/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_create_objetivo_otra_institucion(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_otra_institucion(self, mock):
         """
         Test de creacion de Objetivo para un seguimiento de otra institucion
         """
@@ -368,7 +368,8 @@ class ObjetivoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
-    def test_create_objetivo_no_en_progreso(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_no_en_progreso(self, mock):
         """
         Test de creacion de Objetivo para un seguimiento que no está en progreso
         """
@@ -387,7 +388,8 @@ class ObjetivoTests(APITestCase):
             "No se puede modificar un Seguimiento que no se encuentra en progreso",
         )
 
-    def test_create_objetivo_no_integrante(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_no_integrante(self, mock):
         """
         Test de creacion de Objetivo para un seguimiento del que no es integrante
         """
@@ -403,7 +405,8 @@ class ObjetivoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
-    def test_create_objetivo_no_encargado(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_no_encargado(self, mock):
         """
         Test de creacion de Objetivo para un seguimiento del que no es encargado
         """
@@ -421,7 +424,8 @@ class ObjetivoTests(APITestCase):
             response.data["detail"], "No tiene permiso para crear un objetivo"
         )
 
-    def test_create_objetivo_cualitativo_sin_descripcion(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_cualitativo_sin_descripcion(self, mock):
         """
         Test de creacion de Objetivo cualitativo sin descripción
         """
@@ -440,7 +444,8 @@ class ObjetivoTests(APITestCase):
             "Para este tipo de objetivos es necesario fijar una descripción",
         )
 
-    def test_create_objetivo_cuantitativo_sin_valor(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_cuantitativo_sin_valor(self, mock):
         """
         Test de creacion de Objetivo cuantitativo sin valor
         """
@@ -458,7 +463,8 @@ class ObjetivoTests(APITestCase):
             f"No se ingreso un valor, o no se encuentra en el rango permitido de {float(tipo_objetivo.valor_minimo)} a {float(tipo_objetivo.valor_maximo)}",
         )
 
-    def test_create_objetivo_cuantitativo_fuera_rango(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_cuantitativo_fuera_rango(self, mock):
         """
         Test de creacion de Objetivo cuantitativo valor fuera de rango
         """
@@ -477,7 +483,8 @@ class ObjetivoTests(APITestCase):
             f"No se ingreso un valor, o no se encuentra en el rango permitido de {float(tipo_objetivo.valor_minimo)} a {float(tipo_objetivo.valor_maximo)}",
         )
 
-    def test_create_objetivo_cuantitativo_no_multiple(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_cuantitativo_no_multiple(self, mock):
         """
         Test de creacion de Objetivo cuantitativo no multiple
         """
@@ -496,7 +503,8 @@ class ObjetivoTests(APITestCase):
             "Ya existe un objetivo de este mismo tipo en el seguimiento. No está permitido tener dos objetivos del mismo tipo",
         )
 
-    def test_create_objetivo_tipo_no_existente(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_tipo_no_existente(self, mock):
         """
         Test de creacion de Objetivo cuantitativo con tipo no existente
         """
@@ -511,7 +519,8 @@ class ObjetivoTests(APITestCase):
         response = self.client.post("/api/objetivos/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_create_objetivo_seguimiento_no_existente(self):
+    @patch("objetivos.api.views.django_rq")
+    def test_create_objetivo_seguimiento_no_existente(self, mock):
         """
         Test de creacion de Objetivo cuantitativo con seguimiento no existente
         """
@@ -883,8 +892,8 @@ class AlumnoObjetivoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1", identificador="1234")
+        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2", identificador="fasdf1234")
 
         cls.user_admin = User.objects.create_user(
             "admin@admin.com",

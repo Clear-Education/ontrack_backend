@@ -4,6 +4,7 @@ from seguimientos.models import (
     Seguimiento,
     RolSeguimiento,
     IntegranteSeguimiento,
+    SolicitudSeguimiento,
 )
 
 # Register your models here.

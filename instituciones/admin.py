@@ -5,9 +5,22 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 from django.contrib import messages
 from django.http import HttpResponseRedirect
+from django import forms
+from django.db import models
 
 
 class InstitucionAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        kwargs["widgets"] = {
+            "direccion": forms.TextInput(
+                attrs={
+                    "placeholder": "Calle, Número, Localidad, Provincia",
+                    "size": "40",
+                }
+            )
+        }
+        return super().get_form(request, obj, **kwargs)
+
     def message_user(self, *args):
         pass
 

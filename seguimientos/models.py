@@ -56,6 +56,10 @@ class Seguimiento(models.Model):
         permissions = [
             ("status_seguimiento", "Cambiar el estado de seguimiento"),
             ("list_seguimiento", "Listar seguimiento"),
+            (
+                "unique_seguimiento",
+                "Verificar que un Seguimiento tenga nombre unico",
+            ),
         ]
 
 

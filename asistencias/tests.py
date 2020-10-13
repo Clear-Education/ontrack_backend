@@ -9,8 +9,216 @@ from alumnos.models import Alumno, AlumnoCurso
 from asistencias.models import Asistencia
 from rest_framework import status
 from rest_framework.utils.serializer_helpers import ReturnList
+from unittest.mock import patch
+from unittest import TestCase
+from seguimientos.models import Seguimiento
+from curricula.models import Materia
+from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
+import datetime
+from asistencias.rq_funcions import alumno_asistencia
 
-# Create your tests here.
+
+class QueueAsistenciaTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Setup de User y permisos para poder ejecutar todas las acciones
+        """
+        cls.client = APIClient()
+        cls.group_admin = Group.objects.create(name="Admin")
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can add asistencia")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can change asistencia")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can delete asistencia")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede listar asistencias")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Can view asistencia")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede crear multiples asistencias")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(name="Puede borrar multiples asistencias")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(
+                name="Puede obtener el porcentaje de asistencias"
+            )
+        )
+        cls.group_admin.save()
+
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", identificador="1234"
+        )
+        cls.institucion_1.save()
+
+        cls.user_admin = User.objects.create_user(
+            "admin@admin.com",
+            password="password",
+            groups=cls.group_admin,
+            institucion=cls.institucion_1,
+        )
+
+        cls.carrera_1 = Carrera.objects.create(
+            nombre="Carrera1",
+            descripcion=".",
+            institucion=cls.institucion_1,
+            color=".",
+        )
+
+        cls.anio_1 = Anio.objects.create(
+            nombre="Anio1", carrera=cls.carrera_1, color="."
+        )
+
+        cls.curso_1 = Curso.objects.create(nombre="Curso1", anio=cls.anio_1)
+
+        cls.anio_lectivo_1 = AnioLectivo.objects.create(
+            nombre="2019",
+            fecha_desde="2019-01-01",
+            fecha_hasta="2019-12-31",
+            institucion=cls.institucion_1,
+        )
+        cls.anio_lectivo_1.save()
+
+        cls.anio_lectivo_2 = AnioLectivo.objects.create(
+            nombre="2020",
+            fecha_desde="2020-01-01",
+            fecha_hasta="2020-12-31",
+            institucion=cls.institucion_1,
+        )
+        cls.anio_lectivo_2.save()
+
+        cls.alumno_1 = Alumno.objects.create(
+            dni=1,
+            nombre="Alumno",
+            apellido="1",
+            institucion=cls.institucion_1,
+        )
+        cls.alumno_1.save()
+
+        cls.alumno_2 = Alumno.objects.create(
+            dni=2,
+            nombre="Alumno",
+            apellido="2",
+            institucion=cls.institucion_1,
+        )
+        cls.alumno_2.save()
+
+        cls.alumno_curso_1 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_1,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_1,
+        )
+        cls.alumno_curso_1.save()
+
+        cls.alumno_curso_2 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_1,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_2,
+        )
+        cls.alumno_curso_2.save()
+
+        cls.alumno_curso_3 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_2,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_1,
+        )
+        cls.alumno_curso_3.save()
+
+        cls.alumno_curso_4 = AlumnoCurso.objects.create(
+            alumno=cls.alumno_2,
+            curso=cls.curso_1,
+            anio_lectivo=cls.anio_lectivo_2,
+        )
+        cls.alumno_curso_4.save()
+
+        cls.asistencia_1 = Asistencia.objects.create(
+            fecha="2019-11-15", asistio=1, alumno_curso=cls.alumno_curso_1,
+        )
+        cls.asistencia_1.save()
+
+        cls.asistencia_2 = Asistencia.objects.create(
+            fecha="2019-11-22", asistio=0, alumno_curso=cls.alumno_curso_1,
+        )
+        cls.asistencia_2.save()
+
+        cls.asistencia_2 = Asistencia.objects.create(
+            fecha="2020-11-22", asistio=0, alumno_curso=cls.alumno_curso_2,
+        )
+        cls.asistencia_2.save()
+
+        cls.materia_1 = Materia.objects.create(
+            nombre="Matematicas", anio=cls.anio_1
+        )
+
+        cls.materia_2 = Materia.objects.create(
+            nombre="Lengua", anio=cls.anio_1
+        )
+
+        cls.seguimiento_1 = Seguimiento.objects.create(
+            nombre="seguimiento_1",
+            en_progreso=True,
+            institucion=cls.institucion_1,
+            fecha_inicio=datetime.date(2019, 1, 1),
+            fecha_cierre=datetime.date(2019, 12, 31),
+            descripcion=".",
+            anio_lectivo=cls.anio_lectivo_1,
+        )
+        cls.seguimiento_1.alumnos.add(cls.alumno_curso_1, cls.alumno_curso_3)
+        cls.seguimiento_1.materias.add(cls.materia_1, cls.materia_2)
+        cls.seguimiento_1.save()
+
+        cls.tipo_objetivo_1 = TipoObjetivo.objects.create(
+            nombre="Cualitativo", cuantitativo=False, multiple=True,
+        )
+        cls.tipo_objetivo_2 = TipoObjetivo.objects.create(
+            nombre="Promedio notas",
+            cuantitativo=True,
+            multiple=False,
+            valor_minimo=0,
+            valor_maximo=100,
+        )
+        cls.tipo_objetivo_3 = TipoObjetivo.objects.create(
+            nombre="Porcentaje asistencias",
+            cuantitativo=True,
+            multiple=False,
+            valor_minimo=0,
+            valor_maximo=100,
+        )
+
+        cls.objetivo_1 = Objetivo.objects.create(
+            descripcion="conducta",
+            seguimiento=cls.seguimiento_1,
+            tipo_objetivo=cls.tipo_objetivo_1,
+        )
+        cls.objetivo_2 = Objetivo.objects.create(
+            valor_objetivo_cuantitativo=70,
+            seguimiento=cls.seguimiento_1,
+            tipo_objetivo=cls.tipo_objetivo_2,
+        )
+        cls.objetivo_3 = Objetivo.objects.create(
+            valor_objetivo_cuantitativo=70,
+            seguimiento=cls.seguimiento_1,
+            tipo_objetivo=cls.tipo_objetivo_3,
+        )
+
+    def test_objetivos_queue(self):
+        """
+        Test de creacion correcta de AlumnoObjetivos
+        """
+        alumno_asistencia(self.alumno_1.id)
+        alumnos_objetivos = AlumnoObjetivo.objects.all()
+        assert alumnos_objetivos[0].valor == 0.5
+
+
+@patch("asistencias.api.views.django_rq")
 class AsistenciaTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
@@ -61,9 +269,13 @@ class AsistenciaTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", identificador="12347"
+        )
         cls.institucion_1.save()
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", identificador="12345"
+        )
         cls.institucion_2.save()
 
         cls.user_admin = User.objects.create_user(
@@ -234,7 +446,7 @@ class AsistenciaTests(APITestCase):
     #  CREATE + #
     #############
 
-    def test_create_multiple_asistencias_admin(self):
+    def test_create_multiple_asistencias_admin(self, mock):
         """
         Test de creacion correcta de Asistencias por admin
         """
@@ -256,7 +468,7 @@ class AsistenciaTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_create_multiple_asistencias_docente(self):
+    def test_create_multiple_asistencias_docente(self, mock):
         """
         Test de creacion de Asistencias por docente
         """
@@ -278,7 +490,7 @@ class AsistenciaTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_create_multiple_campos_faltantes(self):
+    def test_create_multiple_campos_faltantes(self, mock):
         """
         Test de creacion de Asistencias con campos faltantes
         """
@@ -297,7 +509,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data[1].get("fecha")[0].code, "required")
 
-    def test_create_multiple_sin_datos(self):
+    def test_create_multiple_sin_datos(self, mock):
         """
         Test de creacion de Asistencias sin datos
         """
@@ -311,7 +523,7 @@ class AsistenciaTests(APITestCase):
             response.data.get("detail"), "No se recibió ninguna información"
         )
 
-    def test_create_multiple_distintos_cursos(self):
+    def test_create_multiple_distintos_cursos(self, mock):
         """
         Test de creacion de Asistencias de distintos cursos
         """
@@ -337,7 +549,7 @@ class AsistenciaTests(APITestCase):
             "No se pueden cargar asistencias para cursos distintos al mismo tiempo",
         )
 
-    def test_create_multiple_asistencias_de_otra_institucion(self):
+    def test_create_multiple_asistencias_de_otra_institucion(self, mock):
         """
         Test de creacion de Asistencias de otra institucion
         """
@@ -357,7 +569,7 @@ class AsistenciaTests(APITestCase):
             response.data.get("detail"), "No encontrado.",
         )
 
-    def test_create_multiple_asistencias_no_existente(self):
+    def test_create_multiple_asistencias_no_existente(self, mock):
         """
         Test de creacion de Asistencias no existente
         """
@@ -378,7 +590,7 @@ class AsistenciaTests(APITestCase):
             response.data.get("detail"), "No encontrado.",
         )
 
-    def test_create_multiple_asistencias_rango_incorrecto(self):
+    def test_create_multiple_asistencias_rango_incorrecto(self, mock):
         """
         Test de creacion de Asistencias con asistio en rango incorrecto
         """
@@ -404,7 +616,7 @@ class AsistenciaTests(APITestCase):
             "El valor del campo asistencia solo puede estar entre 0 y 1",
         )
 
-    def test_create_multiple_asistencias_distintas_fechas(self):
+    def test_create_multiple_asistencias_distintas_fechas(self, mock):
         """
         Test de creacion de Asistencias con distintas fechas
         """
@@ -430,7 +642,7 @@ class AsistenciaTests(APITestCase):
             "No se pueden cargar asistencias para distintas fechas al mismo tiempo",
         )
 
-    def test_create_multiple_asistencias_alumno_curso_repetido(self):
+    def test_create_multiple_asistencias_alumno_curso_repetido(self, mock):
         """
         Test de creacion de Asistencias con alumno_curso repetido
         """
@@ -456,7 +668,7 @@ class AsistenciaTests(APITestCase):
             "No se pueden repetir alumnos en una misma llamada",
         )
 
-    def test_create_multiple_asistencias_fecha_fuera_rango(self):
+    def test_create_multiple_asistencias_fecha_fuera_rango(self, mock):
         """
         Test de creacion de Asistencias con fecha fuera de rango
         """
@@ -482,7 +694,7 @@ class AsistenciaTests(APITestCase):
             "La fecha especificada no se encuentra dentro del Año Lectivo",
         )
 
-    def test_create_multiple_asistencias_fecha_fin_de_semana(self):
+    def test_create_multiple_asistencias_fecha_fin_de_semana(self, mock):
         """
         Test de creacion de Asistencias con fecha fin de semana
         """
@@ -508,7 +720,7 @@ class AsistenciaTests(APITestCase):
             "No se pueden cargar asistencias para fines de semana",
         )
 
-    def test_create_multiple_asistencias_ya_existente(self):
+    def test_create_multiple_asistencias_ya_existente(self, mock):
         """
         Test de creacion de Asistencias con asistencia ya existente
         """
@@ -541,7 +753,7 @@ class AsistenciaTests(APITestCase):
     #   CREATE  #
     #############
 
-    def test_create_asistencia_admin(self):
+    def test_create_asistencia_admin(self, mock):
         """
         Test de creacion correcta de Asistencia por admin
         """
@@ -554,7 +766,7 @@ class AsistenciaTests(APITestCase):
         response = self.client.post("/api/asistencias/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_create_asistencia_docente(self):
+    def test_create_asistencia_docente(self, mock):
         """
         Test de creacion de Asistencia por docente
         """
@@ -567,7 +779,7 @@ class AsistenciaTests(APITestCase):
         response = self.client.post("/api/asistencias/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_create_campos_faltantes(self):
+    def test_create_campos_faltantes(self, m):
         """
         Test de creacion de Asistencia con campos faltantes
         """
@@ -581,7 +793,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data.get("fecha")[0].code, "required")
 
-    def test_create_asistencia_de_otra_institucion(self):
+    def test_create_asistencia_de_otra_institucion(self, m):
         """
         Test de creacion de Asistencia de otra institucion
         """
@@ -597,7 +809,7 @@ class AsistenciaTests(APITestCase):
             response.data.get("detail"), "No encontrado.",
         )
 
-    def test_create_asistencia_no_existente(self):
+    def test_create_asistencia_no_existente(self, m):
         """
         Test de creacion de Asistencia no existente
         """
@@ -614,7 +826,7 @@ class AsistenciaTests(APITestCase):
             response.data.get("detail"), "No encontrado.",
         )
 
-    def test_create_asistencia_rango_incorrecto(self):
+    def test_create_asistencia_rango_incorrecto(self, m):
         """
         Test de creacion de Asistencia con asistio en rango incorrecto
         """
@@ -631,7 +843,7 @@ class AsistenciaTests(APITestCase):
             "El valor del campo asistencia solo puede estar entre 0 y 1",
         )
 
-    def test_create_asistencia_fecha_fuera_rango(self):
+    def test_create_asistencia_fecha_fuera_rango(self, m):
         """
         Test de creacion de Asistencia con fecha fuera de rango
         """
@@ -648,7 +860,7 @@ class AsistenciaTests(APITestCase):
             "La fecha especificada no se encuentra dentro del Año Lectivo",
         )
 
-    def test_create_asistencia_fecha_fin_de_semana(self):
+    def test_create_asistencia_fecha_fin_de_semana(self, m):
         """
         Test de creacion de Asistencia con fecha fin de semana
         """
@@ -665,7 +877,7 @@ class AsistenciaTests(APITestCase):
             "No se pueden cargar asistencias para fines de semana",
         )
 
-    def test_create_asistencia_ya_existente(self):
+    def test_create_asistencia_ya_existente(self, m):
         """
         Test de creacion de Asistencia con asistencia ya existente
         """
@@ -687,7 +899,7 @@ class AsistenciaTests(APITestCase):
     #    GET    #
     #############
 
-    def test_get_asistencia_admin(self):
+    def test_get_asistencia_admin(self, mock):
         """
         Test de obtención de Asistencia por admin
         """
@@ -696,7 +908,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("id"), self.asistencia_1.id)
 
-    def test_get_asistencia_docente(self):
+    def test_get_asistencia_docente(self, mock):
         """
         Test de obtención de Asistencia por docente
         """
@@ -705,7 +917,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("id"), self.asistencia_1.id)
 
-    def test_get_asistencia_otra_institucion(self):
+    def test_get_asistencia_otra_institucion(self, mock):
         """
         Test de obtención de Asistencia de otra institucion
         """
@@ -713,7 +925,7 @@ class AsistenciaTests(APITestCase):
         response = self.client.get(f"/api/asistencias/{self.asistencia_4.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_get_asistencia_no_existente(self):
+    def test_get_asistencia_no_existente(self, mock):
         """
         Test de obtención de Asistencia no existente
         """
@@ -725,7 +937,7 @@ class AsistenciaTests(APITestCase):
     #   UPDATE  #
     #############
 
-    def test_update_asistencia_admin(self):
+    def test_update_asistencia_admin(self, m):
         """
         Test de modificacion de Asistencia por admin
         """
@@ -739,7 +951,7 @@ class AsistenciaTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_update_asistencia_docente(self):
+    def test_update_asistencia_docente(self, m):
         """
         Test de modificacion de Asistencia por docente
         """
@@ -753,7 +965,7 @@ class AsistenciaTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_update_asistencia_otra_institucion(self):
+    def test_update_asistencia_otra_institucion(self, mock):
         """
         Test de modificacion de Asistencia de otra institucion
         """
@@ -767,7 +979,7 @@ class AsistenciaTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_update_asistencia_no_existente(self):
+    def test_update_asistencia_no_existente(self, mock):
         """
         Test de modificacion de Asistencia no existente
         """
@@ -781,7 +993,7 @@ class AsistenciaTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_update_asistencia_vacio(self):
+    def test_update_asistencia_vacio(self, mock):
         """
         Test de modificacion de Asistencia no existente
         """
@@ -797,7 +1009,7 @@ class AsistenciaTests(APITestCase):
     #   DELETE  #
     #############
 
-    def test_delete_asistencia_admin(self):
+    def test_delete_asistencia_admin(self, mock):
         """
         Test de borrado de Asistencia por admin
         """
@@ -807,7 +1019,7 @@ class AsistenciaTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_delete_asistencia_docente(self):
+    def test_delete_asistencia_docente(self, mock):
         """
         Test de borrado de Asistencia por docente
         """
@@ -817,7 +1029,7 @@ class AsistenciaTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_delete_asistencia_inexistente(self):
+    def test_delete_asistencia_inexistente(self, mock):
         """
         Test de borrado de Asistencia inexistente
         """
@@ -825,7 +1037,7 @@ class AsistenciaTests(APITestCase):
         response = self.client.delete("/api/asistencias/500/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_delete_asistencia_otra_institucion(self):
+    def test_delete_asistencia_otra_institucion(self, mock):
         """
         Test de borrado de Asistencia de otra institucion
         """
@@ -839,7 +1051,7 @@ class AsistenciaTests(APITestCase):
     #  DELETE+  #
     #############
 
-    def test_delete_multiple_asistencias_docente(self):
+    def test_delete_multiple_asistencias_docente(self, mock):
         """
         Test de borrado multiple de Asistencias por docente
         """
@@ -851,7 +1063,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Asistencia.objects.count(), current_asistencias)
 
-    def test_delete_multiple_asistencias_curso(self):
+    def test_delete_multiple_asistencias_curso(self, mock):
         """
         Test de borrado multiple de Asistencias por curso
         """
@@ -863,7 +1075,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Asistencia.objects.count(), current_asistencias - 1)
 
-    def test_delete_multiple_asistencias_curso_rango_de_fechas(self):
+    def test_delete_multiple_asistencias_curso_rango_de_fechas(self, mock):
         """
         Test de borrado multiple de Asistencias por curso entre un rango de fechas
         """
@@ -875,7 +1087,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Asistencia.objects.count(), current_asistencias - 3)
 
-    def test_delete_multiple_asistencias_alumno_curso(self):
+    def test_delete_multiple_asistencias_alumno_curso(self, mock):
         """
         Test de borrado multiple de Asistencias por alumno_curso
         """
@@ -887,7 +1099,9 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Asistencia.objects.count(), current_asistencias - 1)
 
-    def test_delete_multiple_asistencias_alumno_curso_rango_de_fechas(self):
+    def test_delete_multiple_asistencias_alumno_curso_rango_de_fechas(
+        self, mock
+    ):
         """
         Test de borrado multiple de Asistencias por curso entre un rango de fechas
         """
@@ -899,7 +1113,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Asistencia.objects.count(), current_asistencias - 2)
 
-    def test_delete_multiple_asistencias_alumno_curso_y_curso(self):
+    def test_delete_multiple_asistencias_alumno_curso_y_curso(self, mock):
         """
         Test de borrado multiple de Asistencias por curso y alumno_curso
         """
@@ -915,7 +1129,7 @@ class AsistenciaTests(APITestCase):
             "No se puede borrar por curso y por alumno_curso al mismo tiempo",
         )
 
-    def test_delete_multiple_asistencias_curso_otra_institucion(self):
+    def test_delete_multiple_asistencias_curso_otra_institucion(self, mock):
         """
         Test de borrado multiple de Asistencias de un curso de otra institucion
         """
@@ -927,7 +1141,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(Asistencia.objects.count(), current_asistencias)
 
-    def test_delete_multiple_asistencias_curso_no_existente(self):
+    def test_delete_multiple_asistencias_curso_no_existente(self, mock):
         """
         Test de borrado multiple de Asistencias de un curso no existente
         """
@@ -939,7 +1153,9 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(Asistencia.objects.count(), current_asistencias)
 
-    def test_delete_multiple_asistencias_alumno_curso_otra_institucion(self):
+    def test_delete_multiple_asistencias_alumno_curso_otra_institucion(
+        self, mock
+    ):
         """
         Test de borrado multiple de Asistencias de un alumno_curso de otra institucion
         """
@@ -951,7 +1167,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(Asistencia.objects.count(), current_asistencias)
 
-    def test_delete_multiple_asistencias_alumno_curso_no_existente(self):
+    def test_delete_multiple_asistencias_alumno_curso_no_existente(self, mock):
         """
         Test de borrado multiple de Asistencias de un alumno_curso no existente
         """
@@ -963,7 +1179,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(Asistencia.objects.count(), current_asistencias)
 
-    def test_delete_multiple_asistencias_fechas_invalidas(self):
+    def test_delete_multiple_asistencias_fechas_invalidas(self, mock):
         """
         Test de borrado multiple de Asistencias con fechas inválidas
         """
@@ -978,7 +1194,7 @@ class AsistenciaTests(APITestCase):
             response.data["detail"], "Las fechas ingresadas son inválidas"
         )
 
-    def test_delete_multiple_asistencias_fechas_mal_escritas(self):
+    def test_delete_multiple_asistencias_fechas_mal_escritas(self, mock):
         """
         Test de borrado multiple de Asistencias con fechas mal escritas
         """
@@ -994,7 +1210,7 @@ class AsistenciaTests(APITestCase):
             "La fecha ingresada no está correctamente expresada",
         )
 
-    def test_delete_asistencias_sin_fechas(self):
+    def test_delete_asistencias_sin_fechas(self, mock):
         """
         Test de borrado multiple de Asistencias sin fechas
         """
@@ -1010,7 +1226,7 @@ class AsistenciaTests(APITestCase):
             "Es necesario ingresar al menos la fecha_desde",
         )
 
-    def test_delete_asistencias_sin_alumno_curso_ni_curso(self):
+    def test_delete_asistencias_sin_alumno_curso_ni_curso(self, mock):
         """
         Test de borrado multiple de Asistencias sin curso ni alumno_curso
         """
@@ -1030,7 +1246,7 @@ class AsistenciaTests(APITestCase):
     #   LIST    #
     #############
 
-    def test_list_asistencias_curso_una_fecha(self):
+    def test_list_asistencias_curso_una_fecha(self, mock):
         """
         Test de listado de Asistencias curso con una fecha
         """
@@ -1041,7 +1257,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("count"), 1)
 
-    def test_list_asistencias_curso_rango_fechas(self):
+    def test_list_asistencias_curso_rango_fechas(self, mock):
         """
         Test de listado de Asistencias curso con un rango de fechas
         """
@@ -1052,7 +1268,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("count"), 3)
 
-    def test_list_asistencias_alumno_curso_una_fecha(self):
+    def test_list_asistencias_alumno_curso_una_fecha(self, mock):
         """
         Test de listado de Asistencias alumnocurso con una fecha
         """
@@ -1063,7 +1279,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("count"), 1)
 
-    def test_list_asistencias_alumno_curso_rango_fechas(self):
+    def test_list_asistencias_alumno_curso_rango_fechas(self, mock):
         """
         Test de listado de Asistencias alumnocurso con un rango de fechas
         """
@@ -1074,7 +1290,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get("count"), 2)
 
-    def test_list_asistencias_curso_y_alumno_curso(self):
+    def test_list_asistencias_curso_y_alumno_curso(self, mock):
         """
         Test de listado de Asistencias curso y alumno_curso
         """
@@ -1088,7 +1304,7 @@ class AsistenciaTests(APITestCase):
             "No se puede listar por curso y por alumno_curso al mismo tiempo",
         )
 
-    def test_list_asistencias_fechas_invalidas(self):
+    def test_list_asistencias_fechas_invalidas(self, mock):
         """
         Test de listado de Asistencias con fechas invalidas
         """
@@ -1101,7 +1317,7 @@ class AsistenciaTests(APITestCase):
             response.data["detail"], "Las fechas ingresadas son inválidas"
         )
 
-    def test_list_asistencias_fechas_mal_escritas(self):
+    def test_list_asistencias_fechas_mal_escritas(self, mock):
         """
         Test de listado de Asistencias con fechas mal escritas
         """
@@ -1115,7 +1331,7 @@ class AsistenciaTests(APITestCase):
             "La fecha ingresada no está correctamente expresada",
         )
 
-    def test_list_asistencias_curso_no_existente(self):
+    def test_list_asistencias_curso_no_existente(self, mock):
         """
         Test de listado de Asistencias curso no existente
         """
@@ -1126,7 +1342,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
-    def test_list_asistencias_curso_otra_institucion(self):
+    def test_list_asistencias_curso_otra_institucion(self, mock):
         """
         Test de listado de Asistencias curso de otra institucion
         """
@@ -1137,7 +1353,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
-    def test_list_asistencias_alumno_curso_no_existente(self):
+    def test_list_asistencias_alumno_curso_no_existente(self, mock):
         """
         Test de listado de Asistencias alumnocurso no existente
         """
@@ -1148,7 +1364,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
-    def test_list_asistencias_alumno_curso_otra_institucion(self):
+    def test_list_asistencias_alumno_curso_otra_institucion(self, mock):
         """
         Test de listado de Asistencias alumnocurso de otra institucion
         """
@@ -1159,7 +1375,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
-    def test_list_asistencias_sin_fechas(self):
+    def test_list_asistencias_sin_fechas(self, mock):
         """
         Test de listado de Asistencias sin fechas
         """
@@ -1173,7 +1389,7 @@ class AsistenciaTests(APITestCase):
             "Es necesario ingresar al menos la fecha_desde",
         )
 
-    def test_list_asistencias_sin_alumno_curso_ni_curso(self):
+    def test_list_asistencias_sin_alumno_curso_ni_curso(self, mock):
         """
         Test de listado de Asistencias sin curso ni alumno_curso
         """
@@ -1191,7 +1407,7 @@ class AsistenciaTests(APITestCase):
     #   STATS   #
     #############
 
-    def test_stats_asistencias_rango(self):
+    def test_stats_asistencias_rango(self, mock):
         """
         Test de stats de Asistencia con rango
         """
@@ -1208,7 +1424,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["porcentaje"], 1)
 
-    def test_stats_asistencias_sin_rango(self):
+    def test_stats_asistencias_sin_rango(self, mock):
         """
         Test de stats de Asistencia sin rango
         """
@@ -1219,7 +1435,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["porcentaje"], 0.5)
 
-    def test_stats_asistencias_sin_alumno_curso(self):
+    def test_stats_asistencias_sin_alumno_curso(self, mock):
         """
         Test de stats de Asistencia sin alumno_curso
         """
@@ -1230,7 +1446,7 @@ class AsistenciaTests(APITestCase):
             response.data["detail"], "Es necesario ingresar un alumno_curso"
         )
 
-    def test_stats_asistencias_alumno_curso_no_numerico(self):
+    def test_stats_asistencias_alumno_curso_no_numerico(self, mock):
         """
         Test de stats de Asistencia alumno_curso no numerico
         """
@@ -1243,7 +1459,7 @@ class AsistenciaTests(APITestCase):
             response.data["detail"], "El valor de alumno_curso no es numérico"
         )
 
-    def test_stats_asistencias_alumno_curso_no_existente(self):
+    def test_stats_asistencias_alumno_curso_no_existente(self, mock):
         """
         Test de stats de Asistencia alumno_curso no existente
         """
@@ -1254,7 +1470,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
-    def test_stats_asistencias_alumno_curso_otra_institucion(self):
+    def test_stats_asistencias_alumno_curso_otra_institucion(self, mock):
         """
         Test de stats de Asistencia alumno_curso de otra institucion
         """
@@ -1265,7 +1481,7 @@ class AsistenciaTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["detail"], "No encontrado.")
 
-    def test_stats_asistencias_fecha_faltante(self):
+    def test_stats_asistencias_fecha_faltante(self, mock):
         """
         Test de stats de Asistencia fecha faltante
         """
@@ -1286,7 +1502,7 @@ class AsistenciaTests(APITestCase):
             response.data["detail"], "Es necesario ingresar un rango de fechas"
         )
 
-    def test_stats_asistencias_fecha_mal_escrita(self):
+    def test_stats_asistencias_fecha_mal_escrita(self, mock):
         """
         Test de stats de Asistencia fecha mal escrita
         """
@@ -1309,7 +1525,7 @@ class AsistenciaTests(APITestCase):
             "La fecha ingresada no está correctamente expresada",
         )
 
-    def test_stats_asistencias_fecha_fuera_del_anio_lectivo(self):
+    def test_stats_asistencias_fecha_fuera_del_anio_lectivo(self, mock):
         """
         Test de stats de Asistencia fecha fuera del anio lectivo
         """
@@ -1332,7 +1548,7 @@ class AsistenciaTests(APITestCase):
             "La fecha_hasta no se encuentra en el rango del AnioLectivo",
         )
 
-    def test_stats_asistencias_fechas_conflictivas(self):
+    def test_stats_asistencias_fechas_conflictivas(self, mock):
         """
         Test de stats de Asistencia alumno_curso de otra institucion
         """

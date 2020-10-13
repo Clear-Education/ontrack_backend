@@ -19,6 +19,17 @@ from drf_yasg.utils import swagger_auto_schema
 from ontrack import responses
 from django.core.exceptions import ValidationError
 from django_rest_passwordreset.models import ResetPasswordToken
+from django.conf import settings
+
+
+HTTP_USER_AGENT_HEADER = getattr(
+    settings,
+    "DJANGO_REST_PASSWORDRESET_HTTP_USER_AGENT_HEADER",
+    "HTTP_USER_AGENT",
+)
+HTTP_IP_ADDRESS_HEADER = getattr(
+    settings, "DJANGO_REST_PASSWORDRESET_IP_ADDRESS_HEADER", "REMOTE_ADDR"
+)
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -34,33 +45,14 @@ class CustomAuthToken(ObtainAuthToken):
     )
     def post(self, request, *args, **kwargs):
         # checkear si es primer login
-        """
-        user = User.objects.get(email=request.data["username"])
-        if not user:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        if user.first_login:
-            token = ResetPasswordToken.objects.create(
-                    user=user,
-                    user_agent=request.META.get(HTTP_USER_AGENT_HEADER, ''),
-                    ip_address=request.META.get(HTTP_IP_ADDRESS_HEADER, ''),
-                )
-            user.reset_token = token.keu
-            response_serializer = serializers.LoginResponseSerializer(user)
-            return Response(data=response_serializer.data)
-        """
-
         serializer = self.serializer_class(
             data=request.data, context={"request": request}
         )
 
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data["user"]
-        serializer = self.serializer_class(
-            data=request.data, context={"request": request}
-        )
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
         user = User.objects.get(pk=user.pk)
+
         if not user.is_superuser and not user.institucion.activa:
             return Response(status=status.HTTP_404_NOT_FOUND)
         token, created = Token.objects.get_or_create(user=user)

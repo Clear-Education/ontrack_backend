@@ -222,16 +222,15 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
                 }
             )
         user.set_password(new_password)
+        user.first_login = False
         user.save()
         return user
 
 
 class GroupSerializer(serializers.ModelSerializer):
-    permissions = serializers.StringRelatedField(many=True, read_only=True)
-
     class Meta:
         model = Group
-        fields = ["id", "name", "permissions"]
+        fields = ["id", "name"]
 
 
 class ListUserSerializer(serializers.ModelSerializer):
@@ -270,7 +269,6 @@ class UserStatusSerializer(serializers.ModelSerializer):
 
 class LoginResponseSerializer(serializers.ModelSerializer):
     token = serializers.CharField(required=False)
-    reset_token = serializers.CharField(required=False)
 
     groups = serializers.StringRelatedField()
 
@@ -292,8 +290,8 @@ class LoginResponseSerializer(serializers.ModelSerializer):
             "localidad",
             "provincia",
             "token",
-            "reset_token",
             "institucion",
+            "first_login",
         ]
 
 
@@ -305,5 +303,6 @@ class PartialViewUserSeralizer(serializers.ModelSerializer):
             "groups",
             "name",
             "last_name",
+            "picture",
             "cargo",
         ]

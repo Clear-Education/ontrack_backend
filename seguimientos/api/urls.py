@@ -7,6 +7,7 @@ from seguimientos.api import views
 urlpatterns = [
     # Seguimiento
     path("", views.create_seguimiento, name="seguimiento-create"),
+    path("unique/", views.unique_seguimiento, name="seguimiento-unique"),
     path(
         "<int:pk>/", views.view_edit_seguimiento, name="seguimiento-view-edit"
     ),

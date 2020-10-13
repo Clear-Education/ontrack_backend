@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     "django_rest_passwordreset",
     "drf_yasg",
     "corsheaders",
+    "django_rq",
+    "storages",
     # Custom
     "users",
     "instituciones",
@@ -65,7 +67,7 @@ INSTALLED_APPS = [
     "asistencias",
     "seguimientos",
     "objetivos",
-    "storages",
+    "actualizaciones",
 ]
 
 REST_FRAMEWORK = {
@@ -94,6 +96,22 @@ MIDDLEWARE = [
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+DEFAULT_LOCAL = {
+    "HOST": "redis",
+    "PORT": 6379,
+    "DB": 0,
+    "PASSWORD": "redis_ontrack",
+    "DEFAULT_TIMEOUT": 500,
+}
+
+DEFAULT_HEROKU = {
+    "URL": os.getenv("REDISTOGO_URL", "redis"),
+    "DEFAULT_TIMEOUT": 500,
+}
+
+RQ_QUEUES = {
+    "default": DEFAULT_HEROKU if os.getenv("HEROKU") else DEFAULT_LOCAL,
+}
 
 ROOT_URLCONF = "ontrack.urls"
 
@@ -211,6 +229,5 @@ EMAIL_HOST = os.environ.get("MAILGUN_SMTP_SERVER", "")
 EMAIL_PORT = os.environ.get("MAILGUN_SMTP_PORT", "")
 EMAIL_HOST_USER = os.environ.get("MAILGUN_SMTP_LOGIN", "")
 EMAIL_HOST_PASSWORD = os.environ.get("MAILGUN_SMTP_PASSWORD", "")
-
 
 django_heroku.settings(locals())

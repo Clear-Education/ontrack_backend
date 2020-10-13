@@ -18,6 +18,7 @@ from django.core.validators import validate_integer
 from itertools import chain
 from django.core.exceptions import ValidationError
 import datetime
+from seguimientos.models import Seguimiento, SolicitudSeguimiento
 
 
 class AlumnoViewSet(ModelViewSet):
@@ -138,8 +139,9 @@ class AlumnoViewSet(ModelViewSet):
                 ):
                     try:
                         Alumno.objects.get(
-                            dni=serializer.validated_data.get("dni")
-                        )
+                            dni=serializer.validated_data.get("dni"),
+                            institucion__exact=institucion,
+                        ).exclude(pk=pk)
                         return Response(
                             data={
                                 "detail": "Alumno con el mismo dni existente"
@@ -172,19 +174,11 @@ class AlumnoViewSet(ModelViewSet):
         retrieved_alumno = get_object_or_404(Alumno, pk=pk)
         if retrieved_alumno.institucion != request.user.institucion:
             return Response(status=status.HTTP_404_NOT_FOUND,)
-        hoy = datetime.date.today()
-        anio_corriente = AnioLectivo.objects.filter(
-            fecha_hasta__gte=hoy, fecha_desde__lte=hoy
-        ).first()
-        if anio_corriente:
-            if AlumnoCurso.objects.filter(
-                alumno_id=retrieved_alumno.pk,
-                anio_lectivo_id=anio_corriente.pk,
-            ):
-                data = {
-                    "detail": "No se puede eliminar un alumno que esté cursando actualmente"
-                }
-                return Response(data=data, status=status.HTTP_400_BAD_REQUEST,)
+        if AlumnoCurso.objects.filter(alumno_id=retrieved_alumno.pk,):
+            data = {
+                "detail": "No se puede eliminar un alumno que esté cursando actualmente"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST,)
 
         retrieved_alumno.delete()
         return Response(status=status.HTTP_200_OK)
@@ -227,7 +221,9 @@ class AlumnoViewSet(ModelViewSet):
             for alumno in serializer.validated_data:
                 try:
                     # TODO optimize with a single query
-                    Alumno.objects.get(dni=alumno.get("dni"))
+                    Alumno.objects.get(
+                        dni=alumno.get("dni"), institucion__exact=institucion
+                    )
                 except Alumno.DoesNotExist:
                     continue
                 except:
@@ -268,6 +264,16 @@ list_alumno = AlumnoViewSet.as_view({"get": "list"})
 mix_alumno = AlumnoViewSet.as_view(
     {"get": "get", "patch": "update", "delete": "destroy"}
 )
+
+
+def check_alumno_curso_no_seguimiento(id_alumno_curso_list):
+    seguimientos = Seguimiento.objects.filter(
+        alumnos__id__in=id_alumno_curso_list
+    )
+    solicitudes = SolicitudSeguimiento.objects.filter(
+        alumnos__id__in=id_alumno_curso_list
+    )
+    return len(seguimientos) or len(solicitudes) or False
 
 
 class AlumnoCursoViewSet(ModelViewSet):
@@ -414,6 +420,15 @@ class AlumnoCursoViewSet(ModelViewSet):
             != request.user.institucion
         ):
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if check_alumno_curso_no_seguimiento([retrieved_alumno_curso.id]):
+            return Response(
+                data={
+                    "detail": "El alumno no puede ser desasignado de un curso si tiene un seguimiento o solicitud de seguimiento"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         retrieved_alumno_curso.delete()
         return Response(status=status.HTTP_200_OK)
 
@@ -508,10 +523,7 @@ class AlumnoCursoViewSet(ModelViewSet):
         )
         if serializer.is_valid():
             if len(serializer.validated_data) == 0:
-                return Response(
-                    data={"detail": "No se recibió ninguna información"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                return Response(status=status.HTTP_200_OK)
             cursos = list(
                 set([a.get("curso") for a in serializer.validated_data])
             )
@@ -569,7 +581,7 @@ class AlumnoCursoViewSet(ModelViewSet):
                         AlumnoCurso.objects.filter(
                             alumno__exact=alumno,
                             anio_lectivo__exact=anios_lectivos[0],
-                        )
+                        ).exclude(curso__exact=cursos[0])
                     )
                     != 0
                 ):
@@ -579,6 +591,29 @@ class AlumnoCursoViewSet(ModelViewSet):
                         },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+
+            lista_de_ids = [a["alumno"].id for a in serializer.validated_data]
+
+            query_alumnos = AlumnoCurso.objects.filter(
+                alumno__id__in=lista_de_ids,
+                anio_lectivo__exact=anios_lectivos[0],
+                curso__exact=cursos[0],
+            )
+            to_delete = list()
+
+            for alumno_curso in serializer.validated_data:
+                for q in query_alumnos:
+                    if (
+                        alumno_curso["alumno"] == q.alumno
+                        and alumno_curso["curso"] == q.curso
+                        and alumno_curso["anio_lectivo"] == q.anio_lectivo
+                    ):
+                        to_delete.append(alumno_curso)
+                        break
+
+            for a in to_delete:
+                serializer.validated_data.remove(a)
+
             serializer.save()
             return Response(status=status.HTTP_201_CREATED)
         else:
@@ -610,7 +645,9 @@ class AlumnoCursoViewSet(ModelViewSet):
         serializer = serializers.CreateAlumnoCursoSerializer(
             many=True, data=request.data
         )
+
         if serializer.is_valid():
+            to_delete = list()
             for alumno_curso in serializer.validated_data:
                 alumno_c = AlumnoCurso.objects.filter(
                     alumno__exact=alumno_curso.get("alumno"),
@@ -619,7 +656,18 @@ class AlumnoCursoViewSet(ModelViewSet):
                     alumno__institucion__exact=request.user.institucion,
                 )
                 if len(alumno_c) >= 1:
-                    alumno_c[0].delete()
+                    to_delete.extend(alumno_c)
+                    # alumno_c[0].delete()
+            id_list = [ac.id for ac in to_delete]
+            if check_alumno_curso_no_seguimiento(id_list):
+                return Response(
+                    data={
+                        "detail": "El alumno no puede ser desasignado de un curso si tiene un seguimiento o solicitud de seguimiento"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            AlumnoCurso.objects.filter(id__in=id_list).delete()
 
             return Response(status=status.HTTP_200_OK)
 

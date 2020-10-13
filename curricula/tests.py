@@ -27,7 +27,9 @@ class MateriaEvaluacionTest(APITestCase):
         cls.group.permissions.add(
             *Permission.objects.values_list("id", flat=True)
         )
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(
+            nombre="MIT", identificador="1234"
+        )
         cls.carrera = Carrera.objects.create(
             **{
                 "nombre": "Ingenieria en Creatividad",
@@ -126,7 +128,9 @@ class MateriaEvaluacionTest(APITestCase):
         Test para checkear de que no es posible ver o eliminar \
         una materia de otra Institucion
         """
-        institucion = Institucion.objects.create(nombre="NYU")
+        institucion = Institucion.objects.create(
+            nombre="NYU", identificador="123456"
+        )
         institucion.save()
         carrera = Carrera.objects.create(
             **{
@@ -402,7 +406,9 @@ class AnioCursoTest(APITestCase):
             *Permission.objects.values_list("id", flat=True)
         )
         cls.group.save()
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(
+            nombre="MIT", identificador="1234"
+        )
         cls.institucion.save()
         cls.carrera = Carrera.objects.create(
             **{
@@ -502,7 +508,9 @@ class AnioCursoTest(APITestCase):
         """
         Test para checkear de que no es posible ver un anio de otra Institucion
         """
-        institucion = Institucion.objects.create(nombre="NYU")
+        institucion = Institucion.objects.create(
+            nombre="NYU", identificador="1236544"
+        )
         institucion.save()
         carrera = Carrera.objects.create(
             **{
@@ -618,7 +626,9 @@ class CarreraTests(APITestCase):
             *Permission.objects.values_list("id", flat=True)
         )
         cls.group.save()
-        cls.institucion = Institucion.objects.create(nombre="MIT")
+        cls.institucion = Institucion.objects.create(
+            nombre="MIT", identificador="1234"
+        )
         cls.institucion.save()
         cls.user = User.objects.create_user(
             "juan@juan.com",
@@ -784,8 +794,12 @@ class AnioLectivoTests(APITestCase):
         )
         cls.group_docente.save()
 
-        cls.institucion_1 = Institucion.objects.create(nombre="Institucion_1")
-        cls.institucion_2 = Institucion.objects.create(nombre="Institucion_2")
+        cls.institucion_1 = Institucion.objects.create(
+            nombre="Institucion_1", identificador="1234"
+        )
+        cls.institucion_2 = Institucion.objects.create(
+            nombre="Institucion_2", identificador="1dg234"
+        )
 
         cls.user_admin_1 = User.objects.create_user(
             "juan1@juan.com",
@@ -989,8 +1003,10 @@ class AnioLectivoTests(APITestCase):
         response1 = self.client.get(
             "/api/anio_lectivo/{}/".format(self.anio_lectivo_institucion_1.pk)
         )
-        response2 = self.client.get("/api/anio_lectivo/2/")
-        response3 = self.client.get("/api/anio_lectivo/20/")
+        response2 = self.client.get(
+            f"/api/anio_lectivo/{self.anio_lectivo_institucion_2.id}/"
+        )
+        response3 = self.client.get("/api/anio_lectivo/20000/")
 
         self.assertEqual(response1.status_code, status.HTTP_200_OK)
         self.assertDictContainsSubset(

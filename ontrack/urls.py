@@ -24,6 +24,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("django-rq/", include("django_rq.urls")),
     path("api/users/", include("users.api.urls")),
     path("api/institucion/", include("instituciones.api.urls")),
     path("api/alumnos/", include("alumnos.api.urls")),
@@ -37,6 +38,7 @@ urlpatterns = [
     path("api/asistencias/", include("asistencias.api.urls")),
     path("api/seguimientos/", include("seguimientos.api.urls")),
     path("api/objetivos/", include("objetivos.api.urls")),
+    path("api/actualizaciones/", include("actualizaciones.api.urls")),
 ]
 
 
