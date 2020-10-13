@@ -428,7 +428,7 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
             with transaction.atomic():
                 for file in request.FILES.getlist("files"):
                     data = {
-                        "actualizacion": actualizacion,
+                        "actualizacion": actualizacion.id,
                         "file": file,
                     }
                     serializer = serializers.CreateActualizacionAdjuntoSerializer(
