@@ -25,7 +25,11 @@ class Actualizacion(models.Model):
 
     def __str__(self):
         return (
-            self.seguimiento.nombre + " " + self.usuario.name + " " + self.pk
+            self.seguimiento.nombre
+            + " "
+            + self.usuario.name
+            + " "
+            + str(self.pk)
         )
 
     class Meta:
