@@ -206,17 +206,34 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "static/images")
 
 
 # S3 BUCKETS CONFIG
+DEFAULT_LOCAL = {
+    "HOST": "redis",
+    "PORT": 6379,
+    "DB": 0,
+    "PASSWORD": "redis_ontrack",
+    "DEFAULT_TIMEOUT": 500,
+}
 
-AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
-AWS_S3_FILE_OVERWRITE = False
-AWS_DEFAULT_ACL = None
-AWS_S3_ADDRESSING_STYLE = "virtual"
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-AWS_S3_SIGNATURE_VERSION = "s3v4"
-AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
+DEFAULT_HEROKU = {
+    "URL": os.getenv("REDISTOGO_URL", "redis"),
+    "DEFAULT_TIMEOUT": 500,
+}
+
+RQ_QUEUES = {
+    "default": DEFAULT_HEROKU if os.getenv("HEROKU") else DEFAULT_LOCAL,
+}
+
+if os.getenv("HEROKU"):
+    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_S3_ADDRESSING_STYLE = "virtual"
+    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    AWS_S3_SIGNATURE_VERSION = "s3v4"
+    AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
 
 AUTH_USER_MODEL = "users.User"
 
