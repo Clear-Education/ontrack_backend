@@ -206,23 +206,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "static/images")
 
 
 # S3 BUCKETS CONFIG
-DEFAULT_LOCAL = {
-    "HOST": "redis",
-    "PORT": 6379,
-    "DB": 0,
-    "PASSWORD": "redis_ontrack",
-    "DEFAULT_TIMEOUT": 500,
-}
-
-DEFAULT_HEROKU = {
-    "URL": os.getenv("REDISTOGO_URL", "redis"),
-    "DEFAULT_TIMEOUT": 500,
-}
-
-RQ_QUEUES = {
-    "default": DEFAULT_HEROKU if os.getenv("HEROKU") else DEFAULT_LOCAL,
-}
-
 if os.getenv("HEROKU"):
     AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
