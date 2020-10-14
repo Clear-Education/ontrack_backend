@@ -13,6 +13,10 @@ from seguimientos.models import (
     RolSeguimiento,
 )
 from rest_framework import status
+from ontrack import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
+import os
+import io
 
 
 class ObjetivoTests(APITestCase):
@@ -155,3 +159,29 @@ class ObjetivoTests(APITestCase):
 
         response = self.client.get(f"/api/actualizaciones/{seguimiento}/list/")
         self.assertEqual(response.data["count"], 0)
+
+    # def test_attach_file(self):
+    #     self.client.force_authenticate(user=self.user_admin)
+    #     seguimiento = self.seguimiento_1.id
+    #     data = {
+    #         "cuerpo": "cuerpo de actualizacion",
+    #     }
+    #     response = self.client.post(
+    #         f"/api/actualizaciones/{seguimiento}/", data, format="json"
+    #     )
+    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    #     filename = "adjunto.pdf"
+    #     filepath = os.path.join(settings.BASE_DIR, filename)
+    #     with open(filepath, "rb") as content:
+    #         # b = io.BytesIO(content)
+    #         file1 = SimpleUploadedFile(
+    #             filename, content.read(), content_type="application/pdf"
+    #         )
+    #         file_list = {"files": [file1]}
+    #         response2 = self.client.post(
+    #             f"/api/actualizaciones/{response.data['id']}/files/",
+    #             file_list,
+    #             format="multipart",
+    #         )
+    #         self.assertEqual(response2.status_code, status.HTTP_200_OK)
+
