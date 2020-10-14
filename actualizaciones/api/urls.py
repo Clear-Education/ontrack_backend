@@ -13,6 +13,11 @@ urlpatterns = [
         name="actualizacion-list",
     ),
     path(
+        "list_last/",
+        views.list_latest_actualizacion,
+        name="actualizacion-list-latests",
+    ),
+    path(
         "<int:actualizacion_pk>/mix/",
         views.mix_actualizacion,
         name="mix-actualizacion",

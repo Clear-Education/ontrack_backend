@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from actualizaciones.models import Actualizacion, ActualizacionAdjunto
 from seguimientos.models import Seguimiento
+from seguimientos.api.serializers import ListSeguimientoSerializer
 from users.models import User
 
 
@@ -103,9 +104,7 @@ class GetSimpleActualizacionSerializer(serializers.ModelSerializer):
 class GetActualizacionSerializer(serializers.ModelSerializer):
     cuerpo = serializers.CharField()
     comentarios = GetSimpleActualizacionSerializer(many=True)
-    seguimiento = serializers.PrimaryKeyRelatedField(
-        queryset=Seguimiento.objects.all(), many=False
-    )
+    seguimiento = ListSeguimientoSerializer(many=False)
     usuario = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), many=False
     )
