@@ -23,7 +23,8 @@ whitenoise = "*"
 boto3 = "==1.14.61"
 django-storages = "==1.10.1"
 django-rq = "==2.3.2"
-
+django-dbbackup = "*"
+django-cron = "*"
 
 [requires]
 python_version = "==3.7"

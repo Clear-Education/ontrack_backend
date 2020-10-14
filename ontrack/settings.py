@@ -58,6 +58,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_rq",
     "storages",
+    "dbbackup",
+    "django_cron",
     # Custom
     "users",
     "instituciones",
@@ -157,6 +159,22 @@ SWAGGER_SETTINGS = {
         }
     }
 }
+
+CRON_CLASSES = [
+    "ontrack.cron.Backup",
+]
+
+
+if os.getenv("BACKUPDB"):
+    DBBACKUP_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    DBBACKUP_STORAGE_OPTIONS = {
+        "access_key": os.environ.get("AWS_ACCESS_KEY_ID"),
+        "secret_key": os.environ.get("AWS_SECRET_ACCESS_KEY"),
+        "bucket_name": os.environ.get("AWS_STORAGE_BUCKET_NAME"),
+        "default_acl": os.environ.get("AWS_DEFAULT_ACL", None),
+        "region_name": os.environ.get("AWS_S3_REGION_NAME"),
+        "location": "backups/",
+    }
 
 
 # Password validation
