@@ -433,13 +433,13 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
         operation_id="upload_actualizacion_file",
         operation_description="""
         Subir un archivo adjunto a la actualización.
-        
+
         El archivo no puede tener el mismo nombre que otro anteriormente subido.
         No se pueden subir archivos luego de 30 minutos de la última modificación de la actualización.
         En una actualización no se puede subir más de 3 archivos.
         El tamaño máximo del archivo es de 10MB.
         """,
-        request_body=serializers.CreateActualizacionAdjuntoSerializer,
+        request_body=serializers.CreateActualizacionAdjuntoSerializerDoc,
         responses={**OK_CREATED, **responses.STANDARD_ERRORS},
     )
     def create(self, request, actualizacion_pk=None):
@@ -527,9 +527,13 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
         try:
             with transaction.atomic():
                 for file in request.FILES.getlist("files"):
+
                     data = {
                         "actualizacion": actualizacion.id,
                         "file": file,
+                        "upload_name": file.name,
+                        "file_type": file.content_type,
+                        "file_size": int(file.size / 1024),
                     }
                     serializer = serializers.CreateActualizacionAdjuntoSerializer(
                         data=data,

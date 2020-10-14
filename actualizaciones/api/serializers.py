@@ -41,7 +41,22 @@ class GetActualizacionAdjuntoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ActualizacionAdjunto
-        fields = ["id", "fecha_creacion", "file"]
+        fields = [
+            "id",
+            "fecha_creacion",
+            "file",
+            "upload_name",
+            "file_type",
+            "file_size",
+        ]
+
+
+class CreateActualizacionAdjuntoSerializerDoc(serializers.ModelSerializer):
+    file = serializers.FileField(max_length=100000, allow_empty_file=False,)
+
+    class Meta:
+        model = ActualizacionAdjunto
+        fields = ["file"]
 
 
 class CreateActualizacionAdjuntoSerializer(serializers.ModelSerializer):
@@ -55,6 +70,9 @@ class CreateActualizacionAdjuntoSerializer(serializers.ModelSerializer):
         fields = [
             "actualizacion",
             "file",
+            "upload_name",
+            "file_type",
+            "file_size",
         ]
 
 
