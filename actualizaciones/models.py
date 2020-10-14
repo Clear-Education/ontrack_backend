@@ -64,6 +64,9 @@ class ActualizacionAdjunto(models.Model):
         upload_to=seguimiento_file_path,
         validators=[validate_file_size],
     )
+    upload_name = models.CharField(max_length=500, null=False, blank=True)
+    file_type = models.CharField(max_length=100, blank=True)
+    file_size = models.IntegerField(blank=True)
 
     def __str__(self):
         return self.actualizacion + " " + self.url
