@@ -33,7 +33,13 @@ class Actualizacion(models.Model):
         )
 
     class Meta:
-        permissions = [("list_actualizacion", "Puede listar actualizaciones")]
+        permissions = [
+            ("list_actualizacion", "Puede listar actualizaciones"),
+            (
+                "list_latest_actualizacion",
+                "Puede listar las ultimas actualizaciones",
+            ),
+        ]
 
 
 def seguimiento_file_path(instance, filename):

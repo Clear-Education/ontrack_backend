@@ -13,9 +13,10 @@ from seguimientos.models import (
     RolSeguimiento,
 )
 from rest_framework import status
+from actualizaciones.models import Actualizacion
 
 
-class ObjetivoTests(APITestCase):
+class ActualizacionTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
         """
@@ -37,6 +38,11 @@ class ObjetivoTests(APITestCase):
         )
         cls.group_admin.permissions.add(
             Permission.objects.get(name="Can view actualizacion")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(
+                name="Puede listar las ultimas actualizaciones"
+            )
         )
         cls.group_admin.save()
 
@@ -101,6 +107,19 @@ class ObjetivoTests(APITestCase):
         cls.seguimiento_1.materias.add(cls.materia_1)
         cls.seguimiento_1.save()
 
+        cls.seguimiento_2 = Seguimiento.objects.create(
+            nombre="seguimiento_2",
+            en_progreso=True,
+            institucion=cls.institucion_1,
+            fecha_inicio=datetime.date(2020, 1, 1),
+            fecha_cierre=datetime.date(2020, 12, 31),
+            descripcion=".",
+            anio_lectivo=cls.anio_lectivo_1,
+        )
+        cls.seguimiento_1.alumnos.add(cls.alumno_curso_1)
+        cls.seguimiento_1.materias.add(cls.materia_1)
+        cls.seguimiento_1.save()
+
         cls.rol_1 = RolSeguimiento.objects.create(
             nombre="Encargado de Seguimiento"
         )
@@ -114,9 +133,25 @@ class ObjetivoTests(APITestCase):
             fecha_desde=datetime.date(2020, 1, 1),
         )
 
-    #############
-    #   CREATE  #
-    #############
+        cls.integrante_2 = IntegranteSeguimiento.objects.create(
+            seguimiento=cls.seguimiento_2,
+            usuario=cls.user_admin,
+            rol=cls.rol_2,
+            fecha_desde=datetime.date(2020, 1, 1),
+        )
+
+        cls.actualizacion_1 = Actualizacion.objects.create(
+            cuerpo="Hola 1",
+            seguimiento=cls.seguimiento_1,
+            usuario=cls.user_admin,
+        )
+
+        cls.actualizacion_2 = Actualizacion.objects.create(
+            cuerpo="Hola 2",
+            seguimiento=cls.seguimiento_2,
+            usuario=cls.user_admin,
+        )
+
     def test_create_actualizacion(self):
         """
         Test de creacion correcta de Actualizacion
@@ -132,7 +167,7 @@ class ObjetivoTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         response = self.client.get(f"/api/actualizaciones/{seguimiento}/list/")
-        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["count"], 2)
 
         data = {
             "cuerpo": "cuerpo del comentario",
@@ -154,4 +189,14 @@ class ObjetivoTests(APITestCase):
         self.assertEqual(response4.status_code, status.HTTP_200_OK)
 
         response = self.client.get(f"/api/actualizaciones/{seguimiento}/list/")
-        self.assertEqual(response.data["count"], 0)
+        self.assertEqual(response.data["count"], 1)
+
+    def test_list_latests_actualizacion(self):
+        """
+        Test de listado correcto de últimas actualizaciones Actualizacion
+        """
+        self.client.force_authenticate(user=self.user_admin)
+
+        response = self.client.get(f"/api/actualizaciones/list_last/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 2)
