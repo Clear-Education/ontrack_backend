@@ -6,17 +6,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('actualizaciones', '0006_auto_20201014_0154'),
+        ("actualizaciones", "0006_auto_20201014_0154"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='actualizacion',
-            options={'permissions': [('list_actualizacion', 'Puede listar actualizaciones'), ('list_latest_actualizacion', 'Puede listar las ultimas actualizaciones')]},
-        ),
-        migrations.AlterField(
-            model_name='actualizacionadjunto',
-            name='file_size',
-            field=models.IntegerField(default=0),
+            name="actualizacion",
+            options={
+                "permissions": [
+                    ("list_actualizacion", "Puede listar actualizaciones"),
+                    (
+                        "list_latest_actualizacion",
+                        "Puede listar las ultimas actualizaciones",
+                    ),
+                ]
+            },
         ),
     ]
