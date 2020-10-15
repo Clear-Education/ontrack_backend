@@ -72,7 +72,7 @@ class ActualizacionAdjunto(models.Model):
     )
     upload_name = models.CharField(max_length=500, null=False, blank=True)
     file_type = models.CharField(max_length=100, blank=True)
-    file_size = models.IntegerField(blank=True, null=True)
+    file_size = models.IntegerField(default=0)
 
     def __str__(self):
         return self.actualizacion + " " + self.url
