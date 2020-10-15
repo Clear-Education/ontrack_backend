@@ -75,4 +75,4 @@ class ActualizacionAdjunto(models.Model):
     file_size = models.IntegerField(blank=True)
 
     def __str__(self):
-        return self.fecha_creacion
+        return str(self.pk)
