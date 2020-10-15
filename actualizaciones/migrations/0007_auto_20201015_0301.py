@@ -22,9 +22,4 @@ class Migration(migrations.Migration):
                 ]
             },
         ),
-        migrations.AlterField(
-            model_name="actualizacionadjunto",
-            name="file_size",
-            field=models.IntegerField(default=0),
-        ),
     ]
