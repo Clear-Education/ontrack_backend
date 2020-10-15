@@ -38,6 +38,8 @@ class UpdateActualizacionSerializer(serializers.ModelSerializer):
 
 class GetActualizacionAdjuntoSerializer(serializers.ModelSerializer):
     fecha_creacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
+    file_size = serializers.IntegerField(allow_null=True, required=False)
+    file_type = serializers.CharField(required=False)
 
     class Meta:
         model = ActualizacionAdjunto

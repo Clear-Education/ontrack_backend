@@ -75,4 +75,4 @@ class ActualizacionAdjunto(models.Model):
     file_size = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.actualizacion + " " + self.url
+        return self.url
