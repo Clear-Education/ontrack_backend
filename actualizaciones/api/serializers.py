@@ -3,6 +3,7 @@ from actualizaciones.models import Actualizacion, ActualizacionAdjunto
 from seguimientos.models import Seguimiento
 from seguimientos.api.serializers import ListSeguimientoSerializer
 from users.models import User
+from users.api.serializers import ListUserSerializer
 
 
 class CreateActualizacionSerializer(serializers.ModelSerializer):
@@ -110,6 +111,29 @@ class GetActualizacionSerializer(serializers.ModelSerializer):
     usuario = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), many=False
     )
+    fecha_creacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
+    fecha_modificacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
+    adjuntos = GetActualizacionAdjuntoSerializer(many=True)
+
+    class Meta:
+        model = Actualizacion
+        fields = [
+            "id",
+            "cuerpo",
+            "comentarios",
+            "seguimiento",
+            "usuario",
+            "fecha_creacion",
+            "fecha_modificacion",
+            "adjuntos",
+        ]
+
+
+class GetActualizacionUsuarioSerializer(serializers.ModelSerializer):
+    cuerpo = serializers.CharField()
+    comentarios = GetSimpleActualizacionSerializer(many=True)
+    seguimiento = ListSeguimientoSerializer(many=False)
+    usuario = ListUserSerializer(many=False)
     fecha_creacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
     fecha_modificacion = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S")
     adjuntos = GetActualizacionAdjuntoSerializer(many=True)
