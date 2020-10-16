@@ -204,7 +204,7 @@ class ActualizacionViewSet(ModelViewSet):
             )
             return self.get_paginated_response(serializer.data)
 
-        serializer = serializers.GetActualizacionSerializer(
+        serializer = serializers.GetActualizacionUsuarioSerializer(
             queryset, many=True
         )
         return Response(data=serializer.data, status=status.HTTP_200_OK)
