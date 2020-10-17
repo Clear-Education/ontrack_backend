@@ -199,7 +199,7 @@ class ActualizacionViewSet(ModelViewSet):
 
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = serializers.GetActualizacionSerializer(
+            serializer = serializers.GetActualizacionUsuarioSerializer(
                 page, many=True
             )
             return self.get_paginated_response(serializer.data)
