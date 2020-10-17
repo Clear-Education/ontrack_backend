@@ -1,7 +1,7 @@
 from asistencias.models import Asistencia
 from objetivos.models import Objetivo, AlumnoObjetivo
 from statistics import mean
-from datetime import datetime
+from django.utils import timezone
 
 
 def alumno_asistencia_redesign(alumno, datetime_requested, date_recalculate):
@@ -25,12 +25,14 @@ def should_recalculate(alumno, datetime_requested, objetivos):
         return False
 
     alumno_objetivo = AlumnoObjetivo.objects.filter(
-        objetivo__id__exact=objetivos[0].id, alumno_curso__alumno__id=alumno,
-    ).order_by("-fecha_creacion")
+        objetivo__id__exact=objetivos[0].id,
+        alumno_curso__alumno__id=alumno,
+        fecha_calculo__isnull=False,
+    ).order_by("-fecha_calculo")
 
     if (
         alumno_objetivo
-        and alumno_objetivo[0].fecha_creacion > datetime_requested
+        and alumno_objetivo[0].fecha_calculo > datetime_requested
     ):
         return False
     return True
@@ -42,7 +44,7 @@ def calculate_asistencia_redesign(objetivos, alumno, date_recalculate):
         objetivo__id__in=objetivos_ids,
         fecha_relacionada__gte=date_recalculate,
         alumno_curso__alumno__id=alumno,
-    ).order_by("-fecha_creacion").delete()
+    ).delete()
 
     anio_lectivo = objetivos[0].seguimiento.anio_lectivo
     alumno_curso = [
@@ -51,7 +53,7 @@ def calculate_asistencia_redesign(objetivos, alumno, date_recalculate):
         if alumno_curso.alumno.id == alumno
     ][0]
 
-    create_datetime = datetime.now()
+    create_datetime = timezone.now()
 
     asistencias = Asistencia.objects.filter(
         fecha__gte=anio_lectivo.fecha_desde,
@@ -79,7 +81,7 @@ def calculate_asistencia_redesign(objetivos, alumno, date_recalculate):
         for objetivo in objetivos:
             objetivos_to_save.append(
                 AlumnoObjetivo(
-                    fecha_creacion=create_datetime,
+                    fecha_calculo=create_datetime,
                     fecha_relacionada=fecha,
                     objetivo=objetivo,
                     alumno_curso=alumno_curso,

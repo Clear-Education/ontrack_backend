@@ -1,6 +1,7 @@
 from django.db import models
 from alumnos.models import AlumnoCurso
 from seguimientos.models import Seguimiento
+from datetime import datetime
 
 
 class TipoObjetivo(models.Model):
@@ -44,9 +45,16 @@ class Objetivo(models.Model):
         ]
 
 
+def default_fecha():
+    return datetime.now().date()
+
+
 class AlumnoObjetivo(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True, blank=True)
-    fecha_relacionada = models.DateField(null=True, blank=True)
+    fecha_calculo = models.DateTimeField(blank=True, null=True)
+    fecha_relacionada = models.DateField(
+        blank=True, null=False, default=default_fecha
+    )
     objetivo = models.ForeignKey(
         to=Objetivo, on_delete=models.CASCADE, blank=True
     )
