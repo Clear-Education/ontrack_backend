@@ -46,6 +46,7 @@ class Objetivo(models.Model):
 
 class AlumnoObjetivo(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True, blank=True)
+    fecha_relacionada = models.DateField(null=True, blank=True)
     objetivo = models.ForeignKey(
         to=Objetivo, on_delete=models.CASCADE, blank=True
     )
