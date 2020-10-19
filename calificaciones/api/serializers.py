@@ -129,12 +129,10 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
 
 class EditCalificacionSerializer(serializers.ModelSerializer):
     puntaje = serializers.FloatField(required=False, min_value=0, max_value=10)
-    fecha = serializers.DateField(required=False)
 
     class Meta:
         model = models.Calificacion
-        fields = ["puntaje", "fecha"]
-        extra_kwargs = {"fecha": {"input_formats": settings.DATE_INPUT_FORMAT}}
+        fields = ["puntaje"]
 
 
 class DeleteManyCalificacionSerializer(serializers.Serializer):

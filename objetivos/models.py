@@ -71,3 +71,4 @@ class AlumnoObjetivo(models.Model):
         permissions = [
             ("list_alumno_objetivo", "Puede listar alumno_objetivo"),
         ]
+        ordering = ["fecha_relacionada"]

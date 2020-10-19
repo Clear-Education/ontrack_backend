@@ -19,7 +19,7 @@ from seguimientos.models import Seguimiento
 from curricula.models import Materia
 from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
 import datetime
-from calificaciones.rq_funcions import alumno_calificacion
+from calificaciones.rq_funcions import alumno_calificacion_redesign
 
 
 class QueueCalificacionesTests(APITestCase):
@@ -185,8 +185,8 @@ class QueueCalificacionesTests(APITestCase):
             evaluacion=cls.evaluacion_1,
         )
         cls.calificacion_2 = Calificacion.objects.create(
-            fecha=datetime.date(2019, 3, 4),
-            puntaje=100,
+            fecha=datetime.date(2019, 3, 5),
+            puntaje=50,
             alumno=cls.alumno_1,
             evaluacion=cls.evaluacion_4,
         )
@@ -249,27 +249,49 @@ class QueueCalificacionesTests(APITestCase):
         Test de creacion correcta de AlumnoObjetivos
         """
 
-        alumno_calificacion(self.alumno_1.id, self.materia_1.id)
+        alumno_calificacion_redesign(
+            self.alumno_1.id, self.materia_1.id, datetime.date(2019, 3, 4)
+        )
 
         alumnos_objetivos = AlumnoObjetivo.objects.all()
         assert alumnos_objetivos[0].valor == 97
+        assert alumnos_objetivos[1].valor == 72
 
         self.calificacion_4 = Calificacion.objects.create(
-            fecha=datetime.date(2019, 3, 4),
+            fecha=datetime.date(2019, 3, 6),
             puntaje=50,
             alumno=self.alumno_1,
             evaluacion=self.evaluacion_2,
         )
 
-        alumno_calificacion(self.alumno_1.id, self.materia_2.id)
+        alumno_calificacion_redesign(
+            self.alumno_1.id, self.materia_2.id, datetime.date(2019, 3, 6)
+        )
         alumnos_objetivos = AlumnoObjetivo.objects.all()
-        assert alumnos_objetivos[1].valor == 79.5
+        assert alumnos_objetivos[0].valor == 97
+        assert alumnos_objetivos[1].valor == 72
+        assert alumnos_objetivos[2].valor == 54.5
 
-        Calificacion.objects.all().delete()
-        AlumnoObjetivo.objects.all().delete()
-        alumno_calificacion(self.alumno_1.id, self.materia_1.id)
+        calif = Calificacion.objects.get(
+            fecha__exact=datetime.date(2019, 3, 5), puntaje__exact=50,
+        )
+        calif.puntaje = 85
+        calif.save()
+
+        alumno_calificacion_redesign(
+            self.alumno_1.id, self.materia_2.id, calif.fecha
+        )
         alumnos_objetivos = AlumnoObjetivo.objects.all()
-        assert alumnos_objetivos[0].valor == -1
+        assert alumnos_objetivos[0].valor == 97
+        assert alumnos_objetivos[1].valor == 89.5
+        assert alumnos_objetivos[2].valor == 72
+
+        # Calificacion.objects.all().delete()
+        # alumno_calificacion_redesign(
+        #     self.alumno_1.id, self.materia_1.id, datetime.date(2019, 3, 4)
+        # )
+        # alumnos_objetivos = AlumnoObjetivo.objects.all()
+        # assert alumnos_objetivos[0].valor == -1
 
 
 @patch("calificaciones.api.views.django_rq")

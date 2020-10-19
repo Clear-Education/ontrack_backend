@@ -16,7 +16,7 @@ import re
 import datetime
 import django_rq
 from asistencias.rq_funcions import alumno_asistencia_redesign
-from calificaciones.rq_funcions import alumno_calificacion
+from calificaciones.rq_funcions import alumno_calificacion_redesign
 
 DATE_REGEX = r"(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[13-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})"
 
@@ -355,11 +355,10 @@ class ObjetivoViewSet(ModelViewSet):
                 for alumno_curso in new_objetivo.seguimiento.alumnos.all():
                     materia = new_objetivo.seguimiento.materias.all()[0]
                     django_rq.enqueue(
-                        alumno_calificacion,
+                        alumno_calificacion_redesign,
                         alumno_curso.alumno.id,
                         materia.id,
-                        # datetime.datetime.now(),
-                        # new_objetivo.seguimiento.anio_lectivo.fecha_desde,
+                        new_objetivo.seguimiento.anio_lectivo.fecha_desde,
                     )
 
             return Response(
@@ -500,11 +499,10 @@ class ObjetivoViewSet(ModelViewSet):
                         for alumno_curso in new_ob.seguimiento.alumnos.all():
                             materia = new_ob.seguimiento.materias.all()[0]
                             django_rq.enqueue(
-                                alumno_calificacion,
+                                alumno_calificacion_redesign,
                                 alumno_curso.alumno.id,
                                 materia.id,
-                                # datetime.datetime.now(),
-                                # new_objetivo.seguimiento.anio_lectivo.fecha_desde,
+                                new_ob.seguimiento.anio_lectivo.fecha_desde,
                             )
 
                 return_serializer = serializers.ReturnId(
