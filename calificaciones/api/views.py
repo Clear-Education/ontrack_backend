@@ -128,9 +128,7 @@ class CalificacionViewSet(ModelViewSet):
                     alumno_calificacion_redesign,
                     alumno,
                     serializer.validated_data["evaluacion"].materia.id,
-                    [cal["fecha"] for cal in serializer.validated_data].sort()[
-                        0
-                    ],
+                    serializer.validated_data["fecha"],
                 )
 
         else:
@@ -218,7 +216,7 @@ class CalificacionViewSet(ModelViewSet):
                 ].anio_lectivo_id,
             )
             if calificaciones:
-                min_fecha = [cal.fecha for cal in calificaciones].sort()[0]
+                min_fecha = sorted([cal.fecha for cal in calificaciones])[0]
             alumnos_id = set(c.alumno.id for c in calificaciones)
             materia_id = serializer.validated_data["evaluacion"].materia.id
             calificaciones.delete()

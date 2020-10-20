@@ -568,15 +568,13 @@ class MateriaEvaluacionTest(APITestCase):
         )
         calificacion.save()
         url = "/api/calificaciones/{}/".format(calificacion.pk)
-        data = {"puntaje": 10, "fecha": "2020-10-12"}
+        data = {"puntaje": 10}
 
         response = self.client.patch(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Calificacion.objects.count(), 1)
         c = Calificacion.objects.first()
         self.assertEqual(c.puntaje, 10)
-        fecha = c.fecha.strftime("%Y-%m-%d")
-        self.assertEqual(fecha, "2020-10-12")
 
     def test_edit_invalid_puntaje_single_calificaciones(self, mock):
         """
@@ -599,26 +597,6 @@ class MateriaEvaluacionTest(APITestCase):
         fecha = c.fecha.strftime("%Y-%m-%d")
         self.assertEqual(fecha, "2020-12-12")
 
-    def test_edit_invalid_fecha_single_calificaciones(self, mock):
-        """
-        Test de edición de una calificacion, formato de fecha
-        """
-        calificacion = Calificacion.objects.create(
-            alumno=self.alumno1,
-            evaluacion=self.evaluacion1,
-            fecha="2020-12-12",
-            puntaje=9,
-        )
-        calificacion.save()
-        url = "/api/calificaciones/{}/".format(calificacion.pk)
-        data = {"fecha": "2020-14-12"}
-
-        response = self.client.patch(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        c = Calificacion.objects.first()
-        fecha = c.fecha.strftime("%Y-%m-%d")
-        self.assertEqual(fecha, "2020-12-12")
-
     def test_edit_alumno_no_effect_single_calificaciones(self, mock):
         """
         Test de edición de una calificacion, no debe editarse la FK alumno
@@ -631,14 +609,12 @@ class MateriaEvaluacionTest(APITestCase):
         )
         calificacion.save()
         url = "/api/calificaciones/{}/".format(calificacion.pk)
-        data = {"fecha": "2020-12-13", "alumno": self.alumno2.pk}
+        data = {"alumno": self.alumno2.pk}
 
         response = self.client.patch(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         c = Calificacion.objects.first()
-        fecha = c.fecha.strftime("%Y-%m-%d")
 
-        self.assertEqual(fecha, "2020-12-13")
         self.assertEqual(c.alumno_id, self.alumno1.pk)
 
     def test_edit_evaluacion_no_effect_single_calificaciones(self, mock):
@@ -653,13 +629,12 @@ class MateriaEvaluacionTest(APITestCase):
         )
         calificacion.save()
         url = "/api/calificaciones/{}/".format(calificacion.pk)
-        data = {"fecha": "2020-12-13", "evaluacion": self.evaluacion2.pk}
+        data = {"evaluacion": self.evaluacion2.pk}
 
         response = self.client.patch(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         c = Calificacion.objects.first()
-        fecha = c.fecha.strftime("%Y-%m-%d")
-        self.assertEqual(fecha, "2020-12-13")
+
         self.assertEqual(c.evaluacion_id, self.evaluacion1.pk)
 
     def test_delete_single_calificaciones(self, mock):
