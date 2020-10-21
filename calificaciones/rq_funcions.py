@@ -126,6 +126,7 @@ def calculate_for_date(
 def calculate_promedio_one_subject(calificaciones_subject):
     promedio = 0
     ponderacion = 0
+
     for calificacion in calificaciones_subject:
         ponderacion += calificacion.evaluacion.ponderacion
         promedio += calificacion.evaluacion.ponderacion * calificacion.puntaje
