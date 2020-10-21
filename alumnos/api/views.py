@@ -19,6 +19,7 @@ from itertools import chain
 from django.core.exceptions import ValidationError
 import datetime
 from seguimientos.models import Seguimiento, SolicitudSeguimiento
+from curricula.models import Evaluacion
 
 
 class AlumnoViewSet(ModelViewSet):
@@ -406,6 +407,109 @@ class AlumnoCursoViewSet(ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = serializers.ViewAlumnoCursoSerializer(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_id="list_alumo_curso_evaluacion",
+        operation_description="""
+        """,
+        manual_parameters=[anio_lectivo_parameter, curso_parameter],
+        responses={**OK_LIST, **responses.STANDARD_ERRORS},
+    )
+    def list_evaluaciones(self, request):
+        queryset = AlumnoCurso.objects.filter(
+            alumno__institucion__exact=request.user.institucion
+        )
+        curso = request.query_params.get("curso", None)
+        anio_lectivo = request.query_params.get("anio_lectivo", None)
+        evaluacion = request.query_params.get("evaluacion", None)
+
+        if not curso:
+            return Response(
+                data={"detail": "Es necesario ingresar un curso"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if curso.isnumeric():
+            curso = int(curso)
+        else:
+            return Response(
+                data={"curso": "El valor no es numérico"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        curso_retrieved = get_object_or_404(Curso, pk=curso)
+
+        if (
+            curso_retrieved.anio.carrera.institucion
+            != request.user.institucion
+        ):
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        queryset = queryset.filter(curso__pk__exact=curso)
+
+        if not anio_lectivo:
+            return Response(
+                data={"detail": "Es necesario ingresar un año lectivo"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if anio_lectivo.isnumeric():
+            anio_lectivo = int(anio_lectivo)
+        else:
+            return Response(
+                data={"anio_lectivo": "El valor no es numérico"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        anio_lectivo_retrieved = get_object_or_404(
+            AnioLectivo, pk=anio_lectivo
+        )
+
+        if anio_lectivo_retrieved.institucion != request.user.institucion:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        queryset = queryset.filter(anio_lectivo__pk__exact=anio_lectivo)
+
+        if not evaluacion:
+            return Response(
+                data={"detail": "Es necesario ingresar una evaluación"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if evaluacion.isnumeric():
+            evaluacion = int(evaluacion)
+        else:
+            return Response(
+                data={"evaluacion": "El valor no es numérico"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        evaluacion_retrieved = get_object_or_404(Evaluacion, pk=evaluacion)
+
+        if (
+            evaluacion_retrieved.anio_lectivo.institucion
+            != request.user.institucion
+        ):
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
+                page, many=True
+            )
+            if serializer.is_valid():
+                serializer.puntaje_field(evaluacion)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
+            queryset, many=True
+        )
+        if serializer.is_valid():
+            serializer.puntaje_field(evaluacion)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(

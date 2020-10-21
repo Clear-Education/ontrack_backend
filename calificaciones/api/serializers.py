@@ -6,6 +6,8 @@ from alumnos.models import Alumno, AlumnoCurso
 from ontrack import settings
 from django.shortcuts import get_object_or_404
 from alumnos.api.serializers import ViewAlumnoSerializer
+import django_rq
+from calificaciones.rq_funcions import alumno_calificacion_redesign
 
 
 class ViewCalficacionSerializer(serializers.ModelSerializer):
@@ -49,8 +51,6 @@ class CalificacionSerializer(serializers.Serializer):
 
 
 class CreateCalificacionListSerializer(serializers.ModelSerializer):
-
-    # id = serializers.IntegerField(required=False)
     fecha = serializers.DateField(required=True)
     evaluacion = serializers.PrimaryKeyRelatedField(
         queryset=Evaluacion.objects.all(), required=True
@@ -65,11 +65,21 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         c = [item for item in validated_data["calificaciones"]]
         for item in c:
-            item["evaluacion"] = validated_data["evaluacion"]
-            item["fecha"] = validated_data["fecha"]
-
-        calificaciones = [models.Calificacion(**item) for item in c]
-        return models.Calificacion.objects.bulk_create(calificaciones)
+            calif, created = models.Calificacion.objects.update_or_create(
+                evaluacion=validated_data["evaluacion"],
+                # Verificar la queue ahora que puedo editar fecha
+                alumno=item["alumno"],
+                defaults={
+                    "fecha": validated_data["fecha"],
+                    "puntaje": item["puntaje"],
+                },
+            )
+            django_rq.enqueue(
+                alumno_calificacion_redesign,
+                item["alumno"].id,
+                validated_data["evaluacion"].materia.id,
+                validated_data["fecha"] if created else calif.fecha,
+            )
 
     def validate(self, data):
         """
@@ -88,8 +98,6 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
         if not all(map(lambda a: a == institucion, alumnos_institucion)):
             raise serializers.ValidationError("Algunos alumnos no existen")
 
-        if not all(map(lambda a: a == institucion, alumnos_institucion)):
-            raise serializers.ValidationError("Algunos alumnos no existen")
         anio_lectivo = data["evaluacion"].anio_lectivo
         alumnos = Alumno.objects.filter(id__in=alumnos)
         cursos = []
@@ -101,15 +109,6 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
             if not res:
                 raise serializers.ValidationError(
                     "El alumno no tiene un curso en ese año lectivo"
-                )
-            count = Calificacion.objects.filter(
-                alumno_id=alumno.pk, evaluacion_id=data["evaluacion"].pk
-            ).count()
-            if count != 0:
-                raise serializers.ValidationError(
-                    "Ya existen calificaciones para el alumno {}".format(
-                        alumno.pk
-                    )
                 )
             # Checkeo que el año de la evaluacion sea el año del curso
             if res.curso.anio.pk != data["evaluacion"].materia.anio.pk:
