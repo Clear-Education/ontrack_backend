@@ -316,14 +316,7 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        if "fecha_cierre" in data:
-            if (
-                data["fecha_cierre"] < datetime.date.today()
-                or data["fecha_cierre"] < data["anio_lectivo"].fecha_desde
-            ):
-                raise serializers.ValidationError(
-                    detail="Fecha de cierre inválida"
-                )
+
         return data
 
     def update(self, seguimiento):
@@ -333,9 +326,17 @@ class EditSeguimientoSerializer(serializers.ModelSerializer):
         seguimiento.nombre = self.validated_data.get(
             "nombre", seguimiento.nombre
         )
-        seguimiento.fecha_cierre = self.validated_data.get(
+        fecha_cierre = self.validated_data.get(
             "fecha_cierre", seguimiento.fecha_cierre
         )
+        if (
+            fecha_cierre < datetime.date.today()
+            or fecha_cierre < seguimiento.anio_lectivo.fecha_desde
+        ):
+            raise serializers.ValidationError(
+                detail="Fecha de cierre inválida"
+            )
+
         seguimiento.save()
         return seguimiento
 
