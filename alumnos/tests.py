@@ -1214,6 +1214,23 @@ class AlumnoCursoTests(APITestCase):
         response = self.client.get(f"/api/alumnos/curso/{self.curso_1.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_list_evaluaciones_alumno_curso_admin(self):
+        """
+        Test de listado de evaluaciones correcto de AlumnoCurso por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+
+        curso_1 = self.curso_1.id
+        anio_lectivo_1 = self.anio_lectivo_1.id
+        evaluacion = self.evaluacion_1.id
+
+        response = self.client.get(
+            f"/api/alumnos/curso/list/?curso={curso_1}&anio_lectivo={anio_lectivo_1}?evaluacion={evaluacion}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # self.assertEqual(response.data["count"], 2)
+        print(response.data)
+
     def test_list_alumno_curso_admin(self):
         """
         Test de listado correcto de AlumnoCurso por admin

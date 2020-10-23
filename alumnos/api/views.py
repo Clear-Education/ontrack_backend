@@ -416,6 +416,7 @@ class AlumnoCursoViewSet(ModelViewSet):
         manual_parameters=[anio_lectivo_parameter, curso_parameter],
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
+    @action(detail=False, methods=["GET"], name="list_evaluaciones")
     def list_evaluaciones(self, request):
         queryset = AlumnoCurso.objects.filter(
             alumno__institucion__exact=request.user.institucion
@@ -429,6 +430,19 @@ class AlumnoCursoViewSet(ModelViewSet):
                 data={"detail": "Es necesario ingresar un curso"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        if not anio_lectivo:
+            return Response(
+                data={"detail": "Es necesario ingresar un año lectivo"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not evaluacion:
+            return Response(
+                data={"detail": "Es necesario ingresar una evaluación"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if curso.isnumeric():
             curso = int(curso)
         else:
@@ -448,12 +462,6 @@ class AlumnoCursoViewSet(ModelViewSet):
             )
         queryset = queryset.filter(curso__pk__exact=curso)
 
-        if not anio_lectivo:
-            return Response(
-                data={"detail": "Es necesario ingresar un año lectivo"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         if anio_lectivo.isnumeric():
             anio_lectivo = int(anio_lectivo)
         else:
@@ -471,12 +479,6 @@ class AlumnoCursoViewSet(ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
         queryset = queryset.filter(anio_lectivo__pk__exact=anio_lectivo)
-
-        if not evaluacion:
-            return Response(
-                data={"detail": "Es necesario ingresar una evaluación"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         if evaluacion.isnumeric():
             evaluacion = int(evaluacion)
@@ -786,6 +788,7 @@ multiple_alumno_curso = AlumnoCursoViewSet.as_view(
     {"post": "create_multiple", "delete": "delete_multiple"}
 )
 list_alumno_curso = AlumnoCursoViewSet.as_view({"get": "list"})
+list_evaluaciones = AlumnoCursoViewSet.as_view({"get": "list_evaluaciones"})
 mix_alumno_curso = AlumnoCursoViewSet.as_view(
     {"get": "get", "delete": "destroy"}
 )
