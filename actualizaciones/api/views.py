@@ -14,7 +14,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from ontrack import responses
 from actualizaciones.models import Actualizacion, ActualizacionAdjunto
-from datetime import datetime, timedelta
+import datetime
 from django.utils import timezone
 from ontrack import settings
 from rest_framework.parsers import (
@@ -258,7 +258,7 @@ class ActualizacionViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if actualizacion.fecha_modificacion < timezone.now() - timedelta(
+        if actualizacion.fecha_modificacion < timezone.now() - datetime.timedelta(
             minutes=30
         ):
             return Response(
@@ -331,7 +331,7 @@ class ActualizacionViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if actualizacion.fecha_modificacion < timezone.now() - timedelta(
+        if actualizacion.fecha_modificacion < timezone.now() - datetime.timedelta(
             minutes=30
         ):
             return Response(
@@ -469,7 +469,7 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if actualizacion.fecha_modificacion < timezone.now() - timedelta(
+        if actualizacion.fecha_modificacion < timezone.now() - datetime.timedelta(
             minutes=30
         ):
             return Response(
@@ -594,7 +594,9 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if file.fecha_creacion < timezone.now() - timedelta(minutes=30):
+        if file.fecha_creacion < timezone.now() - datetime.timedelta(
+            minutes=30
+        ):
             return Response(
                 data={
                     "detail": "No se puede borrar archivos de una actualización luego de que pasaron 30 minutos desde su carga"

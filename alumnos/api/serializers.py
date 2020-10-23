@@ -176,17 +176,12 @@ class ViewAlumnoCursoEvaluacionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AlumnoCurso
-        fields = [
-            "id",
-            "alumno",
-            "curso",
-            "anio_lectivo",
-        ]
+        fields = ["id", "alumno", "curso", "anio_lectivo", "puntaje_field"]
 
-    def puntaje_field(self, evaluacion):
+    def get_puntaje_field(self, alumno_curso):
         calificacion = Calificacion.objects.filter(
-            evaluacion__id__exact=evaluacion,
-            alumno__exact=self.validated_data["alumno"],
+            evaluacion__id__exact=self.context["evaluacion"],
+            alumno__exact=alumno_curso.alumno,
         )
         if calificacion:
             return calificacion[0].puntaje

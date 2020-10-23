@@ -416,7 +416,6 @@ class AlumnoCursoViewSet(ModelViewSet):
         manual_parameters=[anio_lectivo_parameter, curso_parameter],
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
-    @action(detail=False, methods=["GET"], name="list_evaluaciones")
     def list_evaluaciones(self, request):
         queryset = AlumnoCurso.objects.filter(
             alumno__institucion__exact=request.user.institucion
@@ -501,18 +500,16 @@ class AlumnoCursoViewSet(ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
-                page, many=True
+                page, many=True, context={'evaluacion': evaluacion}
             )
-            if serializer.is_valid():
-                serializer.puntaje_field(evaluacion)
             return self.get_paginated_response(serializer.data)
 
-        serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
-            queryset, many=True
-        )
-        if serializer.is_valid():
-            serializer.puntaje_field(evaluacion)
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
+        # serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
+        #     queryset, many=True
+        # )
+        # if serializer.is_valid():
+        #     serializer.puntaje_field(evaluacion)
+        # return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_id="delete_alumno_curso",
