@@ -97,6 +97,10 @@ class AlumnoCurso(models.Model):
         permissions = [
             ("list_alumnocurso", "Puede listar alumnocurso"),
             (
+                "list_evaluaciones_alumnocurso",
+                "Puede listar alumnocurso con evaluaciones",
+            ),
+            (
                 "create_multiple_alumnocurso",
                 "Puede crear multiples alumnocurso",
             ),

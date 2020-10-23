@@ -7,6 +7,7 @@ from alumnos.models import Alumno, AlumnoCurso
 from curricula.models import Curso, AnioLectivo
 from ontrack import settings
 import datetime
+from calificaciones.models import Calificacion
 
 
 class CreateAlumnoSerializer(serializers.ModelSerializer):
@@ -165,6 +166,26 @@ class ViewAlumnoCursoSerializer(serializers.ModelSerializer):
             "curso",
             "anio_lectivo",
         ]
+
+
+class ViewAlumnoCursoEvaluacionSerializer(serializers.ModelSerializer):
+    alumno = ViewAlumnoSerializer(many=False)
+    curso = CursoSerializerWithCarrera(many=False)
+    anio_lectivo = ViewAnioLectivoSerializer(many=False)
+    puntaje_field = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AlumnoCurso
+        fields = ["id", "alumno", "curso", "anio_lectivo", "puntaje_field"]
+
+    def get_puntaje_field(self, alumno_curso):
+        calificacion = Calificacion.objects.filter(
+            evaluacion__id__exact=self.context["evaluacion"],
+            alumno__exact=alumno_curso.alumno,
+        )
+        if calificacion:
+            return calificacion[0].puntaje
+        return 0
 
 
 class PartialViewAlumnoCursoSerializer(serializers.ModelSerializer):
