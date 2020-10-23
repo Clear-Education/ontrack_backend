@@ -58,6 +58,7 @@ def calculate_promedio_for_objetivo(
     objetivo, alumno_curso, date_recalculate, calificaciones
 ):
     materias = set([m.id for m in objetivo.seguimiento.materias.all()])
+
     fechas = sorted(
         list(
             {
@@ -68,7 +69,6 @@ def calculate_promedio_for_objetivo(
             }
         )
     )
-
     promedios = []
 
     for index in range(len(fechas)):

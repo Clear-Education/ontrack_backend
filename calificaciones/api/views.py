@@ -118,18 +118,7 @@ class CalificacionViewSet(ModelViewSet):
         data = {}
 
         if serializer.is_valid(raise_exception=True):
-            alumnos_id = set(
-                c["alumno"].id
-                for c in serializer.validated_data["calificaciones"]
-            )
             serializer.create(serializer.validated_data)
-            for alumno in alumnos_id:
-                django_rq.enqueue(
-                    alumno_calificacion_redesign,
-                    alumno,
-                    serializer.validated_data["evaluacion"].materia.id,
-                    serializer.validated_data["fecha"],
-                )
 
         else:
             data = serializer.errors
