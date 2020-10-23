@@ -282,6 +282,9 @@ class AlumnoCursoViewSet(ModelViewSet):
     OK_EMPTY = {200: ""}
     OK_VIEW = {200: serializers.ViewAlumnoCursoSerializer()}
     OK_LIST = {200: serializers.ViewAlumnoCursoSerializer(many=True)}
+    OK_LIST_2 = {
+        200: serializers.ViewAlumnoCursoEvaluacionSerializer(many=True)
+    }
     OK_CREATED = {201: ""}
 
     anio_lectivo_parameter = openapi.Parameter(
@@ -302,6 +305,13 @@ class AlumnoCursoViewSet(ModelViewSet):
         "alumno",
         openapi.IN_QUERY,
         description="Alumno por el que queremos filtrar la búsqueda",
+        type=openapi.TYPE_INTEGER,
+    )
+
+    evaluacion_parameter = openapi.Parameter(
+        "evaluacion",
+        openapi.IN_QUERY,
+        description="Evaluacion de la cual se quiere traer el puntaje",
         type=openapi.TYPE_INTEGER,
     )
 
@@ -413,8 +423,12 @@ class AlumnoCursoViewSet(ModelViewSet):
         operation_id="list_alumo_curso_evaluacion",
         operation_description="""
         """,
-        manual_parameters=[anio_lectivo_parameter, curso_parameter],
-        responses={**OK_LIST, **responses.STANDARD_ERRORS},
+        manual_parameters=[
+            anio_lectivo_parameter,
+            curso_parameter,
+            evaluacion_parameter,
+        ],
+        responses={**OK_LIST_2, **responses.STANDARD_ERRORS},
     )
     def list_evaluaciones(self, request):
         queryset = AlumnoCurso.objects.filter(
@@ -500,16 +514,14 @@ class AlumnoCursoViewSet(ModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
-                page, many=True, context={'evaluacion': evaluacion}
+                page, many=True, context={"evaluacion": evaluacion}
             )
             return self.get_paginated_response(serializer.data)
 
-        # serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
-        #     queryset, many=True
-        # )
-        # if serializer.is_valid():
-        #     serializer.puntaje_field(evaluacion)
-        # return Response(data=serializer.data, status=status.HTTP_200_OK)
+        serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
+            queryset, many=True, context={"evaluacion": evaluacion}
+        )
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_id="delete_alumno_curso",
