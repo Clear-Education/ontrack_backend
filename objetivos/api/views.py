@@ -17,6 +17,7 @@ import datetime
 import django_rq
 from asistencias.rq_funcions import alumno_asistencia_redesign
 from calificaciones.rq_funcions import alumno_calificacion_redesign
+from django.utils import timezone
 
 DATE_REGEX = r"(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[13-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})"
 
@@ -340,7 +341,7 @@ class ObjetivoViewSet(ModelViewSet):
                     django_rq.enqueue(
                         alumno_asistencia_redesign,
                         alumno_curso.alumno.id,
-                        datetime.datetime.now(),
+                        timezone.now(),
                         new_objetivo.seguimiento.anio_lectivo.fecha_desde,
                     )
             elif (
@@ -484,7 +485,7 @@ class ObjetivoViewSet(ModelViewSet):
                             django_rq.enqueue(
                                 alumno_asistencia_redesign,
                                 alumno_curso.alumno.id,
-                                datetime.datetime.now(),
+                                timezone.now(),
                                 new_ob.seguimiento.anio_lectivo.fecha_desde,
                             )
                     elif (

@@ -15,6 +15,7 @@ from seguimientos.models import Seguimiento
 from curricula.models import Materia
 from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
 import datetime
+from django.utils import timezone
 from asistencias.rq_funcions import alumno_asistencia_redesign
 
 
@@ -220,7 +221,7 @@ class QueueAsistenciaTests(APITestCase):
         Test de creacion correcta de AlumnoObjetivos
         """
         alumno_asistencia_redesign(
-            self.alumno_1.id, datetime.datetime.now(), self.asistencia_1.fecha
+            self.alumno_1.id, timezone.now(), self.asistencia_1.fecha
         )
         alumnos_objetivos = AlumnoObjetivo.objects.all()
         assert alumnos_objetivos[0].valor == 1
