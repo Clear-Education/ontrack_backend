@@ -69,7 +69,6 @@ def calculate_promedio_for_objetivo(
             }
         )
     )
-
     promedios = []
 
     for index in range(len(fechas)):
