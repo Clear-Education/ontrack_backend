@@ -22,6 +22,7 @@ import datetime
 from django.db.models import Avg
 import django_rq
 from asistencias.rq_funcions import alumno_asistencia_redesign
+from django.utils import timezone
 
 DATE_REGEX = r"(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[13-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})"
 
@@ -280,7 +281,7 @@ class AsistenciaViewSet(ModelViewSet):
             django_rq.enqueue(
                 alumno_asistencia_redesign,
                 asistencia_retrieved.alumno_curso.alumno.id,
-                datetime.datetime.now(),
+                timezone.now(),
                 asistencia_retrieved.fecha,
             )
             return Response(status=status.HTTP_200_OK)
@@ -307,7 +308,7 @@ class AsistenciaViewSet(ModelViewSet):
         django_rq.enqueue(
             alumno_asistencia_redesign,
             alumno_id,
-            datetime.datetime.now(),
+            timezone.now(),
             retrieved_asistencia_fecha,
         )
         return Response(status=status.HTTP_200_OK)
@@ -373,7 +374,7 @@ class AsistenciaViewSet(ModelViewSet):
             django_rq.enqueue(
                 alumno_asistencia_redesign,
                 serializer.validated_data["alumno_curso"].alumno.id,
-                datetime.datetime.now(),
+                timezone.now(),
                 serializer.validated_data["fecha"],
             )
             return Response(status=status.HTTP_201_CREATED)
@@ -511,7 +512,7 @@ class AsistenciaViewSet(ModelViewSet):
                 django_rq.enqueue(
                     alumno_asistencia_redesign,
                     alum,
-                    datetime.datetime.now(),
+                    timezone.now(),
                     max(a["fecha"] for a in serializer.validated_data),
                 )
             serializer.save()
@@ -660,10 +661,7 @@ class AsistenciaViewSet(ModelViewSet):
 
         for alum in alumnos_id:
             django_rq.enqueue(
-                alumno_asistencia_redesign,
-                alum,
-                datetime.datetime.now(),
-                fecha_desde,
+                alumno_asistencia_redesign, alum, timezone.now(), fecha_desde,
             )
         return Response(status=status.HTTP_200_OK)
 
