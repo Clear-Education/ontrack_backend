@@ -529,7 +529,9 @@ class SolicitudSeguimientoViewSet(ModelViewSet):
             creador__institucion_id=request.user.institucion_id,
         )
         if request.user.groups.name == "Docente":
-            queryset = queryset.filter(creador=request.user,)
+            queryset = queryset.filter(creador=request.user,).order_by(
+                "-fecha_creacion"
+            )
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
