@@ -109,9 +109,25 @@ DEFAULT_HEROKU = {
     "DEFAULT_TIMEOUT": 500,
 }
 
-RQ_QUEUES = {
-    "default": DEFAULT_HEROKU if os.getenv("HEROKU") else DEFAULT_LOCAL,
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": DEFAULT_HEROKU["URL"],
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "MAX_ENTRIES": 5000,
+        },
+    }
 }
+
+if os.getenv("HEROKU"):
+    RQ_QUEUES = {
+        "default": {"USE_REDIS_CACHE": "default",},
+    }
+else:
+    RQ_QUEUES = {
+        "default": DEFAULT_LOCAL,
+    }
 
 ROOT_URLCONF = "ontrack.urls"
 
