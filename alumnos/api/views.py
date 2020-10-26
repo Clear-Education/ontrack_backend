@@ -134,25 +134,6 @@ class AlumnoViewSet(ModelViewSet):
         serializer = serializers.UpdateAlumnoSerializer(data=request.data)
 
         if serializer.is_valid():
-            if serializer.validated_data.get("dni"):
-                if retrieved_alumno.dni != serializer.validated_data.get(
-                    "dni"
-                ):
-                    try:
-                        Alumno.objects.get(
-                            dni=serializer.validated_data.get("dni"),
-                            institucion__exact=institucion,
-                        ).exclude(pk=pk)
-                        return Response(
-                            data={
-                                "detail": "Alumno con el mismo dni existente"
-                            },
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-                    except Alumno.DoesNotExist:
-                        pass
-                    except:
-                        return Response(status=status.HTTP_400_BAD_REQUEST)
             try:
                 serializer.update(retrieved_alumno)
             except ValidationError as e:
