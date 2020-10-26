@@ -310,7 +310,7 @@ class AlumnoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         id_alumno = Alumno.objects.get(dni=1).id
         data = {
-            "dni": 5,
+            "dni": 2,
             "nombre": "Danilor",
             "apellido": "Reitano",
         }
