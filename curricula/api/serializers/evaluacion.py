@@ -3,12 +3,14 @@ from curricula import models
 from calificaciones.models import Calificacion
 from functools import reduce
 from rest_framework.exceptions import ValidationError
+from ontrack import settings
 
 
 class ViewEvaluacionSerializer(serializers.ModelSerializer):
     anio_lectivo = serializers.PrimaryKeyRelatedField(
         queryset=models.AnioLectivo.objects.all()
     )
+    fecha = serializers.DateField(format="%d-%m-%Y", required=False)
 
     class Meta:
         model = models.Evaluacion
@@ -18,6 +20,7 @@ class ViewEvaluacionSerializer(serializers.ModelSerializer):
             "materia",
             "anio_lectivo",
             "fecha_creacion",
+            "fecha",
             "ponderacion",
         ]
 
@@ -77,7 +80,6 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
         """
         Checkear que las FK sean iguales
         """
-
         anios_lectivos = [e["anio_lectivo"].pk for e in data]
         materias = [e["materia"].pk for e in data]
         if len(set(anios_lectivos)) != 1 or len(set(materias)) != 1:
@@ -109,11 +111,21 @@ class CreateEvaluacionSerializer(serializers.ModelSerializer):
         required=True,
         pk_field=serializers.IntegerField(),
     )
+    fecha = serializers.DateField(
+        required=False, input_formats=settings.DATE_INPUT_FORMAT,
+    )
     ponderacion = serializers.FloatField(required=True)
 
     class Meta:
         model = models.Evaluacion
-        fields = ["id", "anio_lectivo", "nombre", "materia", "ponderacion"]
+        fields = [
+            "id",
+            "anio_lectivo",
+            "nombre",
+            "materia",
+            "ponderacion",
+            "fecha",
+        ]
         list_serializer_class = CreateEvaluacionListSerializer
 
 

@@ -298,6 +298,7 @@ class MateriaEvaluacionTest(APITestCase):
         response = self.client.put(
             "/api/evaluacion/", data=data, format="json"
         )
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(
