@@ -4,13 +4,17 @@ from calificaciones.models import Calificacion
 from functools import reduce
 from rest_framework.exceptions import ValidationError
 from ontrack import settings
+import django_rq
+from calificaciones.rq_funcions import alumno_calificacion_redesign
 
 
 class ViewEvaluacionSerializer(serializers.ModelSerializer):
     anio_lectivo = serializers.PrimaryKeyRelatedField(
         queryset=models.AnioLectivo.objects.all()
     )
-    fecha = serializers.DateField(format="%d-%m-%Y", required=False)
+    fecha = serializers.DateField(
+        format=settings.DATE_INPUT_FORMAT[0], required=False
+    )
 
     class Meta:
         model = models.Evaluacion
@@ -67,6 +71,20 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
             e = eval_mapping.get(eval_id, None)
             if e is not None:
                 ret.append(self.child.update(e, data))
+                calificaciones = Calificacion.objects.filter(
+                    evaluacion_id=e.id
+                )
+                materia = e.materia.id
+                if calificaciones:
+                    alumnos = {c.alumno.id for c in calificaciones}
+                    min_fecha = min({c.fecha for c in calificaciones})
+                    for alumno in alumnos:
+                        django_rq.enqueue(
+                            alumno_calificacion_redesign,
+                            alumno,
+                            materia,
+                            min_fecha,
+                        )
         for data in data_mapping[0]:
             ret.append(self.child.create(data))
 
