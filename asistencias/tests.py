@@ -15,7 +15,8 @@ from seguimientos.models import Seguimiento
 from curricula.models import Materia
 from objetivos.models import Objetivo, TipoObjetivo, AlumnoObjetivo
 import datetime
-from asistencias.rq_funcions import alumno_asistencia
+from django.utils import timezone
+from asistencias.rq_funcions import alumno_asistencia_redesign
 
 
 class QueueAsistenciaTests(APITestCase):
@@ -140,17 +141,23 @@ class QueueAsistenciaTests(APITestCase):
         cls.alumno_curso_4.save()
 
         cls.asistencia_1 = Asistencia.objects.create(
-            fecha="2019-11-15", asistio=1, alumno_curso=cls.alumno_curso_1,
+            fecha=datetime.date(2019, 11, 15),
+            asistio=1,
+            alumno_curso=cls.alumno_curso_1,
         )
         cls.asistencia_1.save()
 
         cls.asistencia_2 = Asistencia.objects.create(
-            fecha="2019-11-22", asistio=0, alumno_curso=cls.alumno_curso_1,
+            fecha=datetime.date(2019, 11, 22),
+            asistio=0,
+            alumno_curso=cls.alumno_curso_1,
         )
         cls.asistencia_2.save()
 
         cls.asistencia_2 = Asistencia.objects.create(
-            fecha="2020-11-22", asistio=0, alumno_curso=cls.alumno_curso_2,
+            fecha=datetime.date(2020, 11, 22),
+            asistio=0,
+            alumno_curso=cls.alumno_curso_2,
         )
         cls.asistencia_2.save()
 
@@ -213,9 +220,12 @@ class QueueAsistenciaTests(APITestCase):
         """
         Test de creacion correcta de AlumnoObjetivos
         """
-        alumno_asistencia(self.alumno_1.id)
+        alumno_asistencia_redesign(
+            self.alumno_1.id, timezone.now(), self.asistencia_1.fecha
+        )
         alumnos_objetivos = AlumnoObjetivo.objects.all()
-        assert alumnos_objetivos[0].valor == 0.5
+        assert alumnos_objetivos[0].valor == 1
+        assert alumnos_objetivos[1].valor == 0.5
 
 
 @patch("asistencias.api.views.django_rq")

@@ -19,6 +19,7 @@ from itertools import chain
 from django.core.exceptions import ValidationError
 import datetime
 from seguimientos.models import Seguimiento, SolicitudSeguimiento
+from curricula.models import Evaluacion
 
 
 class AlumnoViewSet(ModelViewSet):
@@ -133,25 +134,6 @@ class AlumnoViewSet(ModelViewSet):
         serializer = serializers.UpdateAlumnoSerializer(data=request.data)
 
         if serializer.is_valid():
-            if serializer.validated_data.get("dni"):
-                if retrieved_alumno.dni != serializer.validated_data.get(
-                    "dni"
-                ):
-                    try:
-                        Alumno.objects.get(
-                            dni=serializer.validated_data.get("dni"),
-                            institucion__exact=institucion,
-                        ).exclude(pk=pk)
-                        return Response(
-                            data={
-                                "detail": "Alumno con el mismo dni existente"
-                            },
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-                    except Alumno.DoesNotExist:
-                        pass
-                    except:
-                        return Response(status=status.HTTP_400_BAD_REQUEST)
             try:
                 serializer.update(retrieved_alumno)
             except ValidationError as e:
@@ -281,6 +263,9 @@ class AlumnoCursoViewSet(ModelViewSet):
     OK_EMPTY = {200: ""}
     OK_VIEW = {200: serializers.ViewAlumnoCursoSerializer()}
     OK_LIST = {200: serializers.ViewAlumnoCursoSerializer(many=True)}
+    OK_LIST_2 = {
+        200: serializers.ViewAlumnoCursoEvaluacionSerializer(many=True)
+    }
     OK_CREATED = {201: ""}
 
     anio_lectivo_parameter = openapi.Parameter(
@@ -301,6 +286,13 @@ class AlumnoCursoViewSet(ModelViewSet):
         "alumno",
         openapi.IN_QUERY,
         description="Alumno por el que queremos filtrar la búsqueda",
+        type=openapi.TYPE_INTEGER,
+    )
+
+    evaluacion_parameter = openapi.Parameter(
+        "evaluacion",
+        openapi.IN_QUERY,
+        description="Evaluacion de la cual se quiere traer el puntaje",
         type=openapi.TYPE_INTEGER,
     )
 
@@ -406,6 +398,110 @@ class AlumnoCursoViewSet(ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = serializers.ViewAlumnoCursoSerializer(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_id="list_alumo_curso_evaluacion",
+        operation_description="""
+        """,
+        manual_parameters=[
+            anio_lectivo_parameter,
+            curso_parameter,
+            evaluacion_parameter,
+        ],
+        responses={**OK_LIST_2, **responses.STANDARD_ERRORS},
+    )
+    def list_evaluaciones(self, request):
+        queryset = AlumnoCurso.objects.filter(
+            alumno__institucion__exact=request.user.institucion
+        )
+        curso = request.query_params.get("curso", None)
+        anio_lectivo = request.query_params.get("anio_lectivo", None)
+        evaluacion = request.query_params.get("evaluacion", None)
+
+        if not curso:
+            return Response(
+                data={"detail": "Es necesario ingresar un curso"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not anio_lectivo:
+            return Response(
+                data={"detail": "Es necesario ingresar un año lectivo"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not evaluacion:
+            return Response(
+                data={"detail": "Es necesario ingresar una evaluación"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if curso.isnumeric():
+            curso = int(curso)
+        else:
+            return Response(
+                data={"curso": "El valor no es numérico"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        curso_retrieved = get_object_or_404(Curso, pk=curso)
+
+        if (
+            curso_retrieved.anio.carrera.institucion
+            != request.user.institucion
+        ):
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        queryset = queryset.filter(curso__pk__exact=curso)
+
+        if anio_lectivo.isnumeric():
+            anio_lectivo = int(anio_lectivo)
+        else:
+            return Response(
+                data={"anio_lectivo": "El valor no es numérico"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        anio_lectivo_retrieved = get_object_or_404(
+            AnioLectivo, pk=anio_lectivo
+        )
+
+        if anio_lectivo_retrieved.institucion != request.user.institucion:
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        queryset = queryset.filter(anio_lectivo__pk__exact=anio_lectivo)
+
+        if evaluacion.isnumeric():
+            evaluacion = int(evaluacion)
+        else:
+            return Response(
+                data={"evaluacion": "El valor no es numérico"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        evaluacion_retrieved = get_object_or_404(Evaluacion, pk=evaluacion)
+
+        if (
+            evaluacion_retrieved.anio_lectivo.institucion
+            != request.user.institucion
+        ):
+            return Response(
+                data={"detail": "No encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
+                page, many=True, context={"evaluacion": evaluacion}
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = serializers.ViewAlumnoCursoEvaluacionSerializer(
+            queryset, many=True, context={"evaluacion": evaluacion}
+        )
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
@@ -682,6 +778,7 @@ multiple_alumno_curso = AlumnoCursoViewSet.as_view(
     {"post": "create_multiple", "delete": "delete_multiple"}
 )
 list_alumno_curso = AlumnoCursoViewSet.as_view({"get": "list"})
+list_evaluaciones = AlumnoCursoViewSet.as_view({"get": "list_evaluaciones"})
 mix_alumno_curso = AlumnoCursoViewSet.as_view(
     {"get": "get", "delete": "destroy"}
 )

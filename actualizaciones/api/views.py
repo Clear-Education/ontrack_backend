@@ -14,7 +14,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from ontrack import responses
 from actualizaciones.models import Actualizacion, ActualizacionAdjunto
-from datetime import datetime, timedelta
+import datetime
 from django.utils import timezone
 from ontrack import settings
 from rest_framework.parsers import (
@@ -22,6 +22,11 @@ from rest_framework.parsers import (
     MultiPartParser,
     FileUploadParser,
 )
+import re
+from rest_framework.decorators import action
+
+
+DATE_REGEX = r"(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[13-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})"
 
 
 class ActualizacionViewSet(ModelViewSet):
@@ -33,6 +38,24 @@ class ActualizacionViewSet(ModelViewSet):
     OK_VIEW = {200: serializers.GetActualizacionSerializer()}
     OK_LIST = {200: serializers.GetActualizacionSerializer(many=True)}
     OK_CREATED = {201: ""}
+
+    fecha_desde_parameter = openapi.Parameter(
+        "fecha_desde",
+        openapi.IN_QUERY,
+        description="Fecha desde la cual queremos filtrar la búsqueda.",
+        type=openapi.TYPE_STRING,
+        required=False,
+        pattern="DD-MM-YYYY",
+    )
+
+    fecha_hasta_parameter = openapi.Parameter(
+        "fecha_hasta",
+        openapi.IN_QUERY,
+        description="Fecha hasta la cual queremos filtrar la búsqueda.",
+        type=openapi.TYPE_STRING,
+        required=False,
+        pattern="DD-MM-YYYY",
+    )
 
     @swagger_auto_schema(
         operation_id="get_actualizacion",
@@ -73,9 +96,13 @@ class ActualizacionViewSet(ModelViewSet):
         operation_description="""
         Listar las actualizaciones de un seguimiento utilizando el id de seguimiento.
         """,
+        manual_parameters=[fecha_desde_parameter, fecha_hasta_parameter,],
         responses={**OK_LIST, **responses.STANDARD_ERRORS},
     )
     def list(self, request, seguimiento_pk=None):
+        fecha_desde = request.query_params.get("fecha_desde", None)
+        fecha_hasta = request.query_params.get("fecha_hasta", None)
+
         try:
             seguimiento = Seguimiento.objects.get(id__exact=seguimiento_pk)
         except Seguimiento.DoesNotExist:
@@ -98,7 +125,44 @@ class ActualizacionViewSet(ModelViewSet):
 
         queryset = Actualizacion.objects.filter(
             seguimiento__id__exact=seguimiento_pk, padre__isnull=True,
-        ).order_by("-fecha_creacion")
+        )
+
+        if fecha_desde:
+            if not re.compile(DATE_REGEX).match(fecha_desde):
+                return Response(
+                    data={
+                        "detail": "La fecha ingresada no está correctamente expresada"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            temp = fecha_desde.split("-")
+            fecha_desde = datetime.date(
+                int(temp[2]), int(temp[1]), int(temp[0])
+            )
+            queryset = queryset.filter(fecha_modificacion__gte=fecha_desde)
+
+        if fecha_hasta:
+            if not re.compile(DATE_REGEX).match(fecha_hasta):
+                return Response(
+                    data={
+                        "detail": "La fecha ingresada no está correctamente expresada"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            temp = fecha_hasta.split("-")
+            fecha_hasta = datetime.date(
+                int(temp[2]), int(temp[1]), int(temp[0])
+            )
+            queryset = queryset.filter(fecha_modificacion__lte=fecha_hasta)
+
+        if fecha_hasta and fecha_desde:
+            if fecha_hasta <= fecha_desde:
+                return Response(
+                    data={"detail": "Las fechas ingresadas son inválidas"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        queryset = queryset.order_by("-fecha_creacion")
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -108,6 +172,39 @@ class ActualizacionViewSet(ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = serializers.GetActualizacionSerializer(
+            queryset, many=True
+        )
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_id="list_latest_actualizaciones",
+        operation_description="""
+        Listar las últimas actualizaciones para un usuario.
+        """,
+        responses={**OK_LIST, **responses.STANDARD_ERRORS},
+    )
+    @action(detail=False, methods=["GET"], name="list_latest")
+    def list_latest(self, request):
+        integrantes = IntegranteSeguimiento.objects.filter(
+            usuario__exact=request.user, fecha_hasta__isnull=True,
+        )
+
+        seguimiento_set = {
+            integrante.seguimiento.id for integrante in integrantes
+        }
+
+        queryset = Actualizacion.objects.filter(
+            seguimiento__id__in=seguimiento_set, padre__isnull=True,
+        ).order_by("-fecha_creacion")
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = serializers.GetActualizacionUsuarioSerializer(
+                page, many=True
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = serializers.GetActualizacionUsuarioSerializer(
             queryset, many=True
         )
         return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -161,7 +258,7 @@ class ActualizacionViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if actualizacion.fecha_modificacion < timezone.now() - timedelta(
+        if actualizacion.fecha_modificacion < timezone.now() - datetime.timedelta(
             minutes=30
         ):
             return Response(
@@ -234,7 +331,7 @@ class ActualizacionViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if actualizacion.fecha_modificacion < timezone.now() - timedelta(
+        if actualizacion.fecha_modificacion < timezone.now() - datetime.timedelta(
             minutes=30
         ):
             return Response(
@@ -318,6 +415,9 @@ list_actualizacion = ActualizacionViewSet.as_view({"get": "list"})
 mix_actualizacion = ActualizacionViewSet.as_view(
     {"get": "get", "patch": "update", "delete": "destroy"}
 )
+list_latest_actualizacion = ActualizacionViewSet.as_view(
+    {"get": "list_latest"}
+)
 
 
 class ActualizacionAdjuntoViewSet(ModelViewSet):
@@ -369,7 +469,7 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if actualizacion.fecha_modificacion < timezone.now() - timedelta(
+        if actualizacion.fecha_modificacion < timezone.now() - datetime.timedelta(
             minutes=30
         ):
             return Response(
@@ -494,7 +594,9 @@ class ActualizacionAdjuntoViewSet(ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if file.fecha_creacion < timezone.now() - timedelta(minutes=30):
+        if file.fecha_creacion < timezone.now() - datetime.timedelta(
+            minutes=30
+        ):
             return Response(
                 data={
                     "detail": "No se puede borrar archivos de una actualización luego de que pasaron 30 minutos desde su carga"

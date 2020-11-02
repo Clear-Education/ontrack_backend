@@ -9,6 +9,9 @@ from alumnos.models import Alumno, AlumnoCurso
 from rest_framework import status
 from rest_framework.utils.serializer_helpers import ReturnList
 from unittest.mock import patch, Mock
+from curricula.models import Materia, Evaluacion
+from calificaciones.models import Calificacion
+import datetime
 
 
 class AlumnoTests(APITestCase):
@@ -307,7 +310,7 @@ class AlumnoTests(APITestCase):
         self.client.force_authenticate(user=self.user_admin)
         id_alumno = Alumno.objects.get(dni=1).id
         data = {
-            "dni": 5,
+            "dni": 2,
             "nombre": "Danilor",
             "apellido": "Reitano",
         }
@@ -496,6 +499,11 @@ class AlumnoCursoTests(APITestCase):
         )
         cls.group_admin.permissions.add(
             Permission.objects.get(name="Puede borrar multiples alumnocurso")
+        )
+        cls.group_admin.permissions.add(
+            Permission.objects.get(
+                name="Puede listar alumnocurso con evaluaciones"
+            )
         )
         cls.group_admin.save()
 
@@ -700,6 +708,43 @@ class AlumnoCursoTests(APITestCase):
             anio_lectivo=cls.anio_lectivo_3,
         )
         cls.alumno_curso_7.save()
+
+        cls.materia_1 = Materia.objects.create(
+            nombre="Matematicas", anio=cls.anio_1
+        )
+        cls.materia_1.save()
+
+        cls.evaluacion_1 = Evaluacion.objects.create(
+            nombre="Evaluacion Mat 1",
+            materia=cls.materia_1,
+            anio_lectivo=cls.anio_lectivo_1,
+            ponderacion=0.3,
+        )
+        cls.evaluacion_1.save()
+
+        cls.evaluacion_2 = Evaluacion.objects.create(
+            nombre="Evaluacion Mat 2",
+            materia=cls.materia_1,
+            anio_lectivo=cls.anio_lectivo_1,
+            ponderacion=0.7,
+        )
+        cls.evaluacion_2.save()
+
+        cls.calificacion_1 = Calificacion.objects.create(
+            fecha=datetime.date(2019, 3, 4),
+            puntaje=80,
+            alumno=cls.alumno_1,
+            evaluacion=cls.evaluacion_1,
+        )
+        cls.calificacion_1.save()
+
+        cls.calificacion_2 = Calificacion.objects.create(
+            fecha=datetime.date(2019, 3, 5),
+            puntaje=50,
+            alumno=cls.alumno_1,
+            evaluacion=cls.evaluacion_2,
+        )
+        cls.calificacion_2.save()
 
     def test_delete_multiple_alumno_curso_admin(self):
         """
@@ -1212,6 +1257,21 @@ class AlumnoCursoTests(APITestCase):
         """
         self.client.force_authenticate(user=self.user_docente)
         response = self.client.get(f"/api/alumnos/curso/{self.curso_1.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_list_evaluaciones_alumno_curso_admin(self):
+        """
+        Test de listado de evaluaciones correcto de AlumnoCurso por admin
+        """
+        self.client.force_authenticate(user=self.user_admin)
+
+        curso_1 = self.curso_1.id
+        anio_lectivo_1 = self.anio_lectivo_1.id
+        evaluacion = self.evaluacion_1.id
+
+        response = self.client.get(
+            f"/api/alumnos/curso/list/evaluaciones/?curso={curso_1}&anio_lectivo={anio_lectivo_1}&evaluacion={evaluacion}"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list_alumno_curso_admin(self):

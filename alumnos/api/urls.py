@@ -12,5 +12,10 @@ urlpatterns = [
         name="alumnocurso-create-multiple",
     ),
     path("curso/list/", views.list_alumno_curso, name="alumnocurso-list"),
+    path(
+        "curso/list/evaluaciones/",
+        views.list_evaluaciones,
+        name="evaluaciones-list",
+    ),
     path("curso/<int:pk>/", views.mix_alumno_curso, name="alumnocurso-mix"),
 ]

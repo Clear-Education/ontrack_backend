@@ -36,9 +36,9 @@ class Alumno(models.Model):
     def clean(self):
         if self.id:
             if len(
-                Alumno.objects.filter(dni__exact=self.dni).exclude(
-                    id__exact=self.id
-                )
+                Alumno.objects.filter(
+                    dni__exact=self.dni, institucion__exact=self.institucion
+                ).exclude(id__exact=self.id)
             ):
                 raise ValidationError("El DNI indicado ya está en uso")
 
@@ -52,12 +52,16 @@ class Alumno(models.Model):
 
             if self.email and len(
                 Alumno.objects.filter(email__exact=self.email).exclude(
-                    id__exact=self.id
+                    id__exact=self.id, institucion__exact=self.institucion,
                 )
             ):
                 raise ValidationError("El email indicado ya está en uso")
         else:
-            if len(Alumno.objects.filter(dni__exact=self.dni)):
+            if len(
+                Alumno.objects.filter(
+                    dni__exact=self.dni, institucion__exact=self.institucion
+                )
+            ):
                 raise ValidationError("El DNI indicado ya está en uso")
 
             if self.legajo and len(
@@ -69,7 +73,10 @@ class Alumno(models.Model):
                 raise ValidationError("El legajo indicado ya está en uso")
 
             if self.email and len(
-                Alumno.objects.filter(email__exact=self.email)
+                Alumno.objects.filter(
+                    email__exact=self.email,
+                    institucion__exact=self.institucion,
+                )
             ):
                 raise ValidationError("El email indicado ya está en uso")
 
@@ -96,6 +103,10 @@ class AlumnoCurso(models.Model):
     class Meta:
         permissions = [
             ("list_alumnocurso", "Puede listar alumnocurso"),
+            (
+                "list_evaluaciones_alumnocurso",
+                "Puede listar alumnocurso con evaluaciones",
+            ),
             (
                 "create_multiple_alumnocurso",
                 "Puede crear multiples alumnocurso",

@@ -33,7 +33,13 @@ class Actualizacion(models.Model):
         )
 
     class Meta:
-        permissions = [("list_actualizacion", "Puede listar actualizaciones")]
+        permissions = [
+            ("list_actualizacion", "Puede listar actualizaciones"),
+            (
+                "list_latest_actualizacion",
+                "Puede listar las ultimas actualizaciones",
+            ),
+        ]
 
 
 def seguimiento_file_path(instance, filename):
@@ -69,4 +75,4 @@ class ActualizacionAdjunto(models.Model):
     file_size = models.IntegerField(blank=True)
 
     def __str__(self):
-        return self.actualizacion + " " + self.url
+        return str(self.pk)
