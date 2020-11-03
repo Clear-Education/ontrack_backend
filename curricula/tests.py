@@ -287,6 +287,7 @@ class MateriaEvaluacionTest(APITestCase):
         data[0]["anio_lectivo"] = self.anio_lectivo.pk
         del data[0]["nombre"]
         data[0]["materia"] = materia.pk
+        data[0]["fecha"] = "02/08/2020"
         data.append(
             {
                 "anio_lectivo": self.anio_lectivo.pk,

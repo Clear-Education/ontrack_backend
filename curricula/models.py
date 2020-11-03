@@ -224,6 +224,7 @@ class Evaluacion(models.Model):
         default=None,
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha = models.DateField(blank=True, null=True)
     ponderacion = models.FloatField(blank=False)
 
     def clean(self):

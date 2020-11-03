@@ -3,11 +3,17 @@ from curricula import models
 from calificaciones.models import Calificacion
 from functools import reduce
 from rest_framework.exceptions import ValidationError
+from ontrack import settings
+import django_rq
+from calificaciones.rq_funcions import alumno_calificacion_redesign
 
 
 class ViewEvaluacionSerializer(serializers.ModelSerializer):
     anio_lectivo = serializers.PrimaryKeyRelatedField(
         queryset=models.AnioLectivo.objects.all()
+    )
+    fecha = serializers.DateField(
+        format=settings.DATE_INPUT_FORMAT[0], required=False
     )
 
     class Meta:
@@ -18,6 +24,7 @@ class ViewEvaluacionSerializer(serializers.ModelSerializer):
             "materia",
             "anio_lectivo",
             "fecha_creacion",
+            "fecha",
             "ponderacion",
         ]
 
@@ -64,6 +71,20 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
             e = eval_mapping.get(eval_id, None)
             if e is not None:
                 ret.append(self.child.update(e, data))
+                calificaciones = Calificacion.objects.filter(
+                    evaluacion_id=e.id
+                )
+                materia = e.materia.id
+                if calificaciones:
+                    alumnos = {c.alumno.id for c in calificaciones}
+                    min_fecha = min({c.fecha for c in calificaciones})
+                    for alumno in alumnos:
+                        django_rq.enqueue(
+                            alumno_calificacion_redesign,
+                            alumno,
+                            materia,
+                            min_fecha,
+                        )
         for data in data_mapping[0]:
             ret.append(self.child.create(data))
 
@@ -77,7 +98,6 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
         """
         Checkear que las FK sean iguales
         """
-
         anios_lectivos = [e["anio_lectivo"].pk for e in data]
         materias = [e["materia"].pk for e in data]
         if len(set(anios_lectivos)) != 1 or len(set(materias)) != 1:
@@ -109,11 +129,21 @@ class CreateEvaluacionSerializer(serializers.ModelSerializer):
         required=True,
         pk_field=serializers.IntegerField(),
     )
+    fecha = serializers.DateField(
+        required=False, input_formats=settings.DATE_INPUT_FORMAT,
+    )
     ponderacion = serializers.FloatField(required=True)
 
     class Meta:
         model = models.Evaluacion
-        fields = ["id", "anio_lectivo", "nombre", "materia", "ponderacion"]
+        fields = [
+            "id",
+            "anio_lectivo",
+            "nombre",
+            "materia",
+            "ponderacion",
+            "fecha",
+        ]
         list_serializer_class = CreateEvaluacionListSerializer
 
 
