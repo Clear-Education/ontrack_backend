@@ -147,6 +147,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "ontrack.context_processors.export_env_vars",
             ],
         },
     },
@@ -206,6 +207,15 @@ if os.getenv("BACKUPDB"):
         "region_name": os.environ.get("AWS_S3_REGION_NAME"),
         "location": "backups/",
     }
+
+DBBACKUP_CONNECTORS = {
+    "default": {
+        "USER": "postgres",
+        "PASSWORD": "postgres",
+        "HOST": "localhost",
+        "CONNECTOR": "dbbackup.db.postgresql.PgDumpBinaryConnector",
+    }
+}
 
 
 # Password validation
