@@ -62,7 +62,6 @@ INSTALLED_APPS = [
     "django_rq",
     "storages",
     "dbbackup",
-    "django_cron",
     # Custom
     "users",
     "instituciones",
@@ -73,6 +72,7 @@ INSTALLED_APPS = [
     "seguimientos",
     "objetivos",
     "actualizaciones",
+    "mantenimiento",
 ]
 
 REST_FRAMEWORK = {
@@ -158,16 +158,28 @@ WSGI_APPLICATION = "ontrack.wsgi.application"
 # Database
 
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "postgres",
-        "USER": "postgres",
-        "PASSWORD": "postgres",
-        "HOST": "db",
-        "PORT": 5432,
+if os.getenv("DJANGO_DEVELOPMENT"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "postgres",
+            "USER": "postgres",
+            "PASSWORD": "postgres",
+            "HOST": "localhost",
+            "PORT": 5432,
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "postgres",
+            "USER": "postgres",
+            "PASSWORD": "postgres",
+            "HOST": "localhost",
+            "PORT": 5432,
+        }
+    }
 
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
@@ -256,9 +268,6 @@ if os.getenv("HEROKU"):
     AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
 
 AUTH_USER_MODEL = "users.User"
-
-if os.getenv("DJANGO_DEVELOPMENT") is not None:
-    from settings_dev import *  # or specific overrides
 
 # MAIL
 

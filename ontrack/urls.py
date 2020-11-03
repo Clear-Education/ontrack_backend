@@ -23,6 +23,7 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    path("admin/backups/", include("mantenimiento.urls")),
     path("admin/", admin.site.urls),
     path("django-rq/", include("django_rq.urls")),
     path("api/users/", include("users.api.urls")),
