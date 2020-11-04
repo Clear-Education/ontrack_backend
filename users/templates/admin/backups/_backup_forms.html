@@ -1,0 +1,18 @@
+<h2>Backup de Base de Datos</h2>
+<form method="post" action=".">
+  {% csrf_token %}
+  {{ database_backup_form.as_p }}
+  <div class="submit-row">
+  <input type="submit" class="button" name="savebackup" value="Descargar Backup de Base de Datos">
+  </div>
+</form>
+<br/><hr/>
+
+<h2>Backup de Archivos</h2>
+<form method="post" action=".">
+  {% csrf_token %}
+  {{ media_backup_form.as_p }}
+  <div class="submit-row">
+    <input type="submit" class="button" name="mediabackup" value="Descargar Backup de Archivos">
+  </div>
+</form>

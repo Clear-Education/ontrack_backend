@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_rq",
     "storages",
+    "dbbackup",
     # Custom
     "users",
     "instituciones",
@@ -71,6 +72,7 @@ INSTALLED_APPS = [
     "seguimientos",
     "objetivos",
     "actualizaciones",
+    "mantenimiento",
 ]
 
 REST_FRAMEWORK = {
@@ -145,6 +147,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "ontrack.context_processors.export_env_vars",
             ],
         },
     },
@@ -156,16 +159,28 @@ WSGI_APPLICATION = "ontrack.wsgi.application"
 # Database
 
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "postgres",
-        "USER": "postgres",
-        "PASSWORD": "postgres",
-        "HOST": "db",
-        "PORT": 5432,
+if os.getenv("DJANGO_DEVELOPMENT"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "postgres",
+            "USER": "postgres",
+            "PASSWORD": "postgres",
+            "HOST": "localhost",
+            "PORT": 5432,
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "postgres",
+            "USER": "postgres",
+            "PASSWORD": "postgres",
+            "HOST": "localhost",
+            "PORT": 5432,
+        }
+    }
 
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
@@ -174,6 +189,31 @@ SWAGGER_SETTINGS = {
             "name": "Authorization",
             "in": "header",
         }
+    }
+}
+
+CRON_CLASSES = [
+    "ontrack.cron.Backup",
+]
+
+
+if os.getenv("BACKUPDB"):
+    DBBACKUP_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    DBBACKUP_STORAGE_OPTIONS = {
+        "access_key": os.environ.get("AWS_ACCESS_KEY_ID"),
+        "secret_key": os.environ.get("AWS_SECRET_ACCESS_KEY"),
+        "bucket_name": os.environ.get("AWS_STORAGE_BUCKET_NAME"),
+        "default_acl": os.environ.get("AWS_DEFAULT_ACL", None),
+        "region_name": os.environ.get("AWS_S3_REGION_NAME"),
+        "location": "backups/",
+    }
+
+DBBACKUP_CONNECTORS = {
+    "default": {
+        "USER": "postgres",
+        "PASSWORD": "postgres",
+        "HOST": "localhost",
+        "CONNECTOR": "dbbackup.db.postgresql.PgDumpBinaryConnector",
     }
 }
 
@@ -238,9 +278,6 @@ if os.getenv("HEROKU"):
     AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
 
 AUTH_USER_MODEL = "users.User"
-
-if os.getenv("DJANGO_DEVELOPMENT") is not None:
-    from settings_dev import *  # or specific overrides
 
 # MAIL
 
