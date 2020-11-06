@@ -84,9 +84,25 @@
             {% endif %}
             {% endfor %}
         </table>
-    </div>
+    </div>            
     {% endif %}
     {% endfor %}
+    {% if HEROKU %}
+    <div class="app-{{ app.app_label }} module">
+        <table>
+            <caption>
+                <a href="{% url 'backups' %}" class="section"
+                    title="Mantenimiento">Mantenimiento</a>
+            </caption>
+            <tr class="model-backups">
+                <th scope="row"><a href="{% url 'backups' %}">Backups</a></th>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+
     {% else %}
     <p>{% trans 'You don’t have permission to view or edit anything.' %}</p>
     {% endif %}
