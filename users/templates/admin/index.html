@@ -87,7 +87,7 @@
     </div>            
     {% endif %}
     {% endfor %}
-    {% if HEROKU %}
+    {% if not HEROKU %}
     <div class="app-{{ app.app_label }} module">
         <table>
             <caption>
