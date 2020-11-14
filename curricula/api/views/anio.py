@@ -2,6 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 from curricula.api.serializers import anio as serializers_anio
 from curricula.api.serializers import carrera as serializers_carrera
 from curricula.models import Anio, Curso, Carrera, Materia
+from alumnos.models import AlumnoCurso
 from users.permissions import permission_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -177,6 +178,11 @@ class CursoViewSet(ModelViewSet):
         Elimina un Curso
         """
         curso = get_object_or_404(self.get_queryset(), pk=pk)
+        if AlumnoCurso.objects.filter(curso=curso).count() != 0:
+            data = {
+                "detail": "No se puede eliminar un curso con alumnos asignados"
+            }
+            return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
         curso.delete()
         return Response(status=status.HTTP_200_OK)
 

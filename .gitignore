@@ -128,3 +128,5 @@ db.sqlite3
 /entrypoint.sh
 
 media/
+static/
+staticfiles/
