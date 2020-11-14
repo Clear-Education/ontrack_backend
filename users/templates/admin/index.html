@@ -87,7 +87,6 @@
     </div>            
     {% endif %}
     {% endfor %}
-    {% if not HEROKU %}
     <div class="app-{{ app.app_label }} module">
         <table>
             <caption>
@@ -101,7 +100,6 @@
             </tr>
         </table>
     </div>
-    {% endif %}
 
     {% else %}
     <p>{% trans 'You don’t have permission to view or edit anything.' %}</p>
