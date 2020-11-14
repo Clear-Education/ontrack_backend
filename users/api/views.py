@@ -54,7 +54,12 @@ class CustomAuthToken(ObtainAuthToken):
         user = User.objects.get(pk=user.pk)
 
         if not user.is_superuser and not user.institucion.activa:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                data={
+                    "detail": "La institución a la que pertence fue dada de Baja"
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
         token, created = Token.objects.get_or_create(user=user)
         user.token = token.key
         response_serializer = serializers.LoginResponseSerializer(user)
