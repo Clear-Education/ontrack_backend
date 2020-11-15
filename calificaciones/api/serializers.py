@@ -87,7 +87,10 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
         Tambien que no esten repetidos
         Verificar todo con institucion
         """
-
+        if len(data["calificaciones"]) == 0:
+            raise serializers.ValidationError(
+                "Debe enviar al menos una calficación."
+            )
         alumnos = [a["alumno"].pk for a in data["calificaciones"]]
         if len(set(alumnos)) != len(alumnos):
             raise serializers.ValidationError("Existen alumnos repetidos")
@@ -119,6 +122,7 @@ class CreateCalificacionListSerializer(serializers.ModelSerializer):
             cursos.append(res.curso_id)
         # Chequeo que todos los cursos sean iguales, sino
         # Puede pasar que este asignando a los de A y del B a la vez
+
         if len(set(cursos)) != 1:
             raise serializers.ValidationError(
                 "Los alumnos no pertencen al mismo curso!"

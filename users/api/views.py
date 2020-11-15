@@ -4,6 +4,7 @@ from rest_framework.decorators import (
     action,
     permission_classes as pc,
 )
+from seguimientos.models import IntegranteSeguimiento
 from rest_framework import status
 from users.api import serializers
 from rest_framework import viewsets
@@ -54,7 +55,12 @@ class CustomAuthToken(ObtainAuthToken):
         user = User.objects.get(pk=user.pk)
 
         if not user.is_superuser and not user.institucion.activa:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                data={
+                    "detail": "La institución a la que pertence fue dada de Baja"
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
         token, created = Token.objects.get_or_create(user=user)
         user.token = token.key
         response_serializer = serializers.LoginResponseSerializer(user)
@@ -261,6 +267,21 @@ class UsersViewSet(viewsets.ModelViewSet):
                 data={"detail": "No encontrado."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        if (
+            IntegranteSeguimiento.objects.filter(
+                usuario=retrieved_user,
+                fecha_desde__isnull=True,
+                seguimiento__en_progreso=True,
+            ).count()
+            != 0
+        ):
+            return Response(
+                data={
+                    "detail": "No se pueden borrar integrantes de Seguimientos en curso"
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         retrieved_user.delete()
         return Response(status=status.HTTP_200_OK)
 
