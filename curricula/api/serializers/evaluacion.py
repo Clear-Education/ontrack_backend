@@ -106,11 +106,12 @@ class CreateEvaluacionListSerializer(serializers.ListSerializer):
                 las mismas para todas las evaluaciones"
             )
 
-        ponderaciones = [e["ponderacion"] for e in data]
+        ponderaciones = [e["ponderacion"] * 100 for e in data]
         if not all(map(lambda x: x > 0, ponderaciones)):
             raise ValidationError("Valores invalidos para ponderacion!")
         total = reduce((lambda x, y: x + y), ponderaciones)
-        if total != 1:
+        if total != 100:
+
             raise ValidationError(detail="Las ponderaciones no suman 1")
 
         return data
