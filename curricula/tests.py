@@ -310,6 +310,69 @@ class MateriaEvaluacionTest(APITestCase):
         self.assertEqual(type(response.data), ReturnList)
         self.assertEqual(len(response.data), 2)
 
+    def test_edit_ponderaciones_evaluaciones(self):
+        """
+        Test de listado de evaluaciones
+        """
+        materia = Materia.objects.create(
+            **{"nombre": "Análisis Matemático", "anio_id": self.anio.pk}
+        )
+        materia.save()
+        url = reverse("evaluacion-create")
+        data = [
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.3,
+                "nombre": "nombre1",
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.5,
+                "nombre": "nombre2",
+            },
+            {
+                "anio_lectivo": self.anio_lectivo.pk,
+                "materia": materia.pk,
+                "ponderacion": 0.2,
+                "nombre": "nombre3",
+            },
+        ]
+        response = self.client.post(url, data, format="json")
+
+        response = self.client.get(
+            "/api/materia/{}/evaluacion/list/?anio_lectivo={}".format(
+                materia.pk, self.anio_lectivo.pk
+            ),
+        )
+        data = []
+        temp = response.data[0]
+        temp["fecha"] = "23/11/2020"
+        temp["ponderacion"] = 0.2
+        data.append(temp)
+        temp = response.data[1]
+        temp["ponderacion"] = 0.7
+        temp["fecha"] = "23/11/2020"
+        data.append(temp)
+        temp = response.data[2]
+        temp["ponderacion"] = 0.1
+        temp["fecha"] = "23/11/2020"
+        data.append(temp)
+
+        response = self.client.put(
+            "/api/evaluacion/", data=data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(
+            "/api/materia/{}/evaluacion/list/?anio_lectivo={}".format(
+                materia.pk, self.anio_lectivo.pk
+            ),
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(type(response.data), ReturnList)
+
     def test_create_evaluaciones_ponderacion_erronea(self):
         """
         Test de validacion sobre ponderacion en la creacion de evaluaciones
