@@ -52,4 +52,23 @@ class BackupView(
         return context
 
 
+class RestoreView(
+    LoginRequiredMixin, UserPassesTestMixin, TemplateResponseMixin, View
+):
+
+    template_name = "mantenimiento/restore_view.html"
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get(self, request, *args, **kwargs):
+        context = {"title": "Recuperacion a partir de Backup"}
+        return self.render_to_response(self.update_context(context))
+
+    def update_context(self, context):
+        context.update({"title": "Recuperacion"})
+        return context
+
+
 backup = BackupView.as_view()
+restore = RestoreView.as_view()
