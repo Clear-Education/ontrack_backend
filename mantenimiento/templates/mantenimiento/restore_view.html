@@ -1,0 +1,18 @@
+{% extends 'admin/index.html' %}
+
+{% block content %}
+  <div id="content-main">
+  {% if not HEROKU %}
+    <h3>
+    Instrucciones para realizar Recuperación con PgAdmin (<a href="http://127.0.0.1:52772/browser/" target="_blank">Acceder</a>) 
+    </h3>
+  {% endif %}
+  {% if HEROKU %}
+  <h3>
+    Plataforma detectada: Heroku (<a href="https://dashboard.heroku.com/apps" target="_blank">Ir al Dashboard</a>) 
+    </h3>
+  {% endif %}
+    <a href="https://drive.google.com/file/d/12UFXOXc2n8kXUCchUlNf568TPbBXVE2p/view?usp=sharing" target="_blank"> Ver PDF Instructivo para realizar Recuperación</a>
+  </div>
+  
+{% endblock %}
