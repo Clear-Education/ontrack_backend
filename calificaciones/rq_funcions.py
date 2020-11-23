@@ -110,7 +110,7 @@ def calculate_for_date(
 
     for nota, ponderacion in promedios_ponderaciones:
         promedios.append(
-            nota + (1 - ponderacion) * objetivo.tipo_objetivo.valor_minimo
+            nota + (1 - ponderacion) * objetivo.tipo_objetivo.valor_maximo
         )
 
     alumno_objetivo = AlumnoObjetivo(
