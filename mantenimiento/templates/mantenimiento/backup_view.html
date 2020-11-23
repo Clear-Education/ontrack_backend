@@ -6,9 +6,11 @@
 
     {% include 'mantenimiento/_backup_forms.html' %}
 <br/><hr/>
-    <h3>
-    Instrucciones para manejar Backups con PgAdmin (<a href="http://127.0.0.1:52772/browser/" target="_blank">Acceder</a>) 
-    </h3>
+  <h3> Formato de Backups <h3>
+  <ul>
+    <li>Base de Datos: (nombre-base-de-datos)-(nombre-equipo)-(MM-DD-AAAA-HHMMSS).tar.gz</li>
+    <li>Media: (nombre-equipo)-(MM-DD-AAAA-HHMMSS).tar.gz</li>
+  </ul> 
   {% endif %}
   {% if HEROKU %}
   <h3>
@@ -16,6 +18,11 @@
     </h3>
   {% endif %}
     <a href="https://drive.google.com/file/d/12UFXOXc2n8kXUCchUlNf568TPbBXVE2p/view?usp=sharing" target="_blank"> Ver PDF Instructivo </a>
+    <br>
+
+      <hr>
+    <br>
+    <a href="{% url 'restore' %}">Ir a Recuperación </a>
   </div>
   
 {% endblock %}
